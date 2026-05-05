@@ -177,7 +177,6 @@ def table07_subtest_detail(runs_df: pd.DataFrame, subtests_df: pd.DataFrame) -> 
 
                 rows.append(
                     {
-                        "Model": model,
                         "Tier": tier,
                         "Subtest": subtest_row["subtest"],
                         "Pass Rate": subtest_row["pass_rate"],
@@ -194,17 +193,17 @@ def table07_subtest_detail(runs_df: pd.DataFrame, subtests_df: pd.DataFrame) -> 
     # Markdown table (paginated for readability)
     md_lines = ["# Table 7: Full Subtest Results (Appendix B)", ""]
     md_lines.append(
-        "| Model | Tier | Subtest | Pass Rate | Mean Score | Std Dev | Cost ($) | "
+        "| Tier | Subtest | Pass Rate | Mean Score | Std Dev | Cost ($) | "
         "Modal Grade | Grade Distribution |"
     )
     md_lines.append(
-        "|-------|------|---------|-----------|------------|---------|----------|"
+        "|------|---------|-----------|------------|---------|----------|"
         "-------------|-------------------|"
     )
 
     for _, row in df.iterrows():
         md_lines.append(
-            f"| {row['Model']} | {row['Tier']} | {row['Subtest']} | "
+            f"| {row['Tier']} | {row['Subtest']} | "
             f"{row['Pass Rate']:.3f} | {row['Mean Score']:.3f} | {row['Std Dev']:.3f} | "
             f"{row['Cost ($)']:{_FMT_PVAL}} | {row['Modal Grade']} | {row['Grade Dist']} |"
         )
@@ -213,16 +212,16 @@ def table07_subtest_detail(runs_df: pd.DataFrame, subtests_df: pd.DataFrame) -> 
 
     # LaTeX table (use longtable for multi-page)
     latex_lines = [
-        r"\begin{longtable}{llrrrrrll}",
+        r"\begin{longtable}{lrrrrrll}",
         r"\caption{Full Subtest Results (Appendix B)} \\",
         r"\toprule",
-        r"Model & Tier & ST & Pass Rate & Mean Score & Std Dev & Cost (\$) & "
+        r"Tier & ST & Pass Rate & Mean Score & Std Dev & Cost (\$) & "
         r"Grade & Distribution \\",
         r"\midrule",
         r"\endfirsthead",
-        r"\multicolumn{9}{c}{\textit{Table 7 (continued)}} \\",
+        r"\multicolumn{8}{c}{\textit{Table 7 (continued)}} \\",
         r"\toprule",
-        r"Model & Tier & ST & Pass Rate & Mean Score & Std Dev & Cost (\$) & "
+        r"Tier & ST & Pass Rate & Mean Score & Std Dev & Cost (\$) & "
         r"Grade & Distribution \\",
         r"\midrule",
         r"\endhead",
@@ -232,7 +231,7 @@ def table07_subtest_detail(runs_df: pd.DataFrame, subtests_df: pd.DataFrame) -> 
 
     for _, row in df.iterrows():
         latex_lines.append(
-            f"{row['Model']} & {row['Tier']} & {row['Subtest']} & "
+            f"{row['Tier']} & {row['Subtest']} & "
             f"{row['Pass Rate']:.3f} & {row['Mean Score']:.3f} & {row['Std Dev']:.3f} & "
             f"{row['Cost ($)']:{_FMT_PVAL}} & {row['Modal Grade']} & "
             f"\\tiny {row['Grade Dist']} \\\\"
@@ -384,7 +383,6 @@ def table09_experiment_config(runs_df: pd.DataFrame) -> tuple[str, str]:
         )
 
         # Derive configuration from data
-        agent_models = sorted(exp_data["agent_model"].unique())
         tiers = derive_tier_order(exp_data)
         n_tiers = len(tiers)
 
@@ -416,7 +414,6 @@ def table09_experiment_config(runs_df: pd.DataFrame) -> tuple[str, str]:
         rows.append(
             {
                 "Experiment": experiment,
-                "Agent Models": ", ".join(agent_models),
                 "Tiers": n_tiers,
                 "Tier IDs": ", ".join(tiers),
                 "Subtests/Tier": subtest_summary,
@@ -431,11 +428,11 @@ def table09_experiment_config(runs_df: pd.DataFrame) -> tuple[str, str]:
     # Markdown table
     md_lines = ["# Table 9: Experiment Configuration", ""]
     md_lines.append(
-        "| Experiment | Agent Models | Tiers | Tier IDs | Subtests/Tier | "
+        "| Experiment | Tiers | Tier IDs | Subtests/Tier | "
         "Runs/Subtest | Total Runs | Judge Models |"
     )
     md_lines.append(
-        "|------------|--------------|-------|----------|---------------|"
+        "|------------|-------|----------|---------------|"
         "--------------|------------|--------------|"
     )
 
@@ -446,7 +443,7 @@ def table09_experiment_config(runs_df: pd.DataFrame) -> tuple[str, str]:
             tier_ids = tier_ids[:37] + "..."
 
         md_lines.append(
-            f"| {row['Experiment']} | {row['Agent Models']} | {row['Tiers']} | "
+            f"| {row['Experiment']} | {row['Tiers']} | "
             f"{tier_ids} | {row['Subtests/Tier']} | {row['Runs/Subtest']} | "
             f"{row['Total Runs']} | {row['Judge Models']} |"
         )
@@ -460,9 +457,9 @@ def table09_experiment_config(runs_df: pd.DataFrame) -> tuple[str, str]:
         r"\caption{Experiment Configuration (Data-Derived)}",
         r"\label{tab:experiment_config}",
         r"\small",
-        r"\begin{tabular}{llrllrrr}",
+        r"\begin{tabular}{lrllrrr}",
         r"\toprule",
-        r"Experiment & Models & Tiers & Tier IDs & ST/Tier & Runs/ST & Total & Judges \\",
+        r"Experiment & Tiers & Tier IDs & ST/Tier & Runs/ST & Total & Judges \\",
         r"\midrule",
     ]
 
@@ -473,7 +470,7 @@ def table09_experiment_config(runs_df: pd.DataFrame) -> tuple[str, str]:
             tier_ids = tier_ids[:27] + "..."
 
         latex_lines.append(
-            f"{row['Experiment']} & {row['Agent Models']} & {row['Tiers']} & "
+            f"{row['Experiment']} & {row['Tiers']} & "
             f"{tier_ids} & {row['Subtests/Tier']} & {row['Runs/Subtest']} & "
             f"{row['Total Runs']} & {row['Judge Models']} \\\\"
         )
