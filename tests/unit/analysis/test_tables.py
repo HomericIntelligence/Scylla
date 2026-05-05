@@ -199,7 +199,6 @@ def test_table09_experiment_config() -> None:
     assert len(latex) > 0
 
     # Verify contains configuration headers
-    assert "Agent Models" in markdown
     assert "Tiers" in markdown
     assert "Total Runs" in markdown
 

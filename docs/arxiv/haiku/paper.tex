@@ -72,13 +72,13 @@
 Agentic coding systems increasingly employ multi-layered architectural
 patterns---system prompts, domain skills, external tooling, agent delegation,
 and hierarchical orchestration---yet the marginal value of each layer remains
-poorly characterized, particularly for budget-class language models. We present
+poorly characterized, particularly for budget-class language models. I present
 a controlled ablation study using the Scylla evaluation framework, which
 decomposes agent architecture into seven tiers of increasing complexity
 (T0--T6) and measures quality and cost across a structured set of 120 YAML
 subtests. Using \texttt{claude-haiku-4-5}, Anthropic's budget frontier model,
-we execute three multi-task experiments totaling 1,080 runs at a cost of
-\$123.30. Contrary to initial expectations, our results show no significant
+I execute three multi-task experiments totaling 1,080 runs at a cost of
+\$123.30. Contrary to initial expectations, my results show no significant
 relationship between architectural complexity and aggregate task performance:
 all seven tiers achieve high pass rates in the range 0.935--1.000
 (T0\,=\,0.935, T1\,=\,0.967, T2\,=\,0.978, T3\,=\,0.976, T4\,=\,0.976,
@@ -116,7 +116,7 @@ Practitioners face a fundamental question: \emph{which of these architectural
 layers actually improve performance, and at what cost?}
 
 This question is especially acute for budget-class models. While frontier
-models such as Claude Opus or GPT-4 may possess sufficient capacity to benefit
+models such as Claude Opus or the latest GPT from OpenAI may possess sufficient capacity to benefit
 from complex architectures, smaller models may lack the reasoning bandwidth to
 exploit---or even tolerate---the overhead of delegation and orchestration.
 Whether architectural complexity helps, hinders, or has no effect on a budget
@@ -127,7 +127,7 @@ The stakes are practical. Organizations deploying agentic coding systems face
 real economic trade-offs: budget models cost substantially less per token than
 frontier models, but it is unknown whether layering additional architectural
 complexity onto a budget model provides any measurable benefit. If
-architectural tier has negligible impact on pass rate---as our results
+architectural tier has negligible impact on pass rate---as my results
 suggest---then practitioners can safely deploy the simplest viable
 architecture, reducing operational complexity without sacrificing quality.
 
@@ -149,11 +149,11 @@ each tier on identical tasks using identical models. A prior dryrun study
 applied this framework to Claude Sonnet 4.5 on a single task, establishing
 the methodology but leaving multi-task generalization as an open question.
 
-In this paper, we extend the Scylla framework to a budget frontier model
+In this paper, I extend the Scylla framework to a budget frontier model
 (\texttt{claude-haiku-4-5}) and a multi-task evaluation across three
-experiments of varying difficulty. We execute all 120 subtests across all seven
+experiments of varying difficulty. I execute all 120 subtests across all seven
 tiers with $N=3$ replications per subtest, producing 1,080 total runs at a
-total cost of \$123.30. This design enables us to address the following
+total cost of \$123.30. This design enables me to address the following
 research questions:
 
 \begin{description}
@@ -169,27 +169,27 @@ research questions:
     LLM-as-judge panel when evaluating budget-model outputs?
 \end{description}
 
-Our contributions are as follows:
+My contributions are as follows:
 
 \begin{enumerate}
-  \item We provide, to our knowledge, the first multi-task ablation study of
+  \item I provide, to my knowledge, the first multi-task ablation study of
     agentic coding architectures using a budget frontier model, finding that
     architectural tier has no statistically significant effect on aggregate
     pass rate ($H(6)=8.53$, $p=0.2015$), with all tiers achieving pass rates
     between 0.935 and 1.000.
-  \item We show that task-dependent effects dominate architectural effects:
+  \item I show that task-dependent effects dominate architectural effects:
     a Scheirer--Ray--Hare analysis reveals a significant tier $\times$ task
     interaction on quality score ($H(12)=223.5$, $p<0.001$), indicating that
     architectural decisions should be task-contingent rather than universally
     applied.
-  \item We find no statistically significant tier effect on cost ($p=0.676$),
+  \item I find no statistically significant tier effect on cost ($p=0.676$),
     providing no evidence that additional complexity yields economic benefits
     or penalties at this model scale.
-  \item We report poor inter-rater reliability (Krippendorff's $\alpha=0.034$~\cite{krippendorff2004content}) among a
+  \item I report poor inter-rater reliability (Krippendorff's $\alpha=0.034$~\cite{krippendorff2004content}) among a
     three-model judge panel, highlighting the fragility of LLM-as-judge
     evaluation for budget-model outputs and suggesting that judge variance is
     a primary source of measurement noise.
-  \item We establish an aggregate frontier Cost-of-Pass of ${\sim}$\$0.11,
+  \item I establish an aggregate frontier Cost-of-Pass of ${\sim}$\$0.11,
     showing that meaningful ablation studies can be conducted at modest
     cost with budget models.
 \end{enumerate}
@@ -198,7 +198,7 @@ The remainder of this paper is organized as follows.
 Section~\ref{sec:related_work} surveys related work in agent evaluation and
 ablation methodology. Section~\ref{sec:background} describes the Scylla
 framework and its tier taxonomy. Section~\ref{sec:experimental_design} details
-our experimental design. Section~\ref{sec:results} presents results per
+my experimental design. Section~\ref{sec:results} presents results per
 experiment and in aggregate. Section~\ref{sec:interrater} analyzes inter-rater
 reliability. Section~\ref{sec:cost_analysis} examines cost efficiency.
 Section~\ref{sec:discussion} discusses key findings, limitations, and threats
@@ -249,7 +249,7 @@ than architectural ablation.
 
 A common limitation of these benchmarks is that they evaluate agent
 \emph{systems} holistically, without providing a principled decomposition of
-architectural contributions. Our work addresses this gap by applying a
+architectural contributions. My work addresses this gap by applying a
 controlled ablation design that isolates the effect of each architectural layer
 while holding the model constant.
 
@@ -272,7 +272,7 @@ design brings ablation methodology to agent architecture, treating each
 architectural layer (prompts, skills, tools, delegation, hierarchy) as a
 component that can be systematically added or removed.
 
-Our study extends this approach to the budget model setting, where the
+My study extends this approach to the budget model setting, where the
 interaction between model capacity and architectural complexity introduces
 additional considerations not present in frontier model evaluations. The
 ablation is not merely asking ``does this component help?'' but ``does this
@@ -295,7 +295,7 @@ struggle with the coordination overhead of multi-agent
 systems~\cite{dervishi2025multiagent}, but this has not been rigorously
 quantified in a controlled ablation design.
 
-Our work contributes to this area by providing the first controlled ablation
+My work contributes to this area by providing the first controlled ablation
 study across seven architectural tiers for a budget model, finding that
 tier selection has no statistically significant effect on pass rate
 ($p=0.2015$), though strong tier $\times$ task interactions indicate that
@@ -314,7 +314,7 @@ their own outputs more highly)~\cite{polo2024efficient}.
 Most studies of LLM-as-judge reliability have focused on frontier models
 evaluating frontier model outputs. The reliability of judge panels that include
 budget models, or that evaluate budget model outputs, has received less
-attention. Our study extends this literature by reporting inter-rater
+attention. My study extends this literature by reporting inter-rater
 reliability statistics for a three-model judge panel spanning the full
 capability spectrum, finding near-chance agreement levels that raise
 fundamental questions about the validity of LLM-as-judge evaluation in
@@ -333,7 +333,7 @@ The Cost-of-Pass (CoP) metric~\cite{scylla2026dryrun} provides a
 task-normalized measure of economic efficiency by dividing mean cost per run
 by pass rate. This formulation captures a crucial insight: a model that costs
 half as much but passes only a quarter as often is actually \emph{more}
-expensive to use in practice. Our work applies CoP analysis across seven
+expensive to use in practice. My work applies CoP analysis across seven
 architectural tiers, finding that observed cost invariance across tiers
 ($p=0.676$, non-significant under limited power) suggests simpler
 architectures may be Pareto-dominant when they achieve higher quality.
@@ -351,7 +351,7 @@ The Scylla framework is designed around the principle that agent architecture
 can be decomposed into a hierarchy of capabilities, where each tier adds a
 specific category of functionality to the previous tier. This hierarchical
 design enables controlled ablation: by comparing performance across tiers,
-we can isolate the marginal contribution of each capability layer.
+I can isolate the marginal contribution of each capability layer.
 
 The framework name invokes the mythic trial from Homer's \emph{Odyssey},
 where Odysseus must navigate between the six-headed monster Scylla and the
@@ -547,7 +547,7 @@ objectives over the course of execution.
 \subsection{Model Selection}
 \label{sec:model_selection}
 
-We select \texttt{claude-haiku-4-5} as the subject model for all experiments.
+I select \texttt{claude-haiku-4-5} as the subject model for all experiments.
 Haiku 4.5 is Anthropic's budget frontier model---the most cost-efficient
 option in the Claude model family, positioned below Sonnet and Opus in the
 capability hierarchy. It is designed for high-throughput, low-cost inference
@@ -566,45 +566,31 @@ prices are subject to change.} enables a larger experimental matrix at a fixed b
 \subsection{Task Selection}
 \label{sec:task_selection}
 
-We design three experiments of varying difficulty and domain to test the
+I design three experiments of varying difficulty and domain to test the
 generality of tier effects across task characteristics:
 
 \begin{description}
-  \item[test-001: Python Hello World] A trivial task requiring the creation of
-    a ``Hello World'' program in a simple Python repository. This task serves
-    as a floor calibration: any functional agent architecture should achieve
-    near-perfect performance. The minimal complexity of the task makes it
-    a sensitive detector of architectural overhead---if a tier cannot solve
-    this task, the failure is attributable to the architecture, not the task.
-    \emph{Difficulty}: trivial. \emph{Repository}: Hello-World.
-    \emph{Language}: Python.
-    \emph{Expected outcome}: This task is expected to establish a performance
-    floor---all tiers should achieve near-perfect results on this trivial task,
-    and any observed failures are attributable to architectural overhead rather
-    than task difficulty.
+  \item[test-001: Python Hello World] A trivial Python task requiring the
+    creation of a ``Hello World'' program in the Hello-World repository. This
+    task serves as a floor calibration: any functional agent architecture
+    should achieve near-perfect performance, so the minimal complexity makes
+    it a sensitive detector of architectural overhead---if a tier cannot solve
+    this task, the failure is attributable to the architecture, not to task
+    difficulty.
   \item[test-002: Mojo Hello World with Bazel and Documentation] A moderate
-    task requiring a ``Hello World'' program in the Mojo programming language
-    within the official Modular repository, including Bazel build configuration and
-    accompanying documentation. This task tests the agent's ability to work
-    with a less common programming language and a complex build system, both
-    of which may have limited representation in the model's training data.
-    \emph{Difficulty}: moderate. \emph{Repository}: modular.
-    \emph{Language}: Mojo.
-    \emph{Expected outcome}: This task is expected to differentiate tiers---the
-    unfamiliar programming language and complex build system may reveal
-    capability gaps between architectural configurations, particularly for
-    tiers with limited tooling or domain knowledge support.
-  \item[test-003: Add mypy to pixi Configuration] A moderate task requiring the
-    addition of mypy type checking to an existing pixi-managed Python/Mojo
-    project~\cite{projectodyssey}. This task tests the agent's ability to
-    modify existing project configurations, integrate new development tooling,
-    and work within the constraints of an established codebase.
-    \emph{Difficulty}: moderate. \emph{Repository}: ProjectOdyssey.
-    \emph{Language}: Python/Mojo.
-    \emph{Expected outcome}: This task is expected to test integration
-    capability---modifying existing configurations requires understanding
-    project context, dependency relationships, and tooling conventions, which
-    may favor tiers with richer contextual support.
+    task in the Mojo programming language, requiring a ``Hello World'' program
+    within the official Modular repository together with Bazel build
+    configuration and accompanying documentation. The unfamiliar language and
+    complex build system have limited representation in the model's training
+    data, so this task is expected to differentiate tiers and expose capability
+    gaps for configurations with limited tooling or domain knowledge support.
+  \item[test-003: Add mypy to pixi Configuration] A moderate Python/Mojo
+    task in the ProjectOdyssey repository, requiring the addition of mypy
+    type checking to an existing pixi-managed
+    project~\cite{projectodyssey}. Modifying an established configuration
+    tests integration capability---the agent must understand project context,
+    dependency relationships, and tooling conventions, so this task is
+    expected to favor tiers with richer contextual support.
 \end{description}
 
 The three tasks were selected to span a range of dimensions: language
@@ -660,7 +646,7 @@ while enabling analysis of the relationship between judge capability and
 evaluation reliability.
 
 The inclusion of the subject model (Haiku) as one of its own judges is a
-deliberate design choice. It enables us to test for self-preference bias
+deliberate design choice. It enables me to test for self-preference bias
 (whether the model rates its own outputs more or less favorably than external
 judges) and to assess whether budget models possess sufficient evaluative
 capacity to serve as reliable judges.
@@ -700,7 +686,7 @@ a mixed-generation judge panel in which two judges (Opus~4.6 and Sonnet~4.6)
 belong to a newer model generation than the subject agent (Haiku~4.5). The
 generational gap may introduce evaluation asymmetries: newer judges may have
 improved calibration or different scoring baselines relative to the subject's
-generation. We note this design limitation and examine judge-level score
+generation. I note this design limitation and examine judge-level score
 distributions in Section~\ref{sec:agreement_results} to assess whether
 generational differences materially affect evaluation reliability.
 
@@ -708,14 +694,14 @@ generational differences materially affect evaluation reliability.
 \label{sec:statistical_methods}
 
 Analysis of Variance (ANOVA) is a family of statistical tests that partition
-observed variance into components attributable to different factors. Because our
-data violates ANOVA's normality assumptions (Appendix~\ref{app:normality}), we
+observed variance into components attributable to different factors. Because my
+data violates ANOVA's normality assumptions (Appendix~\ref{app:normality}), I
 employ non-parametric alternatives throughout.
 
 All score distributions are tested for normality using the Shapiro--Wilk test.
 Of 14 tier $\times$ \{Score, Cost\} combinations, 13 reject normality
 ($p < 0.05$; the sole exception is T6 Cost with $n=9$, $p=0.069$; see
-Appendix~\ref{app:normality}), so we employ non-parametric methods
+Appendix~\ref{app:normality}), so I employ non-parametric methods
 throughout. Additional metrics (implementation rate, duration) were also
 tested and similarly reject normality for most tier combinations.
 
@@ -734,11 +720,11 @@ where $x_{(i)}$ are the order statistics and $a_i$ are tabulated constants
 derived from the expected values of normal order statistics. $W$ ranges from
 0 to 1, with values near 1 indicating normality.
 
-We use the Shapiro--Wilk test as a gatekeeper: when normality is rejected
-($p < 0.05$), we employ non-parametric alternatives for all subsequent
+I use the Shapiro--Wilk test as a gatekeeper: when normality is rejected
+($p < 0.05$), I employ non-parametric alternatives for all subsequent
 analyses. This test was chosen over the Anderson--Darling and
 Kolmogorov--Smirnov alternatives because of its superior power for small to
-moderate sample sizes~\cite{razali2011power}, which matches our per-tier
+moderate sample sizes~\cite{razali2011power}, which matches my per-tier
 sample sizes ($n = 9$ to $n = 369$). In this study, 13 of 14 tier $\times$
 \{Score, Cost\} combinations reject normality (the sole exception is T6 Cost,
 $n=9$, $p=0.069$), motivating the use of non-parametric methods throughout.
@@ -758,7 +744,7 @@ group $j$, $\bar{R}_j$ is the mean rank within group $j$, and $\bar{R} =
 distributions, $H$ follows a $\chi^2$ distribution with $k-1$ degrees of
 freedom.
 
-We use the Kruskal--Wallis test as the omnibus test for overall tier
+I use the Kruskal--Wallis test as the omnibus test for overall tier
 differences across all seven tiers ($k = 7$). Unlike one-way ANOVA, it does
 not assume normality or equal variances---it requires only that the
 observations be ordinal and the groups independent. A significant result
@@ -779,12 +765,12 @@ the combined ranking:
 \end{equation}
 where $R_1$ is the sum of ranks assigned to the first group.
 
-We apply the Mann--Whitney $U$ test for pairwise tier comparisons following a
-significant Kruskal--Wallis result. Specifically, we test 7 planned
+I apply the Mann--Whitney $U$ test for pairwise tier comparisons following a
+significant Kruskal--Wallis result. Specifically, I test 7 planned
 comparisons per metric family: the 6 adjacent tier transitions (T0 vs.\ T1,
 T1 vs.\ T2, \ldots, T5 vs.\ T6) plus the endpoint comparison (T0 vs.\ T6).
 The test does not assume normality or equal variances, making it appropriate
-for our score and cost distributions. A significant result indicates that the
+for my score and cost distributions. A significant result indicates that the
 two tiers' distributions are stochastically different.
 
 \subsubsection{Holm--Bonferroni Correction}
@@ -800,13 +786,13 @@ p_{(2)} \leq \cdots \leq p_{(m)}$, the procedure rejects hypothesis $(i)$ if:
 starting from the smallest $p$-value and stopping at the first non-rejected
 hypothesis.
 
-We chose the Holm--Bonferroni correction over two alternatives. Compared to the
+I chose the Holm--Bonferroni correction over two alternatives. Compared to the
 standard Bonferroni correction ($\alpha/m$ for all tests), Holm--Bonferroni is
 uniformly more powerful while still controlling FWER at level $\alpha$. Compared
 to the Benjamini--Hochberg procedure~\cite{benjamini1995controlling}, which
 controls the false discovery rate (FDR), Holm--Bonferroni provides stronger
 error control by bounding the probability of \emph{any} false rejection rather
-than the expected \emph{proportion} of false rejections. Given our small number
+than the expected \emph{proportion} of false rejections. Given my small number
 of planned comparisons ($m = 7$), the power loss relative to FDR control is
 modest, and the stronger FWER guarantee is preferable for confirmatory analysis.
 
@@ -824,8 +810,8 @@ where $n_1$ and $n_2$ are the sample sizes of the two groups. The statistic
 ranges from $-1$ (all values in the first group are less than all values in the
 second) to $+1$ (the reverse), with 0 indicating complete overlap.
 
-We use Cliff's $\delta$ rather than Cohen's $d$ because it does not assume
-normality or equal variances, matching our non-parametric testing framework. We
+I use Cliff's $\delta$ rather than Cohen's $d$ because it does not assume
+normality or equal variances, matching my non-parametric testing framework. I
 report 95\% bootstrap confidence intervals alongside each estimate. Effect
 magnitudes are interpreted using established thresholds~\cite{romano2006appropriate}:
 $|\delta| < 0.11$ (negligible), $0.11 \leq |\delta| < 0.28$ (small),
@@ -841,10 +827,10 @@ adjusts the percentile boundaries using a bias-correction factor $\hat{z}_0$
 (estimated from the proportion of bootstrap estimates below the original
 statistic) and an acceleration factor $\hat{a}$ (estimated via the jackknife).
 
-We use BCa bootstrap confidence intervals with $B = 10{,}000$ resamples for
+I use BCa bootstrap confidence intervals with $B = 10{,}000$ resamples for
 pass rates and other proportions. The BCa method was chosen over simple
 percentile bootstrap because it provides second-order accuracy---the coverage
-error is $O(n^{-1})$ rather than $O(n^{-1/2})$---which is important given our
+error is $O(n^{-1})$ rather than $O(n^{-1/2})$---which is important given my
 moderate sample sizes. The BCa interval is also transformation-respecting,
 meaning it produces identical results regardless of the scale on which the
 statistic is computed.
@@ -862,12 +848,12 @@ $100(1-\alpha)\%$ interval is:
 where $B(p;\, a, b)$ is the $p$-th quantile of the Beta distribution with
 parameters $a$ and $b$.
 
-We use Clopper--Pearson intervals for small-sample tiers, particularly T6 with
+I use Clopper--Pearson intervals for small-sample tiers, particularly T6 with
 $n = 9$ runs per experiment. Unlike the normal approximation or Wilson interval,
 the Clopper--Pearson interval guarantees at least nominal coverage for any
 sample size, making it the conservative choice when $n$ is too small for
 asymptotic methods to be reliable. The resulting intervals are wider than
-approximate alternatives, which we consider appropriate given our emphasis on
+approximate alternatives, which I consider appropriate given my emphasis on
 hedged conclusions.
 
 \subsubsection{Scheirer--Ray--Hare Test}
@@ -884,13 +870,13 @@ interaction. The test statistic for each factor is:
 which is compared against a $\chi^2$ distribution with degrees of freedom
 equal to those of the corresponding factor.
 
-We use the SRH test to assess tier $\times$ experiment interactions---that is,
+I use the SRH test to assess tier $\times$ experiment interactions---that is,
 whether the effect of architectural tier varies across tasks. This is critical
 for determining whether a single ``best tier'' exists or whether the optimal
 configuration is task-dependent. The SRH test decomposes effects into three
 components: the tier main effect, the experiment main effect, and the
 tier $\times$ experiment interaction. A significant interaction term indicates
-that tier rankings are not stable across experiments. We note that the
+that tier rankings are not stable across experiments. I note that the
 validity of the SRH interaction test has been debated in the
 literature~\cite{scheirer1976analysis}, and the test's power may be limited
 for unbalanced designs. The interaction results should therefore be
@@ -909,7 +895,7 @@ where $D_o$ is the observed disagreement among raters and $D_e$ is the
 disagreement expected by chance. For interval-scale data (as used here), the
 difference function is squared Euclidean distance between values.
 
-We use Krippendorff's $\alpha$ on the interval scale to assess overall
+I use Krippendorff's $\alpha$ on the interval scale to assess overall
 agreement among the three-judge panel. It was chosen over alternatives such as
 Cohen's $\kappa$ (limited to two raters and nominal data) and the intraclass
 correlation coefficient (assumes normality) because it handles missing data
@@ -917,7 +903,7 @@ natively, supports any number of raters, and is appropriate for interval-scale
 scores. Interpretation follows established thresholds~\cite{krippendorff2004content}:
 $\alpha < 0.667$ is unacceptable for drawing conclusions, $0.667 \leq \alpha
 < 0.800$ permits tentative conclusions, and $\alpha \geq 0.800$ indicates
-acceptable reliability. We supplement $\alpha$ with pairwise Spearman and
+acceptable reliability. I supplement $\alpha$ with pairwise Spearman and
 Pearson correlations to diagnose which judge pairs contribute most to
 agreement or disagreement.
 
@@ -926,7 +912,7 @@ agent attempted the task contribute to the pairwise tests, which reduces the
 effective $n$ for some tiers relative to the full run count.
 
 Given the small sample size ($N=3$ per subtest), all confidence intervals are
-necessarily wide. We adopt hedged language throughout and characterize our
+necessarily wide. I adopt hedged language throughout and characterize my
 findings as preliminary evidence rather than definitive conclusions. The
 results should be interpreted as directional signals that motivate
 larger-scale confirmation studies.
@@ -958,7 +944,7 @@ The best tier varies across experiments: T1 for test-001, T6 for test-002 and
 test-003 (though T6 has only $n=3$ runs per experiment and very wide confidence
 intervals; see Section~\ref{sec:cross_task}). This variation provides an initial
 indication that the optimal architectural configuration is task-dependent, a
-finding we formalize through
+finding I formalize through
 interaction analysis in Section~\ref{sec:interaction}.
 
 Figure~\ref{fig:tier_summary_heatmap} provides an overview of score
@@ -1199,7 +1185,7 @@ for pass rate, implementation rate, or duration:
 \begin{itemize}
   \item Pass rate: $H(6) = 8.53$, $p = 0.2015$ (not significant)%
     \footnote{For the binary pass/fail outcome, a chi-squared test on the
-    $2 \times 7$ contingency table would be the more natural choice. We use
+    $2 \times 7$ contingency table would be the more natural choice. I use
     Kruskal--Wallis throughout for a unified analytical framework; the
     conclusions are qualitatively identical under both tests.}
   \item Score: $H(6) = 91.3$ (from SRH tier factor), $p < 0.001$ (significant)
@@ -1221,6 +1207,15 @@ The only metric showing a significant tier effect is the continuous
 \emph{score}, which captures finer-grained quality differences within the
 predominantly passing runs. Since the omnibus test for pass rate is not
 significant, no pairwise comparisons are warranted.
+
+The non-significance of pass rate is best read as a ceiling-effect artifact:
+the three tasks selected here are well within the model's demonstrated
+capability, so every architectural tier converges on near-perfect pass rates
+with little room to differentiate. More demanding tasks---multi-file
+refactors, cross-repository changes, or problems the model has not previously
+solved---would likely re-expose the architectural differences that this study
+could not detect at the pass-rate level, and replication on harder benchmarks
+may yield a different result.
 
 \begin{figure}[htbp]
   \centering
@@ -1389,7 +1384,7 @@ The resulting $\alpha = 0.034$ is barely above chance agreement ($\alpha = 0$). 
 standards in content analysis~\cite{krippendorff2004content, polo2024efficient}, $\alpha < 0.667$ is
 considered
 unacceptable for drawing conclusions about individual cases, and
-$\alpha > 0.800$ is required for reliable measurement. Our value of $0.034$
+$\alpha > 0.800$ is required for reliable measurement. My value of $0.034$
 indicates that the three judges agree only marginally better than would be
 expected by random scoring.
 
@@ -1490,8 +1485,6 @@ performed by the frontier judges.
 
 \subsubsection{Consensus Scoring and Signal Loss}
 
-\subsubsection{Consensus Scoring and Signal Loss}
-
 The near-zero Krippendorff's $\alpha$ raises a methodological concern that
 affects the interpretation of all results in this paper. If the judges do not
 agree, then the consensus score (arithmetic mean) may not be a reliable
@@ -1559,7 +1552,7 @@ T2 (Tooling) achieves the lowest aggregate CoP at \$0.11, though all tiers
 fall within a narrow range (\$0.11--\$0.16). The overall pass rate of 0.966
 means that most tier--experiment combinations achieve near-perfect pass rates,
 compressing the CoP range. (Cost invariance is a non-significant finding under
-limited power; real cost differences between tiers may exist below our ability
+limited power; real cost differences between tiers may exist below my ability
 to detect.)
 
 The practical implication is that, given no significant tier effect on pass
@@ -1638,8 +1631,8 @@ requiring dedicated evaluation budgets.
 \subsection{Key Findings}
 \label{sec:key_findings}
 
-Our results suggest several preliminary conclusions about the interaction
-between architectural complexity and budget model performance. We organize
+My results suggest several preliminary conclusions about the interaction
+between architectural complexity and budget model performance. I organize
 these findings around the four research questions posed in
 Section~\ref{sec:introduction}.
 
@@ -1652,7 +1645,7 @@ combinations show some variation, the aggregate data provide no evidence that
 adding delegation, hierarchy, or hybrid configurations improves or degrades
 pass rate for the tasks studied. Given the small sample size ($N=3$ per
 subtest), this null result should be interpreted cautiously---real but small
-tier effects may exist below our statistical power to detect.
+tier effects may exist below my statistical power to detect.
 
 \textbf{Finding 2 (RQ2): In this study, task-dependent effects dominate tier effects.}
 The significant SRH interaction effect on score ($H(12) = 223.5$, $p < 0.001$)
@@ -1749,9 +1742,9 @@ task-specific rather than architectural.
 \label{sec:limitations}
 
 This study has several important limitations that constrain the
-generalizability of our findings:
+generalizability of my findings:
 
-\textbf{Small sample size.} With $N=3$ replications per subtest, our
+\textbf{Small sample size.} With $N=3$ replications per subtest, my
 statistical power is limited. Bootstrap confidence intervals are necessarily
 wide (e.g., the T6 pass rate CI spans $[0.664, 1.000]$), and individual
 outlier runs can substantially influence subtest-level statistics. A formal post-hoc power analysis would help
@@ -1797,14 +1790,14 @@ $\alpha = 0.034$ should therefore be interpreted with this caveat in mind.
 \textbf{Confounded tier composition.} The tiers are not pure factorial
 manipulations---each tier includes the capabilities of previous tiers. T3
 includes T0--T2 capabilities plus delegation. This hierarchical design means
-we cannot fully isolate the effect of delegation from potential interaction
+I cannot fully isolate the effect of delegation from potential interaction
 effects with lower-tier components. A fully factorial design would require
 testing delegation without prompts, skills, or tools, which is not currently
 supported by the framework.
 
 \textbf{Temporal effects.} All experiments were conducted over a limited
 time window during January--March 2026. Model behavior may vary due to API
-updates, load balancing, or other infrastructure factors not captured in our
+updates, load balancing, or other infrastructure factors not captured in my
 analysis.
 
 \subsection{Threats to Validity}
@@ -1821,7 +1814,7 @@ its own outputs, while capacity limitations could deflate them.
 
 \textbf{External validity.} The use of a single model family, a single
 evaluation framework, and a small set of tasks limits the external validity
-of our conclusions. The findings are specific to the Scylla framework's
+of my conclusions. The findings are specific to the Scylla framework's
 operationalization of architectural tiers and may not generalize to other
 agent architectures or evaluation protocols. The specific tier definitions
 (e.g., which skills are included in T1, which tools in T2) may also
@@ -1849,10 +1842,10 @@ small effects with $N=3$.
 \section{Conclusions}
 \label{sec:conclusions}
 
-This study presents, to our knowledge, the first multi-task ablation of
+This study presents, to my knowledge, the first multi-task ablation of
 agentic coding architectures using a budget frontier model (\texttt{claude-haiku-4-5}).
 Across 1,080 runs spanning three experiments, seven tiers, and 120 subtests
-at a total cost of \$123.30, we find no significant tier effect on pass rate
+at a total cost of \$123.30, I find no significant tier effect on pass rate
 ($H(6)=8.53$, $p=0.2015$) and an overall pass rate of 0.966.
 
 The central finding is that \emph{no significant tier effect was detected},
@@ -1880,7 +1873,7 @@ and $0.219$)---points to capability-dependent evaluation quality.
 
 These conclusions are necessarily preliminary given the small sample size
 ($N=3$ per subtest), limited task diversity, and single-model-family scope.
-We present them as directional evidence that should motivate larger-scale
+I present them as directional evidence that should motivate larger-scale
 studies with broader task coverage, cross-model comparisons, and improved
 judge calibration.
 
@@ -1932,7 +1925,7 @@ learning to predict which architectural configuration will maximize pass rate
 for a given task description.
 
 \textbf{Cost optimization.} While no significant cost difference across tiers
-was detected in our data, the total cost of \$123.30 for 1,080 runs suggests
+was detected in my data, the total cost of \$123.30 for 1,080 runs suggests
 room for efficiency gains through prompt caching optimization, reduced context
 windows for simple tasks, or selective evaluation (running fewer subtests for
 well-characterized tiers).
@@ -2204,7 +2197,7 @@ test~\cite{mann1947test} with Holm--Bonferroni correction~\cite{holm1979simple}
 could be conducted to identify which tier pairs differ on score. However, since
 the score metric is subject to poor inter-rater reliability ($\alpha = 0.034$),
 and since score differences do not translate to significant pass rate
-differences, we do not report pairwise score comparisons in detail. The
+differences, I do not report pairwise score comparisons in detail. The
 significant omnibus effect on score likely reflects minor calibration
 differences across tiers rather than meaningful quality variation.
 
@@ -2216,7 +2209,7 @@ from one group exceeds a randomly selected observation from another group,
 minus the reverse probability. It ranges from $-1$ (all observations in
 group B exceed all in group A, i.e., the second group dominates) to $+1$
 (all observations in group A exceed all in group B, i.e., the first group
-dominates), with 0 indicating no systematic difference. In our pairwise
+dominates), with 0 indicating no systematic difference. In my pairwise
 comparisons, group A is always the lower-numbered tier (e.g., T2) and group
 B the higher (e.g., T3); thus negative $\delta$ values indicate degradation
 with increasing tier. The conventional interpretation
@@ -2364,13 +2357,13 @@ provides:
 \end{itemize}
 
 The framework is part of the Homeric Intelligence ecosystem, a collection of
-12 repositories providing infrastructure for agent development, testing, and
+15 repositories providing infrastructure for agent development, testing, and
 deployment~\cite{projectodyssey}.
 
 \subsection{Environment}
 
 Experiments were executed on Linux systems (kernel 5.10.0-37-amd64) with
-Python 3.10+. The Claude Code CLI was used in headless mode with deterministic
+Python 3.12. The Claude Code CLI was used in headless mode with deterministic
 settings where possible. API calls were made to Anthropic's production
 endpoints during January--March 2026. The Python dependencies and their
 exact versions are specified in the \texttt{pixi.toml} and
@@ -2417,7 +2410,7 @@ factors in LLM-based experimentation:
     metadata files.
 \end{enumerate}
 
-To maximize reproducibility, we recommend:
+To maximize reproducibility, I recommend:
 \begin{itemize}
   \item Using the exact model identifiers specified in
     Table~\ref{tab:model_specs}
