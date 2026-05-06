@@ -47,6 +47,11 @@ from scylla.e2e.models import (
 )
 from scylla.e2e.parallel_tier_runner import ParallelTierRunner
 from scylla.e2e.resume_manager import ResumeManager
+from scylla.e2e.shutdown import (
+    ShutdownInterruptedError,
+    is_shutdown_requested,
+    request_shutdown,
+)
 from scylla.e2e.tier_action_builder import TierActionBuilder
 from scylla.e2e.tier_manager import TierManager
 from scylla.e2e.workspace_manager import WorkspaceManager
@@ -56,14 +61,10 @@ logger = logging.getLogger(__name__)
 # Checkpoint status constant (kept as string for JSON serialization compatibility)
 _STATUS_RUNNING = "running"
 
-# Shutdown coordination — re-exported from shutdown.py for backward compatibility.
-# Callers that only need these symbols should import from scylla.e2e.shutdown directly
-# to avoid the circular import: runner -> ... -> rate_limit -> runner.
-from scylla.e2e.shutdown import (  # noqa: E402
-    ShutdownInterruptedError,
-    is_shutdown_requested,
-    request_shutdown,
-)
+# Shutdown coordination is re-exported from scylla.e2e.shutdown for backward
+# compatibility (see __all__ below). Callers needing only these symbols should
+# import scylla.e2e.shutdown directly. shutdown.py is a leaf module (only
+# stdlib imports) so no cycle is created by the top-level import above.
 
 __all__ = [
     "ShutdownInterruptedError",
