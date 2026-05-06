@@ -146,6 +146,12 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 #   CVE-2025-64756 (glob command injection)
 #   CVE-2026-26996/27903/27904 (minimatch DoS)
 #   CVE-2026-23745/23950/24842/26960/29786/31802 (tar path traversal/overwrite)
+#
+# MAINTENANCE: These npm patch versions are pinned manually because Dependabot
+# does not scan Dockerfile RUN lines. Update cadence and verification steps are
+# documented in docs/dev/dockerfile-npm-cve-patches.md. Run
+# `scripts/check_dockerfile_npm_patches.sh` to print currently-pinned versions
+# and check them against the npm registry for newer fix releases.
 RUN npm install -g @anthropic-ai/claude-code@2.1.91 \
     # Patch claude-code's transitive deps
     && cd /usr/local/lib/node_modules/@anthropic-ai/claude-code \
