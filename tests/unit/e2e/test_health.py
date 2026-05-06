@@ -19,10 +19,16 @@ import pytest
 
 from scylla.e2e.checkpoint import E2ECheckpoint, load_checkpoint, save_checkpoint
 from scylla.e2e.health import (
+    CRITICAL_DISK_GB,
+    CRITICAL_RAM_MB,
+    WARN_DISK_GB,
+    WARN_RAM_MB,
     HeartbeatThread,
+    ResourcePreflightError,
     _heartbeat_is_stale,
     _pid_is_alive,
     is_zombie,
+    log_resource_preflight,
     reset_zombie_checkpoint,
 )
 
@@ -342,3 +348,111 @@ class TestHeartbeatThread:
         # Verify heartbeat was written to disk
         assert reloaded.last_heartbeat != ""
         assert not _heartbeat_is_stale(reloaded.last_heartbeat, timeout_seconds=30)
+
+
+# ---------------------------------------------------------------------------
+# log_resource_preflight tests
+# ---------------------------------------------------------------------------
+
+
+class TestLogResourcePreflight:
+    """Tests for log_resource_preflight critical/warning thresholds and flag."""
+
+    def test_above_all_thresholds_returns_normally(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Plenty of RAM and disk: returns without raising or warnings."""
+        monkeypatch.setattr(
+            "scylla.e2e.health._get_memory_info",
+            lambda: (WARN_RAM_MB * 4, WARN_RAM_MB * 8),
+        )
+
+        class _Usage:
+            free = (WARN_DISK_GB * 4) * 1024**3
+            total = (WARN_DISK_GB * 8) * 1024**3
+            used = total - free
+
+        import shutil
+
+        monkeypatch.setattr(shutil, "disk_usage", lambda _path: _Usage())
+        log_resource_preflight()  # no raise
+        log_resource_preflight(fail_on_warn=True)  # still no raise
+
+    def test_below_warn_threshold_warns_but_does_not_raise(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Below warning threshold: logs WARNING, does not raise (default)."""
+        monkeypatch.setattr(
+            "scylla.e2e.health._get_memory_info",
+            lambda: (WARN_RAM_MB - 1, WARN_RAM_MB * 4),
+        )
+
+        class _Usage:
+            free = (WARN_DISK_GB - 1) * 1024**3
+            total = WARN_DISK_GB * 4 * 1024**3
+            used = total - free
+
+        import shutil
+
+        monkeypatch.setattr(shutil, "disk_usage", lambda _path: _Usage())
+        with caplog.at_level("WARNING", logger="scylla.e2e.health"):
+            log_resource_preflight()
+        warning_messages = [r.message for r in caplog.records if r.levelname == "WARNING"]
+        assert any("Low memory warning" in m for m in warning_messages)
+        assert any("Low disk warning" in m for m in warning_messages)
+
+    def test_below_warn_threshold_raises_when_flag_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Below warning threshold + fail_on_warn=True: raises."""
+        monkeypatch.setattr(
+            "scylla.e2e.health._get_memory_info",
+            lambda: (WARN_RAM_MB - 1, WARN_RAM_MB * 4),
+        )
+
+        class _Usage:
+            free = (WARN_DISK_GB - 1) * 1024**3
+            total = WARN_DISK_GB * 4 * 1024**3
+            used = total - free
+
+        import shutil
+
+        monkeypatch.setattr(shutil, "disk_usage", lambda _path: _Usage())
+        with pytest.raises(ResourcePreflightError):
+            log_resource_preflight(fail_on_warn=True)
+
+    def test_below_critical_ram_always_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """RAM below critical threshold: raises regardless of flag."""
+        monkeypatch.setattr(
+            "scylla.e2e.health._get_memory_info",
+            lambda: (CRITICAL_RAM_MB - 1, WARN_RAM_MB * 4),
+        )
+
+        class _Usage:
+            free = WARN_DISK_GB * 4 * 1024**3
+            total = WARN_DISK_GB * 8 * 1024**3
+            used = total - free
+
+        import shutil
+
+        monkeypatch.setattr(shutil, "disk_usage", lambda _path: _Usage())
+        with pytest.raises(ResourcePreflightError, match="CRITICAL"):
+            log_resource_preflight()
+        with pytest.raises(ResourcePreflightError, match="CRITICAL"):
+            log_resource_preflight(fail_on_warn=False)
+
+    def test_below_critical_disk_always_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Disk below critical threshold: raises regardless of flag."""
+        monkeypatch.setattr(
+            "scylla.e2e.health._get_memory_info",
+            lambda: (WARN_RAM_MB * 2, WARN_RAM_MB * 4),
+        )
+
+        class _Usage:
+            free = (CRITICAL_DISK_GB - 1) * 1024**3
+            total = WARN_DISK_GB * 4 * 1024**3
+            used = total - free
+
+        import shutil
+
+        monkeypatch.setattr(shutil, "disk_usage", lambda _path: _Usage())
+        with pytest.raises(ResourcePreflightError, match="CRITICAL"):
+            log_resource_preflight()

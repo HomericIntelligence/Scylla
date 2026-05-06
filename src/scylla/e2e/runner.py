@@ -613,7 +613,7 @@ class E2ERunner:
         from scylla.e2e.health import log_resource_preflight
         from scylla.e2e.resource_manager import ResourceManager
 
-        log_resource_preflight()
+        log_resource_preflight(fail_on_warn=self.config.fail_on_resource_check)
         if self._resource_manager is None:
             self._resource_manager = ResourceManager(
                 max_workspaces=self.config.max_concurrent_workspaces,

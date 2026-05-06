@@ -609,6 +609,7 @@ def compute_config_hash(config: ExperimentConfig) -> str:
     config_dict.pop("keep_failed_workspaces", None)
     config_dict.pop("max_concurrent_workspaces", None)
     config_dict.pop("max_concurrent_agents", None)
+    config_dict.pop("fail_on_resource_check", None)
 
     # Stable JSON serialization (sorted keys)
     config_json = json.dumps(config_dict, sort_keys=True)

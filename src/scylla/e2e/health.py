@@ -284,31 +284,95 @@ def _log_resource_usage() -> None:
         pass
 
 
-def log_resource_preflight() -> None:
+# Warning thresholds (low-resource notice; recoverable):
+WARN_RAM_MB = 4096
+WARN_DISK_GB = 50
+
+# Critical thresholds (hard abort regardless of fail_on_warn flag).
+# Set conservatively so a typical CI runner (16GB RAM / 50+GB disk) never
+# trips them — only genuinely under-provisioned hosts do.
+CRITICAL_RAM_MB = 512
+CRITICAL_DISK_GB = 5
+
+
+class ResourcePreflightError(RuntimeError):
+    """Raised when log_resource_preflight() refuses to proceed.
+
+    Raised in two cases:
+    1. A critical-threshold breach (RAM < CRITICAL_RAM_MB or disk <
+       CRITICAL_DISK_GB) regardless of any flag — the host is so
+       under-provisioned that proceeding will almost certainly corrupt
+       the experiment.
+    2. A warning-threshold breach (RAM < WARN_RAM_MB or disk <
+       WARN_DISK_GB) when the caller passes ``fail_on_warn=True``,
+       typically wired to a ``--fail-on-resource-check`` CLI flag.
+    """
+
+
+def log_resource_preflight(*, fail_on_warn: bool = False) -> None:
     """Log resource availability before an experiment starts.
 
-    Warns if memory < 4GB available or disk < 50GB free.
+    Always raises :class:`ResourcePreflightError` when RAM or disk is
+    below the critical thresholds (:data:`CRITICAL_RAM_MB`,
+    :data:`CRITICAL_DISK_GB`), so a wildly under-provisioned host is
+    caught even if the operator misses log lines.
+
+    Warns when RAM or disk is below the warning thresholds
+    (:data:`WARN_RAM_MB`, :data:`WARN_DISK_GB`). When
+    ``fail_on_warn=True`` (typically wired from a
+    ``--fail-on-resource-check`` CLI flag), warning-level breaches also
+    raise instead of just logging.
+
+    Args:
+        fail_on_warn: When True, warning-level shortages also raise
+            :class:`ResourcePreflightError`. Defaults to False so
+            existing callers see no behaviour change at the warning
+            thresholds.
+
+    Raises:
+        ResourcePreflightError: On a critical-threshold breach, or on a
+            warning-threshold breach when ``fail_on_warn=True``.
+
     """
     import shutil
+
+    breaches: list[str] = []
 
     mem = _get_memory_info()
     if mem:
         avail_mb, total_mb = mem
         logger.info(f"Pre-flight: {avail_mb}MB RAM available / {total_mb}MB total")
-        if avail_mb < 4096:
-            logger.warning(
+        if avail_mb < CRITICAL_RAM_MB:
+            breaches.append(
+                f"CRITICAL: only {avail_mb}MB RAM available (threshold {CRITICAL_RAM_MB}MB)"
+            )
+        elif avail_mb < WARN_RAM_MB:
+            msg = (
                 f"Low memory warning: only {avail_mb}MB available. "
                 f"Consider reducing --threads or --max-concurrent-agents."
             )
+            logger.warning(msg)
+            if fail_on_warn:
+                breaches.append(msg)
 
     try:
         usage = shutil.disk_usage("/")
         free_gb = usage.free / (1024**3)
         logger.info(f"Pre-flight: {free_gb:.1f}GB disk free")
-        if free_gb < 50:
-            logger.warning(
+        if free_gb < CRITICAL_DISK_GB:
+            breaches.append(
+                f"CRITICAL: only {free_gb:.1f}GB disk free (threshold {CRITICAL_DISK_GB}GB)"
+            )
+        elif free_gb < WARN_DISK_GB:
+            msg = (
                 f"Low disk warning: only {free_gb:.1f}GB free. "
                 f"Consider cleaning up old experiment workspaces."
             )
+            logger.warning(msg)
+            if fail_on_warn:
+                breaches.append(msg)
     except OSError:
         pass
+
+    if breaches:
+        raise ResourcePreflightError("; ".join(breaches))
