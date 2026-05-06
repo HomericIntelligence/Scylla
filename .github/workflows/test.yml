@@ -1,5 +1,15 @@
 name: Test
 
+# This workflow IS part of the required-checks set for `main`. The matrix
+# expands to two job names that branch protection requires:
+#   - test (unit, tests/unit)
+#   - test (integration, tests/integration)
+# Together with the jobs in `_required.yml` (lint, pre-commit, dependency
+# vulnerability scan, gitleaks secrets scan), these constitute the full
+# required-check surface. Adding, removing, or renaming a matrix entry below
+# also requires updating branch protection. The authoritative list lives at
+# `gh api repos/HomericIntelligence/ProjectScylla/branches/main/protection`.
+
 on:
   pull_request:
   push:
