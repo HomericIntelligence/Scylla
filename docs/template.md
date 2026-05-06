@@ -1,4 +1,9 @@
 <!-- markdownlint-disable MD033 -->
+<!--
+Status: Template — markdown skeleton for new paper-style documents.
+Not authoritative content. Copy and rename when starting a new draft.
+See docs/README.md for the canonical document index.
+-->
 # <Paper Title>
 
 ## <Subtitle (Optional)>
