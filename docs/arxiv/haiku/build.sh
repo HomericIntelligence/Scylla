@@ -115,10 +115,28 @@ echo "[4/4] Creating submission tarball..."
 # Build list of table tex files that exist
 TABLE_FILES=$(ls tables/*.tex 2>/dev/null || echo "")
 
+# Derive the figure list from \includegraphics calls in paper.tex so the
+# tarball contains exactly the figures the paper references — no more, no less.
+# Append .png to bare names; prefix figures/ for any non-absolute path.
+FIGURE_FILES=$(grep -oE '\\includegraphics(\[[^]]*\])?\{[^}]+\}' paper.tex \
+    | sed -E 's/.*\{([^}]+)\}/\1/' \
+    | sort -u \
+    | awk '{ if ($0 !~ /\.[a-zA-Z0-9]+$/) $0 = $0 ".png"; if ($0 !~ /^\//) $0 = "figures/" $0; print }')
+
+# Verify each referenced figure exists on disk before tarring.
+MISSING_FIGS=""
+for f in ${FIGURE_FILES}; do
+    [ -f "$f" ] || MISSING_FIGS="${MISSING_FIGS} $f"
+done
+if [ -n "${MISSING_FIGS}" ]; then
+    echo "✗ Error: paper references figures not present on disk:${MISSING_FIGS}"
+    exit 1
+fi
+
 tar -czf arxiv-submission.tar.gz \
     paper.tex \
     references.bib \
-    $(ls figures/*.png 2>/dev/null | head -30) \
+    ${FIGURE_FILES} \
     ${TABLE_FILES} 2>/dev/null || {
     echo "✗ Error creating tarball"
     exit 1
