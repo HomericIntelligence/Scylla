@@ -167,6 +167,10 @@ source = ["src/scylla", "scripts"]
 omit = [
     "*/tests/*",
     "*/__init__.py",
+    # claude-code subtier compose/generate utilities are CLI-only generators run
+    # manually via subprocess to produce test inputs; they have no pytest coverage.
+    # Tracked in #1872 (relocated from tests/claude-code/shared/compose/).
+    "scripts/claude_code_compose/*",
 ]
 
 [tool.coverage.report]

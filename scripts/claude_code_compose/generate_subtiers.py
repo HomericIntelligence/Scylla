@@ -31,8 +31,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Base directory for tests
-TESTS_DIR = Path(__file__).parent.parent.parent
+# Base directory for tests; this script lives in scripts/claude_code_compose/, so we walk up to the
+# repo root and into tests/claude-code/ where the generated subtier output trees live.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+TESTS_DIR = REPO_ROOT / "tests" / "claude-code"
 COMPOSE_DIR = Path(__file__).parent
 
 # Models to generate for
@@ -456,7 +458,7 @@ def list_configurations() -> None:
     print(f"Total test cases: {total * len(MODELS)}")
 
 
-def main() -> None:  # noqa: C901  # CLI main with multiple tier generation modes
+def main() -> None:  # CLI main with multiple tier generation modes
     """Generate sub-tier configurations from command line arguments."""
     parser = argparse.ArgumentParser(
         description="Generate sub-tier configurations for testing",

@@ -25,8 +25,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Directory containing the organized agents
-AGENTS_DIR = Path(__file__).parent.parent / "agents"
+# Directory containing the organized agents (test inputs live under tests/claude-code/shared/)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+AGENTS_DIR = REPO_ROOT / "tests" / "claude-code" / "shared" / "agents"
 
 # Preset configurations
 PRESETS: dict[str, Any] = {
