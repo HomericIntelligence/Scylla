@@ -129,6 +129,41 @@ class DockerExecutor:
         "AZURE_OPENAI_ENDPOINT",
     )
 
+    # Suffix-based fallback for catching secret-bearing env vars whose names
+    # are not in the explicit ``API_KEY_VARS`` enumeration. This provides
+    # defense-in-depth so a new provider's credential (e.g., ``FOO_API_KEY``,
+    # ``BAR_TOKEN``) is forwarded into containers without code changes.
+    #
+    # The bare ``_KEY`` suffix is intentionally excluded because it has a high
+    # false-positive rate (e.g., ``PUBLIC_KEY_PATH``, ``SSH_KEY_FILE`` would
+    # never end in ``_KEY`` themselves but ``OBJECT_STORE_KEY``/``CACHE_KEY``
+    # might be non-secret). Callers needing those can pass an explicit
+    # ``var_names`` list to :meth:`get_api_keys_from_env`.
+    API_KEY_SUFFIXES: tuple[str, ...] = (
+        "_API_KEY",
+        "_SECRET",
+        "_TOKEN",
+        "_PASSWORD",
+    )
+
+    @classmethod
+    def is_secret_var(cls, name: str) -> bool:
+        """Check whether an env var name looks like it carries a secret.
+
+        Returns ``True`` if ``name`` is in :attr:`API_KEY_VARS` or ends with
+        any suffix in :attr:`API_KEY_SUFFIXES`.
+
+        Args:
+            name: Environment variable name (case-sensitive).
+
+        Returns:
+            True if the name should be treated as secret-bearing.
+
+        """
+        if name in cls.API_KEY_VARS:
+            return True
+        return any(name.endswith(suffix) for suffix in cls.API_KEY_SUFFIXES)
+
     def __init__(self) -> None:
         """Initialize DockerExecutor and verify Docker is available."""
         self._check_docker_available()
@@ -509,14 +544,19 @@ class DockerExecutor:
         for passing to containers via environment variables.
 
         Args:
-            var_names: Variable names to extract. Defaults to API_KEY_VARS.
+            var_names: Variable names to extract. When ``None`` (the default),
+                returns every host env var that satisfies
+                :meth:`is_secret_var` — that is, any name in
+                :attr:`API_KEY_VARS` plus any name ending with one of
+                :attr:`API_KEY_SUFFIXES`. Pass an explicit list to restrict
+                extraction to those names.
 
         Returns:
             Dict of variable names to values (only includes set variables).
 
         """
         if var_names is None:
-            var_names = cls.API_KEY_VARS
+            return {name: value for name, value in os.environ.items() if cls.is_secret_var(name)}
 
         return {name: os.environ[name] for name in var_names if name in os.environ}
 
