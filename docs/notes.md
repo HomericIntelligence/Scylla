@@ -1,3 +1,9 @@
+<!--
+Status: Scratch / WIP — developer brainstorming and to-do notes.
+This file is not part of the authoritative documentation set. See
+docs/README.md for the canonical document index.
+-->
+
 # Things to do
 
 * Pick 5 PR's for each category that are representative of various workflows in the size of < 100 LOC, 300-500LOC, and 500-2000 LOC.

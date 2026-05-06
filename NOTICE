@@ -1,0 +1,94 @@
+ProjectScylla
+Copyright (c) HomericIntelligence and ProjectScylla contributors
+
+This product is licensed under the BSD 3-Clause License (see LICENSE).
+
+================================================================================
+Third-party software bundled in the Docker image (docker/Dockerfile)
+================================================================================
+
+The published Docker image installs and patches the following npm packages
+to mitigate published CVEs. These packages are not redistributed as a library
+and are only present inside the runtime container, but their attribution
+notices are reproduced here for license-compliance transparency.
+
+--------------------------------------------------------------------------------
+cross-spawn
+--------------------------------------------------------------------------------
+Version: 7.0.6 (CVE-2024-21538 patch)
+License: MIT
+Source:  https://github.com/moxystudio/node-cross-spawn
+
+Copyright (c) 2018 Made With MOXY Lda <hello@moxy.studio>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+--------------------------------------------------------------------------------
+glob
+--------------------------------------------------------------------------------
+Version: 11.1.0 (CVE-2025-64756 patch)
+License: ISC
+Source:  https://github.com/isaacs/node-glob
+
+The ISC License
+
+Copyright (c) 2009-2023 Isaac Z. Schlueter and Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES.
+
+--------------------------------------------------------------------------------
+minimatch
+--------------------------------------------------------------------------------
+Version: 10.2.5 (CVE-2026-26996/27903/27904 patches)
+License: ISC
+Source:  https://github.com/isaacs/minimatch
+
+The ISC License
+
+Copyright (c) 2011-2023 Isaac Z. Schlueter and Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES.
+
+--------------------------------------------------------------------------------
+tar
+--------------------------------------------------------------------------------
+Version: 7.5.13 (CVE-2026-23745/23950/24842/26960/29786/31802 patches)
+License: ISC
+Source:  https://github.com/isaacs/node-tar
+
+The ISC License
+
+Copyright (c) Isaac Z. Schlueter and Contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES.
+
+================================================================================
+Notes
+================================================================================
+
+This NOTICE file is provided for transparency. ProjectScylla itself is BSD
+3-Clause licensed (see LICENSE). The above MIT/ISC packages are bundled only
+within the published Docker image, not in the Python distribution, and are
+listed here to document attribution requirements for image distribution.

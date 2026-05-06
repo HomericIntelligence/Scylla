@@ -1,6 +1,11 @@
 # Pre-commit hooks for ProjectScylla
 # See https://pre-commit.com for more information
 
+# Install both pre-commit and commit-msg hook types when contributors run
+# `pre-commit install`, so the conventional-commit validator below is
+# activated automatically.
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
 
   # Secrets scanning — detect credentials committed to git history
@@ -261,3 +266,15 @@ repos:
         exclude: ^notes/(plan|review|issues)/
       - id: check-merge-conflict
         name: Check for Merge Conflict Markers
+
+  # Conventional Commits validation (commit-msg stage)
+  - repo: local
+    hooks:
+      - id: conventional-commit-msg
+        name: Conventional Commit Message
+        description: >-
+          Validate that commit subjects follow Conventional Commits
+          (feat/fix/docs/...). Documented in CLAUDE.md "Commit Message Format".
+        entry: python3 scripts/check_conventional_commit.py
+        language: system
+        stages: [commit-msg]
