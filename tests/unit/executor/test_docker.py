@@ -497,6 +497,65 @@ class TestAPIKeyHandling:
 
             assert keys == {"MY_API_KEY": "my-key", "OTHER_KEY": "other"}
 
+    def test_is_secret_var_explicit_match(self) -> None:
+        """Names in API_KEY_VARS are treated as secrets."""
+        assert DockerExecutor.is_secret_var("ANTHROPIC_API_KEY") is True
+        assert DockerExecutor.is_secret_var("OPENAI_API_KEY") is True
+
+    def test_is_secret_var_suffix_match(self) -> None:
+        """Names ending with an API_KEY_SUFFIXES entry are treated as secrets."""
+        assert DockerExecutor.is_secret_var("FOO_API_KEY") is True
+        assert DockerExecutor.is_secret_var("DATABASE_PASSWORD") is True
+        assert DockerExecutor.is_secret_var("GITHUB_TOKEN") is True
+        assert DockerExecutor.is_secret_var("STRIPE_SECRET") is True
+
+    def test_is_secret_var_negative_cases(self) -> None:
+        """Names without an exact match or qualifying suffix are not secrets."""
+        # Bare ``_KEY`` was deliberately excluded due to false-positive risk.
+        assert DockerExecutor.is_secret_var("PUBLIC_KEY_PATH") is False
+        assert DockerExecutor.is_secret_var("CACHE_KEY") is False
+        # Affixes elsewhere in the name don't count.
+        assert DockerExecutor.is_secret_var("TOKEN_PATH") is False
+        assert DockerExecutor.is_secret_var("PASSWORD_FILE") is False
+        # Empty / unrelated.
+        assert DockerExecutor.is_secret_var("") is False
+        assert DockerExecutor.is_secret_var("HOME") is False
+
+    def test_get_api_keys_from_env_includes_suffix_matches(self) -> None:
+        """Default extraction picks up suffix-matching names not in API_KEY_VARS."""
+        with patch.dict(
+            "os.environ",
+            {
+                "ANTHROPIC_API_KEY": "ant-key",
+                "FOO_API_KEY": "foo-key",
+                "GITHUB_TOKEN": "gh-tok",
+                "DATABASE_PASSWORD": "pw",
+                "STRIPE_SECRET": "ss",
+                "CACHE_KEY": "ck",
+                "HOME": "/home/test",
+            },
+            clear=True,
+        ):
+            keys = DockerExecutor.get_api_keys_from_env()
+
+            assert keys == {
+                "ANTHROPIC_API_KEY": "ant-key",
+                "FOO_API_KEY": "foo-key",
+                "GITHUB_TOKEN": "gh-tok",
+                "DATABASE_PASSWORD": "pw",
+                "STRIPE_SECRET": "ss",
+            }
+
+    def test_get_api_keys_explicit_var_names_unaffected(self) -> None:
+        """Explicit var_names argument is unchanged by suffix logic."""
+        with patch.dict(
+            "os.environ",
+            {"FOO_API_KEY": "foo-key", "OTHER": "other"},
+            clear=True,
+        ):
+            keys = DockerExecutor.get_api_keys_from_env(["OTHER"])
+            assert keys == {"OTHER": "other"}
+
 
 class TestImageOperations:
     """Tests for Docker image operations."""
