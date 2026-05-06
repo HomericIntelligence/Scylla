@@ -21,8 +21,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Directory containing the extracted blocks
-BLOCKS_DIR = Path(__file__).parent.parent / "blocks"
+# Directory containing the extracted blocks (test inputs live under tests/claude-code/shared/)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+BLOCKS_DIR = REPO_ROOT / "tests" / "claude-code" / "shared" / "blocks"
 
 # Block metadata
 BLOCKS: dict[str, Any] = {

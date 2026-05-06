@@ -23,8 +23,9 @@ import shutil
 import sys
 from pathlib import Path
 
-# Directory containing the organized skills
-SKILLS_DIR = Path(__file__).parent.parent / "skills"
+# Directory containing the organized skills (test inputs live under tests/claude-code/shared/)
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SKILLS_DIR = REPO_ROOT / "tests" / "claude-code" / "shared" / "skills"
 
 # Available categories
 CATEGORIES = [
@@ -123,7 +124,7 @@ def get_skill_by_name(skill_name: str) -> Path | None:
     return None
 
 
-def compose(  # noqa: C901  # skill composition with many conditional branches
+def compose(  # skill composition with many conditional branches
     categories: list[str] | None,
     skills: list[str] | None,
     output: Path,
