@@ -1,22 +1,44 @@
-# Markdownlint configuration
-# https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+# Markdownlint configuration (single source of truth — used by CI and pre-commit).
+# Rule reference: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 
 default: true
 
-MD013:
-  line_length: 120
-  heading_line_length: 120
-  code_block_line_length: 120
-  tables: false
-  headings: true
-  code_blocks: true
+MD003:
+  style: atx
+
+MD007:
+  indent: 2
+
+MD013: false  # Line length — disabled (long URLs, code blocks, tables)
+
+MD024: false  # Multiple headings with same content — allowed (PR/release sections)
+
+MD025: true   # Single H1 per document
 
 MD033:
-  allowed_elements: [T, img, br, details, summary]
+  allowed_elements:
+    - a
+    - br
+    - details
+    - img
+    - issue-number
+    - number
+    - principle
+    - role
+    - section
+    - sections
+    - step
+    - sub
+    - summary
+    - sup
+    - system
+    - T
+    - task
 
-MD036: false
-MD040: false
-MD041: false
-
-MD046:
-  style: fenced
+MD036: false  # Emphasis used as heading
+MD040: false  # Fenced code blocks must specify language
+MD041: false  # First line of file must be H1
+MD042: false  # No empty links
+MD046: false  # Code block style — both fenced and indented allowed
+MD051: false  # Link fragments must be valid
+MD060: false  # Deprecated rule

@@ -3,6 +3,7 @@
 *Statistical workflow: Kruskal-Wallis omnibus test, then pairwise Mann-Whitney U with Holm-Bonferroni correction (step-down)*
 
 **Omnibus Test Results (Kruskal-Wallis):**
+
 - claude-haiku-4-5: H(6)=5.83, p=0.4423 ✗ (skip pairwise), power=1.000
 
 | Model | Transition | N (T1, T2) | Impl-Rate Δ | p-value | Cliff's δ | Power | Significant? |

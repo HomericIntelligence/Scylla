@@ -1,0 +1,27 @@
+# markdownlint-cli2 runtime config (single source of truth for globs and
+# path-level ignores). Both local pre-commit and the GitHub Actions
+# markdownlint-cli2-action read this file automatically when present at the
+# repo root, so CI and local agree on which files get linted.
+#
+# Rule configuration lives in .markdownlint.yaml.
+
+config: ".markdownlint.yaml"
+
+globs:
+  - "**/*.md"
+
+ignores:
+  # Build artifacts and tooling caches
+  - ".pixi/**"
+  - ".pytest_cache/**"
+  - "build/**"
+  - "node_modules/**"
+  # Generated experiment runs
+  - "results/**"
+  # Untracked scratch / triage outputs
+  - "analysis/**"
+  # Notes (rough drafts, scratch)
+  - "notes/plan/**"
+  - "notes/issues/**"
+  - "notes/review/**"
+  - "notes/blog/**"
