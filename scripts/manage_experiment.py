@@ -282,6 +282,15 @@ def _add_run_args(parser: argparse.ArgumentParser) -> None:
         metavar="N",
         help="Max concurrent claude CLI processes (default: min(threads, cpu_count))",
     )
+    parser.add_argument(
+        "--fail-on-resource-check",
+        action="store_true",
+        default=False,
+        help=(
+            "Abort instead of warn when pre-flight RAM/disk are below the "
+            "warning thresholds. Critical-threshold breaches always abort."
+        ),
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     parser.add_argument("-q", "--quiet", action="store_true", help="Suppress non-error output")
 
@@ -743,6 +752,7 @@ def _run_batch(test_dirs: list[Path], args: argparse.Namespace) -> int:
                 keep_failed_workspaces=args.keep_failed_workspaces,
                 max_concurrent_workspaces=args.max_concurrent_workspaces,
                 max_concurrent_agents=args.max_concurrent_agents,
+                fail_on_resource_check=args.fail_on_resource_check,
             )
 
             # If --from specified, load existing checkpoint and reset states
@@ -1166,6 +1176,7 @@ def cmd_run(args: argparse.Namespace) -> int:  # CLI dispatch with many command 
         keep_failed_workspaces=args.keep_failed_workspaces,
         max_concurrent_workspaces=args.max_concurrent_workspaces,
         max_concurrent_agents=args.max_concurrent_agents,
+        fail_on_resource_check=args.fail_on_resource_check,
     )
 
     # If --from specified, load existing checkpoint and reset states

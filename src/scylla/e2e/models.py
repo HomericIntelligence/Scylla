@@ -795,6 +795,10 @@ class ExperimentConfig(BaseModel):
     max_concurrent_workspaces: int | None = None  # Limit live workspaces (None = auto)
     max_concurrent_agents: int | None = None  # Limit concurrent claude CLI processes (None = auto)
     off_peak: bool = False  # Wait for off-peak hours before each subtest run
+    # Abort instead of warn when log_resource_preflight() finds RAM/disk
+    # below the warning thresholds. Critical-threshold breaches always abort
+    # regardless of this flag. Wired from --fail-on-resource-check.
+    fail_on_resource_check: bool = False
 
     @field_validator("models", mode="before")
     @classmethod
@@ -833,6 +837,7 @@ class ExperimentConfig(BaseModel):
             "max_concurrent_workspaces",
             "max_concurrent_agents",
             "off_peak",
+            "fail_on_resource_check",
         }
         return self.model_dump(mode="json", exclude=_ephemeral)
 
