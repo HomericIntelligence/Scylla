@@ -224,6 +224,7 @@ def _generate_pairwise_comparison(  # noqa: C901  # pairwise comparison with man
     # Add omnibus results to header
     omnibus_power_map = dict(omnibus_powers)
     md_lines.append("**Omnibus Test Results (Kruskal-Wallis):**")
+    md_lines.append("")
     for model, h_stat, omnibus_p, dof in omnibus_results:
         sig_str = "✓ (proceed to pairwise)" if omnibus_p < ALPHA else "✗ (skip pairwise)"
         kw_power = omnibus_power_map.get(model, float("nan"))

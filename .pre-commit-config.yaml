@@ -218,8 +218,8 @@ repos:
       - id: markdownlint-cli2
         name: Markdown Lint
         description: Lint markdown files for consistency
-        exclude: ^(notes/(plan|issues|review|blog)/|build/|docs/template\.md|docs/arxiv/|docs/design/figures/)
-        args: ['--config', '.markdownlint.json', '--fix']
+        # Path excludes live in .markdownlintignore so CI and pre-commit agree.
+        args: ['--config', '.markdownlint.yaml', '--fix']
 
   # YAML linting
   - repo: https://github.com/adrienverge/yamllint
