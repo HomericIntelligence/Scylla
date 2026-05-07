@@ -161,7 +161,7 @@ class TestLogCheckpointResume:
         runner.checkpoint.get_completed_run_count.return_value = 5
 
         checkpoint_path = Path("/tmp/checkpoint.json")
-        with patch("scylla.e2e.runner.logger") as mock_logger:
+        with patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger:
             runner._log_checkpoint_resume(checkpoint_path)
 
         mock_logger.info.assert_any_call(f"📂 Resuming from checkpoint: {checkpoint_path}")
@@ -175,7 +175,7 @@ class TestLogCheckpointResume:
         runner.checkpoint.get_completed_run_count.return_value = 7
 
         checkpoint_path = Path("/tmp/checkpoint.json")
-        with patch("scylla.e2e.runner.logger") as mock_logger:
+        with patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger:
             runner._log_checkpoint_resume(checkpoint_path)
 
         mock_logger.info.assert_any_call("   Previously completed: 7 runs")
@@ -189,7 +189,7 @@ class TestLogCheckpointResume:
         runner.checkpoint.get_completed_run_count.return_value = 3
 
         checkpoint_path = Path("/tmp/exp/checkpoint.json")
-        with patch("scylla.e2e.runner.logger") as mock_logger:
+        with patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger:
             runner._log_checkpoint_resume(checkpoint_path)
 
         assert mock_logger.info.call_count == 2
@@ -220,7 +220,10 @@ class TestLogCheckpointResume:
         checkpoint_path = tmp_path / "checkpoint.json"
 
         with (
-            patch("scylla.e2e.runner.load_checkpoint", return_value=mock_checkpoint),
+            patch(
+                "scylla.e2e.runner_internals.runner_core.load_checkpoint",
+                return_value=mock_checkpoint,
+            ),
             patch.object(runner, "_log_checkpoint_resume") as mock_log,
         ):
             runner._load_checkpoint_and_config(checkpoint_path)
@@ -244,8 +247,14 @@ class TestLogCheckpointResume:
         checkpoint_path = tmp_path / "checkpoint.json"
 
         with (
-            patch("scylla.e2e.runner.load_checkpoint", return_value=mock_checkpoint),
-            patch("scylla.e2e.runner.validate_checkpoint_config", return_value=True),
+            patch(
+                "scylla.e2e.runner_internals.runner_core.load_checkpoint",
+                return_value=mock_checkpoint,
+            ),
+            patch(
+                "scylla.e2e.runner_internals.runner_core.validate_checkpoint_config",
+                return_value=True,
+            ),
             patch.object(runner, "_log_checkpoint_resume") as mock_log,
         ):
             runner._load_checkpoint_and_config(checkpoint_path)
@@ -465,7 +474,7 @@ class TestValidateFilesystemOnResume:
         runner.experiment_dir.mkdir()
         (tmp_path / "repos").mkdir()
 
-        with patch("scylla.e2e.runner.logger") as mock_logger:
+        with patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger:
             runner._validate_filesystem_on_resume(ExperimentState.TIERS_RUNNING)
 
         # No warnings should have been emitted
@@ -497,7 +506,7 @@ class TestValidateFilesystemOnResume:
         runner = E2ERunner(mock_config, mock_tier_manager, tmp_path)
         runner.experiment_dir = tmp_path / "nonexistent"  # Would cause warning in TIERS_RUNNING
 
-        with patch("scylla.e2e.runner.logger") as mock_logger:
+        with patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger:
             runner._validate_filesystem_on_resume(ExperimentState.INITIALIZING)
 
         # No filesystem warnings for INITIALIZING state
