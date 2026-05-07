@@ -134,7 +134,7 @@ jobs:
         run: pixi run python scripts/validate_config_schemas.py config/defaults.yaml config/models/*.yaml tests/fixtures/config/tiers/*.yaml
 
       - name: Check cyclomatic complexity
-        run: pixi run python scripts/check_max_complexity.py --threshold 10
+        run: pixi run hephaestus-check-complexity --threshold 10
 
       - name: Run unit tests
         run: |

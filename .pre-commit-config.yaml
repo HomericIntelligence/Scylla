@@ -147,7 +147,7 @@ repos:
       - id: check-docstring-fragments
         name: Check Orphaned Docstring Fragments
         description: Detects orphaned lowercase continuation lines in module-level and function docstrings (e.g., lines starting with connector words like 'across', 'and', 'or') and fails the commit
-        entry: pixi run python scripts/check_docstring_fragments.py --directory src/scylla/
+        entry: pixi run hephaestus-check-docstrings --directory src/scylla/
         language: system
         files: \.py$
         types: [python]
@@ -199,7 +199,7 @@ repos:
       - id: check-max-complexity
         name: Check Cyclomatic Complexity
         description: Fails if any function in src/scylla/ exceeds max cyclomatic complexity of 10
-        entry: pixi run python scripts/check_max_complexity.py --threshold 10 --path src/scylla/
+        entry: pixi run hephaestus-check-complexity --threshold 10 --path src/scylla/
         language: system
         files: ^src/scylla/.*\.py$
         pass_filenames: false
