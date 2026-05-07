@@ -31,6 +31,10 @@ This document is referenced by 20+ locations across 13 files in the codebase.
 
 - **[dev/](dev/)** — Developer guides and technical documentation
 
+### Operational Runbooks
+
+- **[runbooks/experiment-failure-recovery.md](runbooks/experiment-failure-recovery.md)** — Recover from checkpoint corruption, tier/run state reset, zombie false positives, and disk exhaustion mid-experiment
+
 ### Figures
 
 - **[figures/](figures/)** — All figure documentation and assets
