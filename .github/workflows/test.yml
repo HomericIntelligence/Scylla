@@ -138,7 +138,7 @@ jobs:
 
       - name: Check cyclomatic complexity
         if: matrix.test-group.name == 'unit'
-        run: pixi run python scripts/check_max_complexity.py --threshold 10
+        run: pixi run hephaestus-check-complexity --threshold 10
 
       - name: Run ${{ matrix.test-group.name }} tests
         env:
