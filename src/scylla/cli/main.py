@@ -23,6 +23,10 @@ from scylla.reporting import (
     TransitionAssessment,
     create_tier_metrics,
 )
+from scylla.utils.json_logging import (
+    configure_json_logging,
+    is_json_logging_enabled,
+)
 
 # Dict-dispatch mapping format names to generator classes.
 # Adding a new format requires only a new entry here
@@ -41,7 +45,10 @@ def cli() -> None:
 
     Evaluate and benchmark AI agent architectures across multiple tiers.
     """
-    pass
+    # Opt-in structured JSON logging via SCYLLA_JSON_LOGS=1.
+    # Default behaviour (text logs) is unchanged.
+    if is_json_logging_enabled():
+        configure_json_logging()
 
 
 @cli.command()
