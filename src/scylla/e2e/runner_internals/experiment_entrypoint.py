@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from scylla.e2e.models import ExperimentConfig, ExperimentResult
 from scylla.e2e.runner_internals.runner_core import E2ERunner
+from scylla.metrics.emitter import MetricEmitter
 
 if TYPE_CHECKING:
     from scylla.e2e.resource_manager import ResourceManager
@@ -21,6 +22,7 @@ def run_experiment(
     results_dir: Path,
     fresh: bool = False,
     resource_manager: ResourceManager | None = None,
+    emitter: MetricEmitter | None = None,
 ) -> ExperimentResult:
     """Run an experiment with the given configuration.
 
@@ -31,13 +33,16 @@ def run_experiment(
         fresh: If True, ignore existing checkpoints and start fresh
         resource_manager: Optional shared ResourceManager for concurrency control.
             When running in batch mode, all experiments share the same instance.
+        emitter: Optional :class:`MetricEmitter` for time-series export.
+            Defaults to :func:`get_default_emitter` (NoOp unless
+            ``SCYLLA_METRICS_PATH`` is set).
 
     Returns:
         ExperimentResult with all results.
 
     """
     try:
-        runner = E2ERunner(config, tiers_dir, results_dir, fresh=fresh)
+        runner = E2ERunner(config, tiers_dir, results_dir, fresh=fresh, emitter=emitter)
         runner._resource_manager = resource_manager
         return runner.run()
     except (

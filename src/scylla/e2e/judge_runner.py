@@ -20,6 +20,7 @@ from scylla.e2e.llm_judge import run_llm_judge
 from scylla.e2e.models import JudgeResultSummary
 from scylla.e2e.paths import RESULT_FILE, get_judge_result_file
 from scylla.e2e.rate_limit import RateLimitError, RateLimitInfo, _detect_rate_limit_from_stderr
+from scylla.metrics.emitter import MetricEmitter, get_default_emitter
 
 if TYPE_CHECKING:
     from scylla.e2e.llm_judge_models import BuildPipelineResult, JudgeResult
@@ -139,6 +140,7 @@ def _run_judge(
     rubric_path: Path | None = None,
     judge_models: list[str] | None = None,
     pipeline_baseline: BuildPipelineResult | None = None,
+    emitter: MetricEmitter | None = None,
 ) -> tuple[dict[str, Any], list[JudgeResultSummary]]:
     """Run LLM judge evaluation(s) on the result.
 
@@ -164,6 +166,7 @@ def _run_judge(
     if not judge_models:
         raise ValueError("judge_models is required")
 
+    _emitter = emitter if emitter is not None else get_default_emitter()
     judges = []
 
     # Run each configured judge
@@ -201,6 +204,7 @@ def _run_judge(
                 criteria_scores=judge_result.criteria_scores,
             )
             judges.append(judge_summary)
+            _emit_judge_metric(_emitter, model, judge_result.is_valid, judge_result.passed)
 
         except RateLimitError:
             # Rate limit errors must propagate immediately to trigger backoff
@@ -266,6 +270,7 @@ def _run_judge(
                 criteria_scores={},
             )
             judges.append(failed_summary)
+            _emit_judge_metric(_emitter, model, is_valid=False, passed=False)
 
     # Compute consensus from all judges (only valid ones contribute)
     consensus_score, consensus_passed, consensus_grade = _compute_judge_consensus(judges)
@@ -328,6 +333,34 @@ def _run_judge(
     }
 
     return consensus_dict, judges
+
+
+def _emit_judge_metric(
+    emitter: MetricEmitter,
+    model: str,
+    is_valid: bool,
+    passed: bool,
+) -> None:
+    """Increment ``scylla_judge_evaluations_total`` for a judge result.
+
+    Outcome label is one of ``error`` (judge failed to produce a valid
+    result), ``pass`` (valid + passed), or ``fail`` (valid but did not pass).
+    Errors in the emitter must not break judge evaluation.
+    """
+    if not is_valid:
+        outcome = "error"
+    elif passed:
+        outcome = "pass"
+    else:
+        outcome = "fail"
+    try:
+        emitter.emit_counter(
+            "scylla_judge_evaluations_total",
+            1,
+            labels={"model": model, "outcome": outcome},
+        )
+    except Exception as e:  # emitter must never break judge runs
+        logger.warning(f"Judge metric emission failed (non-fatal): {e}")
 
 
 def _phase_log(phase: str, message: str) -> None:

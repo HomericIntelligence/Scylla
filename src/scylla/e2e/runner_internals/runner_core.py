@@ -44,6 +44,7 @@ from scylla.e2e.shutdown import (
 from scylla.e2e.tier_action_builder import TierActionBuilder
 from scylla.e2e.tier_manager import TierManager
 from scylla.e2e.workspace_manager import WorkspaceManager
+from scylla.metrics.emitter import MetricEmitter, get_default_emitter
 
 if TYPE_CHECKING:
     from scylla.e2e.resource_manager import ResourceManager
@@ -82,6 +83,7 @@ class E2ERunner:
         tiers_dir: Path,
         results_base_dir: Path,
         fresh: bool = False,
+        emitter: MetricEmitter | None = None,
     ) -> None:
         """Initialize the E2E runner.
 
@@ -90,6 +92,9 @@ class E2ERunner:
             tiers_dir: Path to tier configurations
             results_base_dir: Base directory for results
             fresh: If True, ignore existing checkpoints and start fresh
+            emitter: Optional metric emitter for time-series export. Defaults
+                to :func:`scylla.metrics.emitter.get_default_emitter` (a
+                :class:`NoOpEmitter` unless ``SCYLLA_METRICS_PATH`` is set).
 
         """
         self.config = config
@@ -101,6 +106,7 @@ class E2ERunner:
         self._fresh = fresh
         self._last_experiment_result: ExperimentResult | None = None
         self._resource_manager: ResourceManager | None = None
+        self._emitter = emitter if emitter is not None else get_default_emitter()
 
     def _result_writer(self) -> ExperimentResultWriter:
         """Create an ExperimentResultWriter bound to current state.
@@ -496,6 +502,7 @@ class E2ERunner:
         result = self._aggregate_results(tier_results, start_time)
         self._save_final_results(result)
         self._generate_report(result)
+        self._emit_experiment_metrics(tier_results, result)
         self._last_experiment_result = result
 
     def _action_exp_reports_generated(self) -> None:
@@ -666,6 +673,85 @@ class E2ERunner:
 
             tier_results.update(load_experiment_tier_results(self.experiment_dir, self.config))
         return self._aggregate_results(tier_results, start_time)
+
+    def _emit_experiment_metrics(
+        self,
+        tier_results: dict[TierID, TierResult],
+        result: ExperimentResult,
+    ) -> None:
+        """Emit per-tier counters and gauges via the configured MetricEmitter.
+
+        Default emitter is a NoOpEmitter, so this is a cheap no-op when
+        ``SCYLLA_METRICS_PATH`` is unset. Failures in the emitter must not
+        break experiment finalization.
+
+        Args:
+            tier_results: Per-tier results accumulated during the experiment.
+            result: Aggregated experiment result (unused for now but reserved
+                for experiment-level metrics).
+
+        """
+        del result  # currently only per-tier metrics; reserved for future use
+        experiment_id = self.config.experiment_id
+        try:
+            for tier_id, tier_result in tier_results.items():
+                tier_label = tier_id.value
+                # Outcome from best-subtest pass_rate: pass if any run passed.
+                best = (
+                    tier_result.subtest_results.get(tier_result.best_subtest)
+                    if tier_result.best_subtest
+                    else None
+                )
+                pass_rate = best.pass_rate if best is not None else 0.0
+                outcome = "pass" if pass_rate > 0 else "fail"
+                self._emitter.emit_counter(
+                    "scylla_tier_runs_total",
+                    1,
+                    labels={"tier": tier_label, "outcome": outcome},
+                )
+
+                # Per-subtest run outcome counts
+                pass_runs = 0
+                fail_runs = 0
+                for subtest in tier_result.subtest_results.values():
+                    for run in subtest.runs:
+                        if run.judge_passed:
+                            pass_runs += 1
+                        else:
+                            fail_runs += 1
+                if pass_runs:
+                    self._emitter.emit_counter(
+                        "scylla_subtest_runs_total",
+                        pass_runs,
+                        labels={"tier": tier_label, "outcome": "pass"},
+                    )
+                if fail_runs:
+                    self._emitter.emit_counter(
+                        "scylla_subtest_runs_total",
+                        fail_runs,
+                        labels={"tier": tier_label, "outcome": "fail"},
+                    )
+
+                labels = {"experiment": experiment_id, "tier": tier_label}
+                self._emitter.emit_gauge(
+                    "scylla_experiment_pass_rate", float(pass_rate), labels=labels
+                )
+                cop = tier_result.cost_of_pass
+                # Skip infinite CoP — emit only when finite to keep textfile
+                # collector parsable.
+                if cop != float("inf"):
+                    self._emitter.emit_gauge(
+                        "scylla_experiment_cost_of_pass_usd",
+                        float(cop),
+                        labels=labels,
+                    )
+                self._emitter.emit_gauge(
+                    "scylla_experiment_latency_seconds",
+                    float(tier_result.total_duration),
+                    labels=labels,
+                )
+        except Exception as e:  # emitter must never break finalization
+            logger.warning(f"Metric emission failed (non-fatal): {e}")
 
     def _setup_manager(self) -> ExperimentSetupManager:
         """Create an ExperimentSetupManager bound to current state."""
