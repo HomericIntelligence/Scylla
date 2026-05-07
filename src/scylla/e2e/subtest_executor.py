@@ -59,12 +59,14 @@ from scylla.e2e.workspace_setup import (
     _move_to_failed,
     _setup_workspace,
 )
+from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
     from scylla.e2e.checkpoint import E2ECheckpoint
     from scylla.e2e.parallel_executor import RateLimitCoordinator
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
 
 __all__ = [
     "SubTestExecutor",
@@ -360,7 +362,7 @@ class SubTestExecutor:
         self.adapter = adapter or ClaudeCodeAdapter()
         self._resource_manager = resource_manager
 
-    def run_subtest(  # noqa: C901  # orchestration with many retry/outcome paths
+    def run_subtest(
         self,
         tier_id: TierID,
         tier_config: TierConfig,
@@ -394,6 +396,43 @@ class SubTestExecutor:
             SubTestResult with aggregated metrics.
 
         """
+        with _tracer.start_as_current_span(
+            "scylla.subtest",
+            attributes={
+                "scylla.tier_id": tier_id.value,
+                "scylla.subtest_id": subtest.id,
+                "scylla.experiment_id": self.config.experiment_id,
+            },
+        ) as _subtest_span:
+            try:
+                return self._run_subtest_body(
+                    tier_id=tier_id,
+                    tier_config=tier_config,
+                    subtest=subtest,
+                    baseline=baseline,
+                    results_dir=results_dir,
+                    checkpoint=checkpoint,
+                    checkpoint_path=checkpoint_path,
+                    coordinator=coordinator,
+                    experiment_dir=experiment_dir,
+                )
+            except Exception as _exc:
+                _subtest_span.record_exception(_exc)
+                raise
+
+    def _run_subtest_body(  # noqa: C901  # orchestration with many retry/outcome paths
+        self,
+        tier_id: TierID,
+        tier_config: TierConfig,
+        subtest: SubTestConfig,
+        baseline: TierBaseline | None,
+        results_dir: Path,
+        checkpoint: E2ECheckpoint | None = None,
+        checkpoint_path: Path | None = None,
+        coordinator: RateLimitCoordinator | None = None,
+        experiment_dir: Path | None = None,
+    ) -> SubTestResult:
+        """Body of :meth:`run_subtest`, wrapped in a tracing span by the caller."""
         from scylla.e2e.models import SubtestState
         from scylla.e2e.stages import RunContext, build_actions_dict
         from scylla.e2e.state_machine import StateMachine
@@ -426,230 +465,248 @@ class SubTestExecutor:
             nonlocal last_workspace, pipeline_baseline
 
             for run_num in range(1, self.config.runs_per_subtest + 1):
-                # Check for shutdown before starting run
-                if coordinator and coordinator.is_shutdown_requested():
-                    logger.warning(
-                        f"Shutdown requested before run {run_num} of "
-                        f"{tier_id.value}/{subtest.id}, stopping..."
-                    )
-                    break
-
-                # Check coordinator for pause signal before each run
-                if coordinator:
-                    coordinator.check_if_paused()
-
-                run_dir = results_dir / f"run_{run_num:02d}"
-                workspace = run_dir / "workspace"
-
-                # Build checkpoint/state-machine objects for this run
-                sm = (
-                    StateMachine(
-                        checkpoint=checkpoint,
-                        checkpoint_path=checkpoint_path,
-                    )
-                    if checkpoint and checkpoint_path
-                    else None
-                )
-
-                # Skip runs already at or past the --until target state (they are not
-                # terminal but have completed their allowed work for this invocation).
-                if sm and self.config.until_run_state is not None:
-                    from scylla.e2e.state_machine import is_at_or_past_state
-
-                    current_run_state = sm.get_state(tier_id.value, subtest.id, run_num)
-                    if is_at_or_past_state(current_run_state, self.config.until_run_state):
-                        logger.debug(
-                            f"Skipping run {tier_id.value}/{subtest.id}/run_{run_num:02d} "
-                            f"— already at or past --until state: "
-                            f"{self.config.until_run_state.value} "
-                            f"(current: {current_run_state.value})"
-                        )
-                        continue
-
-                # Check if already in a terminal state (fully complete or previously failed)
-                if sm and sm.is_complete(tier_id.value, subtest.id, run_num):
-                    # Completed runs are promoted to completed/ — check there first
-                    if experiment_dir is not None:
-                        from scylla.e2e.paths import get_run_dir
-
-                        completed_run_dir = get_run_dir(
-                            experiment_dir,
-                            tier_id.value,
-                            subtest.id,
-                            run_num,
-                            completed=True,
-                        )
-                        if completed_run_dir.exists():
-                            run_dir = completed_run_dir
-                    run_result_file = run_dir / "run_result.json"
-                    if run_dir.exists() and run_result_file.exists():
-                        from scylla.e2e.rate_limit import validate_run_result
-
-                        is_valid, failure_reason = validate_run_result(run_dir)
-                        if not is_valid:
+                with _tracer.start_as_current_span(
+                    "scylla.run",
+                    attributes={
+                        "scylla.tier_id": tier_id.value,
+                        "scylla.subtest_id": subtest.id,
+                        "scylla.run_num": run_num,
+                        "scylla.experiment_id": self.config.experiment_id,
+                    },
+                ) as _run_span:
+                    try:
+                        # Check for shutdown before starting run
+                        if coordinator and coordinator.is_shutdown_requested():
                             logger.warning(
-                                f"Previously completed run is invalid"
-                                f" ({failure_reason}), re-running..."
+                                f"Shutdown requested before run {run_num} of "
+                                f"{tier_id.value}/{subtest.id}, stopping..."
                             )
-                            _move_to_failed(run_dir)
-                            if checkpoint and checkpoint_path:
-                                checkpoint.unmark_run_completed(tier_id.value, subtest.id, run_num)
-                                from scylla.e2e.checkpoint import save_checkpoint
+                            break
 
-                                save_checkpoint(checkpoint, checkpoint_path)
-                            # Fall through to re-run
-                        else:
-                            logger.info(
-                                f"Skipping completed run: "
-                                f"{tier_id.value}/{subtest.id}/run_{run_num:02d}"
+                        # Check coordinator for pause signal before each run
+                        if coordinator:
+                            coordinator.check_if_paused()
+
+                        run_dir = results_dir / f"run_{run_num:02d}"
+                        workspace = run_dir / "workspace"
+
+                        # Build checkpoint/state-machine objects for this run
+                        sm = (
+                            StateMachine(
+                                checkpoint=checkpoint,
+                                checkpoint_path=checkpoint_path,
                             )
-                            with open(run_result_file) as f:
-                                report_data = json.load(f)
-
-                            run_result = E2ERunResult(
-                                run_number=report_data["run_number"],
-                                exit_code=report_data["exit_code"],
-                                token_stats=TokenStats.from_dict(report_data["token_stats"]),
-                                cost_usd=report_data["cost_usd"],
-                                duration_seconds=report_data["duration_seconds"],
-                                agent_duration_seconds=report_data.get(
-                                    "agent_duration_seconds", 0.0
-                                ),
-                                judge_duration_seconds=report_data.get(
-                                    "judge_duration_seconds", 0.0
-                                ),
-                                judge_score=report_data["judge_score"],
-                                judge_passed=report_data["judge_passed"],
-                                judge_grade=report_data["judge_grade"],
-                                judge_reasoning=report_data["judge_reasoning"],
-                                workspace_path=Path(report_data["workspace_path"]),
-                                logs_path=Path(report_data["logs_path"]),
-                                command_log_path=(
-                                    Path(report_data["command_log_path"])
-                                    if report_data.get("command_log_path")
-                                    else None
-                                ),
-                                criteria_scores=report_data.get("criteria_scores") or {},
-                                baseline_pipeline_summary=report_data.get(
-                                    "baseline_pipeline_summary"
-                                ),
-                            )
-                            runs.append(run_result)
-                            last_workspace = workspace
-                            continue
-
-                # If the run was previously promoted to completed/ (and possibly
-                # had its checkpoint state regressed), the artifacts live in
-                # completed/ even though the state may be as early as
-                # AGENT_COMPLETE.  Prefer the completed/ directory when it
-                # exists so _restore_run_context finds agent/judge artifacts.
-                if sm and experiment_dir is not None:
-                    from scylla.e2e.models import RunState
-                    from scylla.e2e.state_machine import is_at_or_past_state
-
-                    _cur = sm.get_state(tier_id.value, subtest.id, run_num)
-                    if is_at_or_past_state(_cur, RunState.AGENT_COMPLETE):
-                        from scylla.e2e.paths import get_run_dir
-
-                        completed_run_dir = get_run_dir(
-                            experiment_dir,
-                            tier_id.value,
-                            subtest.id,
-                            run_num,
-                            completed=True,
+                            if checkpoint and checkpoint_path
+                            else None
                         )
-                        if completed_run_dir.exists():
-                            run_dir = completed_run_dir
-                            workspace = run_dir / "workspace"
 
-                run_dir.mkdir(parents=True, exist_ok=True)
-                workspace.mkdir(parents=True, exist_ok=True)
-                last_workspace = workspace
+                        # Skip runs already at or past the --until target state (they are not
+                        # terminal but have completed their allowed work for this invocation).
+                        if sm and self.config.until_run_state is not None:
+                            from scylla.e2e.state_machine import is_at_or_past_state
 
-                # Build RunContext for this run
-                ctx = RunContext(
-                    config=self.config,
-                    tier_id=tier_id,
-                    tier_config=tier_config,
-                    subtest=subtest,
-                    baseline=baseline,
-                    run_number=run_num,
-                    run_dir=run_dir,
-                    workspace=workspace,
-                    experiment_dir=experiment_dir,
-                    tier_manager=self.tier_manager,
-                    workspace_manager=self.workspace_manager,
-                    adapter=self.adapter,
-                    pipeline_baseline=pipeline_baseline,
-                    task_prompt=task_prompt,
-                    coordinator=coordinator,
-                    checkpoint=checkpoint,
-                    checkpoint_path=checkpoint_path,
-                    resource_manager=self._resource_manager,
-                )
+                            current_run_state = sm.get_state(tier_id.value, subtest.id, run_num)
+                            if is_at_or_past_state(current_run_state, self.config.until_run_state):
+                                logger.debug(
+                                    f"Skipping run {tier_id.value}/{subtest.id}/run_{run_num:02d} "
+                                    f"— already at or past --until state: "
+                                    f"{self.config.until_run_state.value} "
+                                    f"(current: {current_run_state.value})"
+                                )
+                                continue
 
-                # Set thread-local log context for structured logging
-                from scylla.e2e.log_context import set_log_context
+                        # Check if already in a terminal state (fully complete or previously failed)
+                        if sm and sm.is_complete(tier_id.value, subtest.id, run_num):
+                            # Completed runs are promoted to completed/ — check there first
+                            if experiment_dir is not None:
+                                from scylla.e2e.paths import get_run_dir
 
-                set_log_context(
-                    tier_id=tier_id.value,
-                    subtest_id=subtest.id,
-                    run_num=run_num,
-                )
+                                completed_run_dir = get_run_dir(
+                                    experiment_dir,
+                                    tier_id.value,
+                                    subtest.id,
+                                    run_num,
+                                    completed=True,
+                                )
+                                if completed_run_dir.exists():
+                                    run_dir = completed_run_dir
+                            run_result_file = run_dir / "run_result.json"
+                            if run_dir.exists() and run_result_file.exists():
+                                from scylla.e2e.rate_limit import validate_run_result
 
-                actions = build_actions_dict(ctx)
+                                is_valid, failure_reason = validate_run_result(run_dir)
+                                if not is_valid:
+                                    logger.warning(
+                                        f"Previously completed run is invalid"
+                                        f" ({failure_reason}), re-running..."
+                                    )
+                                    _move_to_failed(run_dir)
+                                    if checkpoint and checkpoint_path:
+                                        checkpoint.unmark_run_completed(
+                                            tier_id.value, subtest.id, run_num
+                                        )
+                                        from scylla.e2e.checkpoint import save_checkpoint
 
-                # Restore RunContext fields from disk when resuming from an
-                # intermediate state — earlier stages were skipped, so their
-                # outputs (agent_result, judge_prompt) must be reloaded.
-                if sm:
-                    _current_run_state = sm.get_state(tier_id.value, subtest.id, run_num)
-                    if _current_run_state.value != "pending":
-                        _restore_run_context(ctx, _current_run_state.value)
+                                        save_checkpoint(checkpoint, checkpoint_path)
+                                    # Fall through to re-run
+                                else:
+                                    logger.info(
+                                        f"Skipping completed run: "
+                                        f"{tier_id.value}/{subtest.id}/run_{run_num:02d}"
+                                    )
+                                    with open(run_result_file) as f:
+                                        report_data = json.load(f)
 
-                try:
-                    # Wrap entire run in workspace_slot to guarantee release on
-                    # any exception (including ShutdownInterruptedError).
-                    import contextlib
-                    from contextlib import AbstractContextManager
+                                    run_result = E2ERunResult(
+                                        run_number=report_data["run_number"],
+                                        exit_code=report_data["exit_code"],
+                                        token_stats=TokenStats.from_dict(
+                                            report_data["token_stats"]
+                                        ),
+                                        cost_usd=report_data["cost_usd"],
+                                        duration_seconds=report_data["duration_seconds"],
+                                        agent_duration_seconds=report_data.get(
+                                            "agent_duration_seconds", 0.0
+                                        ),
+                                        judge_duration_seconds=report_data.get(
+                                            "judge_duration_seconds", 0.0
+                                        ),
+                                        judge_score=report_data["judge_score"],
+                                        judge_passed=report_data["judge_passed"],
+                                        judge_grade=report_data["judge_grade"],
+                                        judge_reasoning=report_data["judge_reasoning"],
+                                        workspace_path=Path(report_data["workspace_path"]),
+                                        logs_path=Path(report_data["logs_path"]),
+                                        command_log_path=(
+                                            Path(report_data["command_log_path"])
+                                            if report_data.get("command_log_path")
+                                            else None
+                                        ),
+                                        criteria_scores=report_data.get("criteria_scores") or {},
+                                        baseline_pipeline_summary=report_data.get(
+                                            "baseline_pipeline_summary"
+                                        ),
+                                    )
+                                    runs.append(run_result)
+                                    last_workspace = workspace
+                                    continue
 
-                    ws_ctx: AbstractContextManager[Any] = (
-                        self._resource_manager.workspace_slot()
-                        if self._resource_manager
-                        else contextlib.nullcontext()
-                    )
+                        # If the run was previously promoted to completed/ (and possibly
+                        # had its checkpoint state regressed), the artifacts live in
+                        # completed/ even though the state may be as early as
+                        # AGENT_COMPLETE.  Prefer the completed/ directory when it
+                        # exists so _restore_run_context finds agent/judge artifacts.
+                        if sm and experiment_dir is not None:
+                            from scylla.e2e.models import RunState
+                            from scylla.e2e.state_machine import is_at_or_past_state
 
-                    with ws_ctx:
+                            _cur = sm.get_state(tier_id.value, subtest.id, run_num)
+                            if is_at_or_past_state(_cur, RunState.AGENT_COMPLETE):
+                                from scylla.e2e.paths import get_run_dir
+
+                                completed_run_dir = get_run_dir(
+                                    experiment_dir,
+                                    tier_id.value,
+                                    subtest.id,
+                                    run_num,
+                                    completed=True,
+                                )
+                                if completed_run_dir.exists():
+                                    run_dir = completed_run_dir
+                                    workspace = run_dir / "workspace"
+
+                        run_dir.mkdir(parents=True, exist_ok=True)
+                        workspace.mkdir(parents=True, exist_ok=True)
+                        last_workspace = workspace
+
+                        # Build RunContext for this run
+                        ctx = RunContext(
+                            config=self.config,
+                            tier_id=tier_id,
+                            tier_config=tier_config,
+                            subtest=subtest,
+                            baseline=baseline,
+                            run_number=run_num,
+                            run_dir=run_dir,
+                            workspace=workspace,
+                            experiment_dir=experiment_dir,
+                            tier_manager=self.tier_manager,
+                            workspace_manager=self.workspace_manager,
+                            adapter=self.adapter,
+                            pipeline_baseline=pipeline_baseline,
+                            task_prompt=task_prompt,
+                            coordinator=coordinator,
+                            checkpoint=checkpoint,
+                            checkpoint_path=checkpoint_path,
+                            resource_manager=self._resource_manager,
+                        )
+
+                        # Set thread-local log context for structured logging
+                        from scylla.e2e.log_context import set_log_context
+
+                        set_log_context(
+                            tier_id=tier_id.value,
+                            subtest_id=subtest.id,
+                            run_num=run_num,
+                        )
+
+                        actions = build_actions_dict(ctx)
+
+                        # Restore RunContext fields from disk when resuming from an
+                        # intermediate state — earlier stages were skipped, so their
+                        # outputs (agent_result, judge_prompt) must be reloaded.
                         if sm:
-                            sm.advance_to_completion(
-                                tier_id.value,
-                                subtest.id,
-                                run_num,
-                                actions,
-                                until_state=self.config.until_run_state,
+                            _current_run_state = sm.get_state(tier_id.value, subtest.id, run_num)
+                            if _current_run_state.value != "pending":
+                                _restore_run_context(ctx, _current_run_state.value)
+
+                        try:
+                            # Wrap entire run in workspace_slot to guarantee release on
+                            # any exception (including ShutdownInterruptedError).
+                            import contextlib
+                            from contextlib import AbstractContextManager
+
+                            ws_ctx: AbstractContextManager[Any] = (
+                                self._resource_manager.workspace_slot()
+                                if self._resource_manager
+                                else contextlib.nullcontext()
                             )
-                        else:
-                            # No checkpoint — run all stages directly without state machine
-                            for action in actions.values():
-                                action()
 
-                    if ctx.run_result:
-                        runs.append(ctx.run_result)
+                            with ws_ctx:
+                                if sm:
+                                    sm.advance_to_completion(
+                                        tier_id.value,
+                                        subtest.id,
+                                        run_num,
+                                        actions,
+                                        until_state=self.config.until_run_state,
+                                    )
+                                else:
+                                    # No checkpoint — run all stages directly without state machine
+                                    for action in actions.values():
+                                        action()
 
-                    # Propagate pipeline_baseline to subsequent runs
-                    if ctx.pipeline_baseline is not None and pipeline_baseline is None:
-                        pipeline_baseline = ctx.pipeline_baseline
+                            if ctx.run_result:
+                                runs.append(ctx.run_result)
 
-                except RateLimitError as e:
-                    # Move the run directory to .failed/ so run number can be reused
-                    if run_dir.exists():
-                        _move_to_failed(run_dir)
+                            # Propagate pipeline_baseline to subsequent runs
+                            if ctx.pipeline_baseline is not None and pipeline_baseline is None:
+                                pipeline_baseline = ctx.pipeline_baseline
 
-                    # Signal coordinator if available
-                    if coordinator:
-                        coordinator.signal_rate_limit(e.info)
-                    # Re-raise to be handled at higher level
-                    raise
+                        except RateLimitError as e:
+                            # Move the run directory to .failed/ so run number can be reused
+                            if run_dir.exists():
+                                _move_to_failed(run_dir)
+
+                            # Signal coordinator if available
+                            if coordinator:
+                                coordinator.signal_rate_limit(e.info)
+                            # Re-raise to be handled at higher level
+                            raise
+
+                    except Exception as _exc:
+                        _run_span.record_exception(_exc)
+                        raise
 
         def _save_resource_manifest() -> None:
             nonlocal last_workspace

@@ -45,11 +45,13 @@ from scylla.e2e.tier_action_builder import TierActionBuilder
 from scylla.e2e.tier_manager import TierManager
 from scylla.e2e.workspace_manager import WorkspaceManager
 from scylla.metrics.emitter import MetricEmitter, get_default_emitter
+from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
     from scylla.e2e.resource_manager import ResourceManager
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
 
 
 class E2ERunner:
@@ -805,6 +807,25 @@ class E2ERunner:
             TierResult with all sub-test results.
 
         """
+        with _tracer.start_as_current_span(
+            "scylla.tier",
+            attributes={
+                "scylla.tier_id": tier_id.value,
+                "scylla.experiment_id": self.config.experiment_id,
+            },
+        ) as _tier_span:
+            try:
+                return self._run_tier_body(tier_id, baseline)
+            except Exception as e:
+                _tier_span.record_exception(e)
+                raise
+
+    def _run_tier_body(
+        self,
+        tier_id: TierID,
+        baseline: TierBaseline | None,
+    ) -> TierResult:
+        """Body of :meth:`_run_tier`, wrapped in a tracing span by the caller."""
         from scylla.e2e.tier_state_machine import TierStateMachine
 
         # Typed mutable namespace passed to closures in _build_tier_actions()
