@@ -4,14 +4,21 @@ Tests cover:
 - set_log_context + ContextFilter injects fields into log records
 - Default empty strings when no context is set
 - Thread-local isolation (context set in one thread is not visible in another)
+- End-to-end integration with configure_json_logging
 """
 
 from __future__ import annotations
 
+import io
+import json
 import logging
 import threading
+from collections.abc import Iterator
+
+import pytest
 
 from scylla.e2e.log_context import ContextFilter, clear_log_context, set_log_context
+from scylla.utils.json_logging import configure_json_logging
 
 
 class TestContextFilterDefaults:
@@ -223,3 +230,41 @@ class TestHandlerFormatterIntegration:
         assert "context test" in captured[0]
 
         clear_log_context()
+
+
+@pytest.fixture
+def reset_root_logger() -> Iterator[None]:
+    """Snapshot and restore root logger state around the JSON integration test."""
+    root = logging.getLogger()
+    original_handlers = list(root.handlers)
+    original_level = root.level
+    for handler in original_handlers:
+        root.removeHandler(handler)
+    try:
+        yield
+    finally:
+        for handler in list(root.handlers):
+            root.removeHandler(handler)
+        for handler in original_handlers:
+            root.addHandler(handler)
+        root.setLevel(original_level)
+
+
+class TestJsonLoggingIntegration:
+    """End-to-end: configure_json_logging + set_log_context surface in JSON."""
+
+    def test_context_fields_appear_in_json_output(self, reset_root_logger: None) -> None:
+        """All three context fields must appear in the JSON log line."""
+        stream = io.StringIO()
+        configure_json_logging(stream=stream)
+        set_log_context(tier_id="T4", subtest_id="07", run_num=3)
+        try:
+            logging.getLogger("scylla.integration").info("e2e ctx")
+        finally:
+            clear_log_context()
+
+        payload = json.loads(stream.getvalue().strip().splitlines()[-1])
+        assert payload["tier_id"] == "T4"
+        assert payload["subtest_id"] == "07"
+        assert payload["run_num"] == "3"
+        assert payload["message"] == "e2e ctx"
