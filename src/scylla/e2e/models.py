@@ -21,12 +21,10 @@ from scylla.config.constants import (
     normalize_model_id,
 )
 from scylla.core.results import RunResultBase
+from scylla.e2e.rate_limit import RateLimitInfo
 
 # Grade ordering for min/max calculations (F=worst, S=best)
 GRADE_ORDER: list[str] = ["F", "D", "C", "B", "A", "S"]
-
-# Import after models are defined to avoid circular import at module level
-# This is safe because RateLimitInfo is only used in type hints within SubTestResult
 
 
 class TokenStats(BaseModel):
@@ -926,8 +924,8 @@ class ExperimentResult(BaseModel):
             json.dump(self.to_dict(), f, indent=2)
 
 
-# Resolve forward references after all models are defined
-# Import RateLimitInfo and rebuild SubTestResult to resolve the forward reference
-from scylla.e2e.rate_limit import RateLimitInfo  # noqa: E402
-
+# Resolve forward references after all models are defined. The
+# RateLimitInfo import is at the top of this module since
+# scylla.e2e.rate_limit only imports from stdlib + scylla.e2e.paths
+# (a leaf module), so no cycle exists.
 SubTestResult.model_rebuild()
