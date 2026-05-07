@@ -6,10 +6,10 @@ scaffold, what is — and is not — wired up, and how operators activate it.
 
 ## Status
 
-- **Scaffold only.** The tracing module and a single root span at the CLI
-  entrypoint are in place. Exhaustive instrumentation across every logging
-  site is intentionally out of scope and tracked as a follow-up under
-  issue #1887.
+- **Span depth in place.** The tracing module emits a root
+  `scylla.experiment.run` span at the CLI entry point and child spans at
+  every meaningful runtime boundary — tier, subtest, run, and judge. See
+  [Span hierarchy](#span-hierarchy) below.
 - **Opt-in.** Default behaviour of the application is unchanged. With no
   configuration, no OpenTelemetry SDK imports happen.
 
@@ -73,17 +73,155 @@ in a single root span named `scylla.experiment.run` with attributes:
 - `experiment.runs_per_tier`
 - `experiment.tiers` (when explicit tiers are passed)
 
-This is deliberately the *only* span emitted by this scaffold. Adding spans
-to deeper layers (orchestrator, executor, judge, metrics) is follow-up work
-under issue #1887.
+Child spans below this root cover the rest of the runtime — see
+[Span hierarchy](#span-hierarchy).
+
+## Span hierarchy
+
+Beyond the single root `scylla.experiment.run` span, the runtime emits
+child spans at every meaningful execution boundary. The full hierarchy is:
+
+| Span name              | Emitted by                                        | Attributes                                                                                       |
+|------------------------|---------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `scylla.experiment.run` | `src/scylla/cli/main.py`                          | `experiment.test_id`, `experiment.model`, `experiment.runs_per_tier`, `experiment.tiers`         |
+| `scylla.tier`          | `src/scylla/e2e/runner_internals/runner_core.py`  | `scylla.tier_id`, `scylla.experiment_id`                                                         |
+| `scylla.subtest`       | `src/scylla/e2e/subtest_executor.py`              | `scylla.tier_id`, `scylla.subtest_id`, `scylla.experiment_id`                                    |
+| `scylla.run`           | `src/scylla/e2e/subtest_executor.py`              | `scylla.tier_id`, `scylla.subtest_id`, `scylla.run_num`, `scylla.experiment_id`                  |
+| `scylla.judge`         | `src/scylla/e2e/judge_runner.py`                  | `scylla.judge_model`, `scylla.judge_number`                                                      |
+
+Failures at any level call `span.record_exception(exc)` before re-raising,
+so spans carry exception events even when the run itself fails.
+
+> **Cardinality note.** `scylla.subtest_id` is recorded as a span attribute
+> only — never as a metric label. The OTLP collector budgets cardinality
+> at the trace-storage tier; metric exporters keep low-cardinality labels.
+
+## Sample trace tree
+
+For an experiment with 2 tiers, 3 subtests per tier and 2 runs per
+subtest, the span tree looks like this (one judge per run shown for
+brevity — multi-judge runs add sibling `scylla.judge` spans):
+
+```text
+scylla.experiment.run
+├── scylla.tier (T0)
+│   ├── scylla.subtest (001)
+│   │   ├── scylla.run (run_num=1)
+│   │   │   └── scylla.judge (claude-3-haiku, #1)
+│   │   └── scylla.run (run_num=2)
+│   │       └── scylla.judge (claude-3-haiku, #1)
+│   ├── scylla.subtest (002)
+│   │   ├── scylla.run (run_num=1) → scylla.judge
+│   │   └── scylla.run (run_num=2) → scylla.judge
+│   └── scylla.subtest (003)
+│       ├── scylla.run (run_num=1) → scylla.judge
+│       └── scylla.run (run_num=2) → scylla.judge
+└── scylla.tier (T1)
+    └── ... (same shape)
+```
+
+## Production OTLP collector setup
+
+The repo ships **no** collector configuration — operators stand one up
+themselves. The minimal deployment below uses Jaeger as both trace store
+and UI; it is sufficient for inspecting Scylla traces locally and in
+single-host shared environments.
+
+### `docker-compose.observability.yml`
+
+Save this on the host running ProjectScylla (do **not** check it into the
+repo — it is operator-side configuration):
+
+```yaml
+version: "3.9"
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "14250:14250"   # gRPC ingestion (used by the collector)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.108.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP (optional)
+    depends_on:
+      - jaeger
+```
+
+### `otel-collector-config.yaml`
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]
+```
+
+### Operator quick-start
+
+1. Install the OTel client packages once:
+
+   ```bash
+   pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
+   ```
+
+2. Bring the observability stack up:
+
+   ```bash
+   docker compose -f docker-compose.observability.yml up -d
+   ```
+
+3. Run an experiment with the OTLP exporter pointed at the local
+   collector:
+
+   ```bash
+   SCYLLA_OTEL_EXPORTER=otlp \
+   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
+   pixi run scylla run 001-justfile-to-makefile --tier T0 --runs 1
+   ```
+
+4. Open the Jaeger UI at <http://localhost:16686>, select the
+   `scylla` service, and query for the `scylla.experiment.run` span.
+   Drill into the trace to see the full tier → subtest → run → judge
+   tree described above.
+
+For multi-host deployments, point `OTEL_EXPORTER_OTLP_ENDPOINT` at the
+collector's externally reachable address and add TLS/auth as appropriate
+in `otel-collector-config.yaml`.
 
 ## Out of scope for this scaffold
 
-- Spans at every logging site.
 - `opentelemetry-instrumentation-*` auto-instrumentation packages.
-- Real OTLP collector deployment / endpoint configuration.
-
-These remain open under issue #1887.
 
 ## Log/span correlation
 

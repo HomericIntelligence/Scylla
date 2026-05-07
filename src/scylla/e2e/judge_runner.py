@@ -21,11 +21,13 @@ from scylla.e2e.models import JudgeResultSummary
 from scylla.e2e.paths import RESULT_FILE, get_judge_result_file
 from scylla.e2e.rate_limit import RateLimitError, RateLimitInfo, _detect_rate_limit_from_stderr
 from scylla.metrics.emitter import MetricEmitter, get_default_emitter
+from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
     from scylla.e2e.llm_judge_models import BuildPipelineResult, JudgeResult
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
 
 
 def _save_judge_result(judge_dir: Path, result: JudgeResult) -> None:
@@ -131,7 +133,7 @@ def _compute_judge_consensus(
     return (consensus_score, passed, grade)
 
 
-def _run_judge(
+def _run_judge(  # noqa: C901  # multi-judge consensus with rate-limit/error branches
     workspace: Path,
     task_prompt: str,
     stdout: str,
@@ -180,17 +182,28 @@ def _run_judge(
 
         # Use the LLM judge for proper evaluation
         try:
-            judge_result = run_llm_judge(
-                workspace=workspace,
-                task_prompt=task_prompt,
-                agent_output=stdout,
-                model=model,
-                judge_dir=judge_dir,
-                judge_run_number=judge_num,  # Creates judge_01/, judge_02/, etc.
-                language=language,
-                rubric_path=rubric_path,
-                pipeline_baseline=pipeline_baseline,
-            )
+            with _tracer.start_as_current_span(
+                "scylla.judge",
+                attributes={
+                    "scylla.judge_model": model,
+                    "scylla.judge_number": judge_num,
+                },
+            ) as _judge_span:
+                try:
+                    judge_result = run_llm_judge(
+                        workspace=workspace,
+                        task_prompt=task_prompt,
+                        agent_output=stdout,
+                        model=model,
+                        judge_dir=judge_dir,
+                        judge_run_number=judge_num,  # Creates judge_01/, judge_02/, etc.
+                        language=language,
+                        rubric_path=rubric_path,
+                        pipeline_baseline=pipeline_baseline,
+                    )
+                except Exception as _exc:
+                    _judge_span.record_exception(_exc)
+                    raise
 
             # Store individual judge result
             judge_summary = JudgeResultSummary(

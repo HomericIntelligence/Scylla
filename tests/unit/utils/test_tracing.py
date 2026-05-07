@@ -120,6 +120,23 @@ def test_get_tracer_is_name_scoped(monkeypatch: pytest.MonkeyPatch) -> None:
         pass
 
 
+def test_get_tracer_noop_supports_record_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The no-op span must accept record_exception() without raising.
+
+    Span depth instrumentation (PR for #1887) calls
+    ``span.record_exception(e)`` on the way out of every wrapped boundary;
+    this contract guarantees that path is safe when tracing is disabled.
+    """
+    monkeypatch.delenv("SCYLLA_OTEL_EXPORTER", raising=False)
+    tracer = get_tracer("scylla.test")
+    with tracer.start_as_current_span("noop") as span:
+        # The shim must accept arbitrary exceptions without raising.
+        span.record_exception(RuntimeError("boom"))
+        span.record_exception(ValueError("kaboom"))
+
+
 def test_module_imports_cleanly_without_otel(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
