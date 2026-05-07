@@ -20,8 +20,14 @@ serialised under the ``traceback`` key.
 
 No third-party dependencies are introduced; this is intentional so the
 foundation can be adopted incrementally without touching existing
-``logger.info(...)`` call sites. Distributed tracing (OpenTelemetry,
-Jaeger, etc.) remains out of scope and will be tracked separately.
+``logger.info(...)`` call sites.
+
+When the OpenTelemetry API is importable AND a recording span is active
+at log time, the formatter additionally injects ``trace_id`` (32-char
+lowercase hex) and ``span_id`` (16-char lowercase hex) fields, matching
+the OpenTelemetry log-correlation convention. OpenTelemetry remains an
+optional dependency: when not installed, these fields are silently
+omitted.
 """
 
 from __future__ import annotations
@@ -38,6 +44,13 @@ __all__ = [
     "configure_json_logging",
     "is_json_logging_enabled",
 ]
+
+# Module-level lazy probe for the OpenTelemetry trace API. Cached on first
+# use of :meth:`JsonFormatter.format` so the import attempt happens at most
+# once per process. The sentinel ``_OTEL_PROBED`` distinguishes "not yet
+# probed" from "probed and unavailable" (``_OTEL_TRACE_MODULE is None``).
+_OTEL_TRACE_MODULE: Any = None
+_OTEL_PROBED: bool = False
 
 # Standard LogRecord attributes that should NOT be copied into the
 # JSON payload as "extras". See logging.LogRecord docs.
@@ -73,6 +86,39 @@ _ENV_VAR = "SCYLLA_JSON_LOGS"
 _CONFIGURED_FLAG = "_scylla_json_logging_configured"
 
 
+def _extract_otel_trace_ids() -> dict[str, str]:
+    """Return ``{"trace_id": ..., "span_id": ...}`` for the current OTel span.
+
+    Returns an empty dict when the OpenTelemetry API is not importable, when
+    no span is active, or when the active span context is not valid. The
+    trace_id is rendered as a 32-char lowercase hex string and the span_id
+    as 16-char lowercase hex, matching the OpenTelemetry log-correlation
+    convention.
+    """
+    global _OTEL_TRACE_MODULE, _OTEL_PROBED
+    if not _OTEL_PROBED:
+        try:
+            from opentelemetry import trace as _otel_trace
+        except ImportError:
+            _OTEL_TRACE_MODULE = None
+        else:
+            _OTEL_TRACE_MODULE = _otel_trace
+        _OTEL_PROBED = True
+
+    trace_mod = _OTEL_TRACE_MODULE
+    if trace_mod is None:
+        return {}
+
+    span = trace_mod.get_current_span()
+    ctx = span.get_span_context()
+    if not ctx.is_valid:
+        return {}
+    return {
+        "trace_id": f"{ctx.trace_id:032x}",
+        "span_id": f"{ctx.span_id:016x}",
+    }
+
+
 class JsonFormatter(logging.Formatter):
     """Format :class:`logging.LogRecord` instances as a single JSON line.
 
@@ -81,6 +127,11 @@ class JsonFormatter(logging.Formatter):
     extras supplied via ``logger.info(..., extra={...})``. When the
     record carries exception info, a ``traceback`` field is appended.
     """
+
+    # Context fields injected by ``scylla.e2e.log_context.ContextFilter``
+    # are omitted from the JSON payload when their value is empty/None, to
+    # keep logs clean when no thread-local context is set.
+    _OMIT_IF_EMPTY: frozenset[str] = frozenset({"tier_id", "subtest_id", "run_num"})
 
     def format(self, record: logging.LogRecord) -> str:
         """Render *record* as a single-line JSON string."""
@@ -96,7 +147,13 @@ class JsonFormatter(logging.Formatter):
         for key, value in record.__dict__.items():
             if key in _RESERVED_LOGRECORD_ATTRS or key.startswith("_"):
                 continue
+            if key in self._OMIT_IF_EMPTY and not value:
+                continue
             payload[key] = value
+
+        # OTel trace correlation (best-effort; absent when OTel is not
+        # installed or no recording span is active).
+        payload.update(_extract_otel_trace_ids())
 
         if record.exc_info:
             payload["traceback"] = self.formatException(record.exc_info)
@@ -147,6 +204,13 @@ def configure_json_logging(
     json_handler.setFormatter(formatter)
     json_handler.setLevel(numeric_level)
     root.setLevel(numeric_level)
+
+    # Lazy import avoids a circular dependency between
+    # ``scylla.utils.json_logging`` and ``scylla.e2e.log_context``.
+    from scylla.e2e.log_context import ContextFilter
+
+    if not any(isinstance(f, ContextFilter) for f in json_handler.filters):
+        json_handler.addFilter(ContextFilter())
 
 
 def is_json_logging_enabled() -> bool:

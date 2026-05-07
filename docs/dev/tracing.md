@@ -82,6 +82,34 @@ under issue #1887.
 - Spans at every logging site.
 - `opentelemetry-instrumentation-*` auto-instrumentation packages.
 - Real OTLP collector deployment / endpoint configuration.
-- Bridging `logging.LogRecord` into spans.
 
 These remain open under issue #1887.
+
+## Log/span correlation
+
+When both `SCYLLA_JSON_LOGS=1` and `SCYLLA_OTEL_EXPORTER=...` are set,
+the JSON formatter automatically enriches each log line with:
+
+- `tier_id`, `subtest_id`, `run_num` — thread-local execution context
+  injected by `scylla.e2e.log_context.ContextFilter`. Empty fields are
+  omitted from output.
+- `trace_id` (32-char lowercase hex) and `span_id` (16-char lowercase
+  hex) — the currently active OpenTelemetry span, matching the
+  [OpenTelemetry log-correlation convention][otel-log-corr]. Omitted
+  when no recording span is active or when `opentelemetry-api` is not
+  installed.
+
+Sample JSON line emitted from inside an active span:
+
+```json
+{"timestamp": "2026-05-07T12:00:00.000000+00:00", "level": "INFO",
+ "name": "scylla.executor", "message": "subtest start",
+ "tier_id": "T0", "subtest_id": "05", "run_num": "1",
+ "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+ "span_id": "00f067aa0ba902b7"}
+```
+
+OpenTelemetry remains an optional dependency: when not installed, the
+trace fields are silently omitted and JSON logging continues to work.
+
+[otel-log-corr]: https://opentelemetry.io/docs/specs/otel/logs/data-model/#trace-context-fields
