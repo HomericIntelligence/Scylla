@@ -31,6 +31,10 @@ This document is referenced by 20+ locations across 13 files in the codebase.
 
 - **[dev/](dev/)** — Developer guides and technical documentation
 
+### Operations
+
+- **[operations/capacity-planning.md](operations/capacity-planning.md)** — Capacity-planning methodology, resource axes, sizing formulas, and measurement templates for sizing a host before running an experiment
+
 ### Operational Runbooks
 
 - **[runbooks/experiment-failure-recovery.md](runbooks/experiment-failure-recovery.md)** — Recover from checkpoint corruption, tier/run state reset, zombie false positives, and disk exhaustion mid-experiment
