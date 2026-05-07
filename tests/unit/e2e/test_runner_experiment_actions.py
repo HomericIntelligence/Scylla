@@ -92,7 +92,7 @@ class TestActionExpRepoCloned:
         """_action_exp_repo_cloned emits an info log containing the tier groups."""
         tier_groups = [[TierID.T0], [TierID.T1]]
 
-        with patch("scylla.e2e.runner.logger") as mock_logger:
+        with patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger:
             runner._action_exp_repo_cloned(tier_groups)
 
         mock_logger.info.assert_called_once()
@@ -103,7 +103,7 @@ class TestActionExpRepoCloned:
         """The logged message includes the actual tier_groups value."""
         tier_groups = [[TierID.T0, TierID.T1]]
 
-        with patch("scylla.e2e.runner.logger") as mock_logger:
+        with patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger:
             runner._action_exp_repo_cloned(tier_groups)
 
         logged_msg = mock_logger.info.call_args[0][0]
@@ -202,7 +202,7 @@ class TestActionExpReportsGenerated:
 
         with (
             patch.object(runner, "_mark_checkpoint_completed"),
-            patch("scylla.e2e.runner.logger") as mock_logger,
+            patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger,
         ):
             runner._action_exp_reports_generated()
 
@@ -217,7 +217,7 @@ class TestActionExpReportsGenerated:
 
         with (
             patch.object(runner, "_mark_checkpoint_completed"),
-            patch("scylla.e2e.runner.logger") as mock_logger,
+            patch("scylla.e2e.runner_internals.runner_core.logger") as mock_logger,
         ):
             runner._action_exp_reports_generated()
 
