@@ -27,6 +27,7 @@ from scylla.utils.json_logging import (
     configure_json_logging,
     is_json_logging_enabled,
 )
+from scylla.utils.tracing import configure_tracing, get_tracer
 
 # Dict-dispatch mapping format names to generator classes.
 # Adding a new format requires only a new entry here
@@ -49,6 +50,9 @@ def cli() -> None:
     # Default behaviour (text logs) is unchanged.
     if is_json_logging_enabled():
         configure_json_logging()
+    # Opt-in OpenTelemetry tracing via SCYLLA_OTEL_EXPORTER=console|otlp.
+    # When unset, this is a no-op and no SDK imports happen.
+    configure_tracing()
 
 
 @cli.command()
@@ -129,34 +133,41 @@ def run(
 
     orchestrator = EvalOrchestrator(config)
 
-    try:
-        if runs == 1 and tiers and len(tiers) == 1:
-            # Single run mode
-            result = orchestrator.run_single(
-                test_id=test_id,
-                model_id=model_id,
-                tier_id=tiers[0],
-            )
-            if not quiet:
-                click.echo(f"\nResult: {'PASS' if result.judgment.passed else 'FAIL'}")
-                click.echo(f"Grade: {result.judgment.letter_grade}")
-                click.echo(f"Cost: ${result.metrics.cost_usd:.4f}")
-        else:
-            # Multi-run mode
-            results = orchestrator.run_test(
-                test_id=test_id,
-                models=[model_id],
-                tiers=tiers,
-                runs_per_tier=runs,
-            )
-            if not quiet:
-                passed = sum(1 for r in results if r.judgment.passed)
-                click.echo(f"\nCompleted {len(results)} runs")
-                click.echo(f"Pass rate: {passed}/{len(results)}")
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("scylla.experiment.run") as span:
+        span.set_attribute("experiment.test_id", test_id)
+        span.set_attribute("experiment.model", model_id)
+        span.set_attribute("experiment.runs_per_tier", runs)
+        if tiers is not None:
+            span.set_attribute("experiment.tiers", ",".join(tiers))
+        try:
+            if runs == 1 and tiers and len(tiers) == 1:
+                # Single run mode
+                result = orchestrator.run_single(
+                    test_id=test_id,
+                    model_id=model_id,
+                    tier_id=tiers[0],
+                )
+                if not quiet:
+                    click.echo(f"\nResult: {'PASS' if result.judgment.passed else 'FAIL'}")
+                    click.echo(f"Grade: {result.judgment.letter_grade}")
+                    click.echo(f"Cost: ${result.metrics.cost_usd:.4f}")
+            else:
+                # Multi-run mode
+                results = orchestrator.run_test(
+                    test_id=test_id,
+                    models=[model_id],
+                    tiers=tiers,
+                    runs_per_tier=runs,
+                )
+                if not quiet:
+                    passed = sum(1 for r in results if r.judgment.passed)
+                    click.echo(f"\nCompleted {len(results)} runs")
+                    click.echo(f"Pass rate: {passed}/{len(results)}")
 
-    except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        sys.exit(1)
+        except Exception as e:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
 
 
 def _load_results(test_id: str, base_path: Path = Path(".")) -> list[dict[str, Any]]:
