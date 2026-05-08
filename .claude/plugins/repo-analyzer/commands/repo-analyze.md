@@ -102,7 +102,6 @@ For each section, output:
     <criteria>
       - README.md: project purpose, quick-start, prerequisites, installation, usage, contributing guide
       - CONTRIBUTING.md: coding standards, PR process, branch strategy
-      - CHANGELOG.md or equivalent release notes
       - LICENSE file present and appropriate
       - Architecture decision records (ADRs) or design documents
       - API documentation (OpenAPI/Swagger specs, JSDoc, docstrings, etc.)

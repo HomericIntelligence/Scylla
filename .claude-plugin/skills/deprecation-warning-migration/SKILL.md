@@ -152,24 +152,9 @@ class TestBaseRunMetricsBackwardCompatibility:
             BaseRunMetrics(tokens_input=1, tokens_output=1, cost_usd=0.0)
 ```
 
-### 6. Update CHANGELOG.md
+### 6. Note the deprecation in the PR description
 
-```markdown
-## [Unreleased]
-
-### Deprecated
-
-- `BaseRunMetrics` dataclass in `scylla/core/results.py` is deprecated.
-  It will be removed in a future major version.
-  **Migration**: Replace with `RunMetricsBase` (Pydantic model).
-  A runtime `DeprecationWarning` is now emitted on each instantiation.
-  Related: #787, follow-up from #728.
-```
-
-> **Note**: Do not use aspirational version numbers (e.g., ``v1.5.0``, ``v2.0.0``)
-> in the CHANGELOG. Use ``[Unreleased]`` per keepachangelog.com convention and
-> phrase timelines as "a future major version". The ``check-package-version-consistency``
-> pre-commit hook will reject version references higher than the canonical version.
+Document the deprecation in the PR body so it surfaces in the auto-generated release notes via `gh release create --generate-notes`. Phrase timelines as "a future major version" rather than naming aspirational version numbers (the `check-package-version-consistency` hook will reject `v1.5.0`/`v2.0.0`-style references higher than canonical).
 
 ### 7. Add non-blocking CI tracking step
 
@@ -280,6 +265,5 @@ When deprecating `OldClass` → `NewClass`:
 - [ ] ALL instantiation sites in tests wrapped with `pytest.warns`
 - [ ] `TestNewClass` added (construction, immutability, `model_dump`, equality)
 - [ ] `TestOldClassBackwardCompatibility` added (still works, field parity, warning emitted)
-- [ ] `CHANGELOG.md` updated under `[Unreleased] > ### Deprecated`
 - [ ] CI grep step added (non-blocking `::warning::` only)
 - [ ] Module docstring updated with new hierarchy note
