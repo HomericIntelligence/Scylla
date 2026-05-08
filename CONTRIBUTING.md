@@ -212,8 +212,7 @@ A CI check (`scripts/check_version_consistency.py`) verifies all three agree on 
 
 1. Update the version string in all three files listed above.
 2. Run `pixi install` to regenerate `pixi.lock` (the lock encodes the package SHA).
-3. Add a new section to `CHANGELOG.md` following [Keep a Changelog](https://keepachangelog.com/) format.
-4. Commit all changes (including `pixi.lock`).
+3. Commit all changes (including `pixi.lock`).
 
 ### Creating a Release
 
@@ -228,12 +227,6 @@ git push origin v<VERSION>
 
 The `.github/workflows/release.yml` workflow automatically creates a GitHub release
 with auto-generated release notes from conventional commits.
-
-### CHANGELOG Maintenance
-
-- Add entries under `## [Unreleased]` as you work.
-- When releasing, rename `[Unreleased]` to `[<version>] - <date>` and add a fresh `[Unreleased]` section.
-- Use Keep a Changelog categories: Added, Changed, Deprecated, Removed, Fixed, Security.
 
 ## Code Quality Standards
 

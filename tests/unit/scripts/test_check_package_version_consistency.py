@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 
 from scripts.check_package_version_consistency import (
-    check_changelog,
     check_init_version,
     check_package_version_consistency,
     check_pixi_version,
@@ -50,13 +49,6 @@ def write_init(directory: Path, version: str = "0.1.0") -> Path:
     scylla_dir.mkdir(parents=True, exist_ok=True)
     path = scylla_dir / "__init__.py"
     path.write_text(f'__version__ = "{version}"\n')
-    return path
-
-
-def write_changelog(directory: Path, content: str) -> Path:
-    """Write a CHANGELOG.md with the given content."""
-    path = directory / "CHANGELOG.md"
-    path.write_text(content)
     return path
 
 
@@ -324,47 +316,6 @@ class TestFindAspirationalVersions:
 # ---------------------------------------------------------------------------
 
 
-class TestCheckChangelog:
-    """Tests for check_changelog()."""
-
-    def test_no_changelog_passes(self, tmp_path: Path) -> None:
-        """Should pass when CHANGELOG.md does not exist."""
-        assert check_changelog(tmp_path, "0.1.0") == []
-
-    def test_clean_changelog_passes(self, tmp_path: Path) -> None:
-        """Should pass when CHANGELOG.md only references canonical or lower versions."""
-        write_changelog(
-            tmp_path,
-            "# Changelog\n\n## [0.1.0] - 2026-03-25\n\n### Added\n\n- Feature X\n",
-        )
-        assert check_changelog(tmp_path, "0.1.0") == []
-
-    def test_aspirational_version_detected(self, tmp_path: Path) -> None:
-        """Should detect aspirational version references in CHANGELOG.md."""
-        write_changelog(
-            tmp_path,
-            "# Changelog\n\n## [Unreleased]\n\n"
-            "### Deprecated\n\n- Deprecated as of v1.5.0, removed in v2.0.0\n",
-        )
-        errors = check_changelog(tmp_path, "0.1.0")
-        assert len(errors) == 2
-        assert any("v1.5.0" in e for e in errors)
-        assert any("v2.0.0" in e for e in errors)
-
-    def test_migration_timeline_table_detected(self, tmp_path: Path) -> None:
-        """Should detect aspirational versions in Migration Timeline tables."""
-        write_changelog(
-            tmp_path,
-            "## Migration Timeline\n\n"
-            "| Version | Action |\n"
-            "|---------|--------|\n"
-            "| v1.5.0  | Deprecated |\n"
-            "| v2.0.0  | Removed |\n",
-        )
-        errors = check_changelog(tmp_path, "0.1.0")
-        assert len(errors) == 2
-
-
 # ---------------------------------------------------------------------------
 # TestCheckSkillFiles
 # ---------------------------------------------------------------------------
@@ -450,9 +401,8 @@ class TestCheckPackageVersionConsistency:
     """Integration tests for check_package_version_consistency()."""
 
     def test_all_consistent_returns_zero(self, tmp_path: Path) -> None:
-        """Should return 0 when all versions match and no aspirational refs."""
+        """Should return 0 when all versions match."""
         setup_minimal_repo(tmp_path)
-        write_changelog(tmp_path, "# Changelog\n\n## [0.1.0]\n\n- Initial\n")
         assert check_package_version_consistency(tmp_path) == 0
 
     def test_pixi_mismatch_returns_one(self, tmp_path: Path) -> None:
@@ -463,12 +413,6 @@ class TestCheckPackageVersionConsistency:
     def test_init_mismatch_returns_one(self, tmp_path: Path) -> None:
         """Should return 1 when __init__.py version differs."""
         setup_minimal_repo(tmp_path, init_version="0.2.0")
-        assert check_package_version_consistency(tmp_path) == 1
-
-    def test_changelog_aspirational_returns_one(self, tmp_path: Path) -> None:
-        """Should return 1 when CHANGELOG.md has aspirational versions."""
-        setup_minimal_repo(tmp_path)
-        write_changelog(tmp_path, "Deprecated in v1.5.0, removed in v2.0.0\n")
         assert check_package_version_consistency(tmp_path) == 1
 
     def test_skill_files_not_scanned_by_default(self, tmp_path: Path) -> None:

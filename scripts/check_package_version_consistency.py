@@ -7,11 +7,9 @@ validates that every other version declaration in the repository matches.
 Checks (always run):
 1. ``pixi.toml`` ``[workspace].version`` matches canonical version.
 2. ``src/scylla/__init__.py`` ``__version__`` matches canonical version.
-3. ``CHANGELOG.md`` does not reference version numbers higher than the
-   canonical version (outside ``[Unreleased]`` sections).
 
 Check (opt-in via ``--scan-skills``):
-4. Markdown files under ``.claude-plugin/skills/`` and ``.claude/`` do not
+3. Markdown files under ``.claude-plugin/skills/`` and ``.claude/`` do not
    reference version numbers higher than the canonical version.
 
 Usage:
@@ -183,7 +181,7 @@ def find_aspirational_versions(
     Args:
         file_path: Path to the file to scan.
         canonical_tuple: The canonical version as a tuple of ints for comparison.
-        label: Human-readable label for error messages (e.g. ``"CHANGELOG.md"``).
+        label: Human-readable label for error messages (e.g. ``"SKILL.md"``).
 
     Returns:
         List of error strings for each aspirational version found.
@@ -216,25 +214,6 @@ def find_aspirational_versions(
                 )
 
     return errors
-
-
-def check_changelog(repo_root: Path, canonical: str) -> list[str]:
-    """Check ``CHANGELOG.md`` for version references higher than canonical.
-
-    Args:
-        repo_root: Repository root directory.
-        canonical: The canonical version string from ``pyproject.toml``.
-
-    Returns:
-        List of error strings (empty if the check passes).
-
-    """
-    changelog_path = repo_root / "CHANGELOG.md"
-    if not changelog_path.is_file():
-        return []  # No CHANGELOG is fine — nothing to validate
-
-    canonical_tuple = _parse_version_tuple(canonical)
-    return find_aspirational_versions(changelog_path, canonical_tuple, "CHANGELOG.md")
 
 
 def check_skill_files(repo_root: Path, canonical: str) -> list[str]:
@@ -313,14 +292,7 @@ def check_package_version_consistency(
     elif verbose:
         print(f"PASS: src/scylla/__init__.py __version__ matches ({canonical})")
 
-    # Check 3: CHANGELOG.md
-    changelog_errors = check_changelog(repo_root, canonical)
-    if changelog_errors:
-        all_errors.extend(changelog_errors)
-    elif verbose:
-        print("PASS: CHANGELOG.md has no aspirational version references")
-
-    # Check 4: Skill files (opt-in)
+    # Check 3: Skill files (opt-in)
     if scan_skills:
         skill_errors = check_skill_files(repo_root, canonical)
         if skill_errors:

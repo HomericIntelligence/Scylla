@@ -159,13 +159,6 @@ repos:
         language: system
         files: ^(CLAUDE\.md|README\.md|pyproject\.toml)$
         pass_filenames: false
-      - id: check-changelog-version
-        name: Check CHANGELOG Version Entry
-        description: Fails if CHANGELOG.md has no entry matching the version in pyproject.toml
-        entry: pixi run python scripts/check_changelog_version.py
-        language: system
-        files: ^(CHANGELOG\.md|pyproject\.toml)$
-        pass_filenames: false
       - id: validate-config-schemas
         name: Validate Config Files Against JSON Schemas
         description: >-
@@ -207,12 +200,12 @@ repos:
         name: Check Package Version Consistency
         description: >-
           Fails if pixi.toml or src/scylla/__init__.py version diverges from
-          pyproject.toml, or if CHANGELOG.md contains aspirational version
-          references. Use --scan-skills to also check skill template files.
+          pyproject.toml. Use --scan-skills to also check skill template files
+          for aspirational version references.
         entry: pixi run python scripts/check_package_version_consistency.py --scan-skills
         language: system
         files: >-
-          ^(pyproject\.toml|pixi\.toml|src/scylla/__init__\.py|CHANGELOG\.md|
+          ^(pyproject\.toml|pixi\.toml|src/scylla/__init__\.py|
           \.claude-plugin/skills/.*\.md|\.claude/.*\.md)$
         pass_filenames: false
 

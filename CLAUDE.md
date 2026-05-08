@@ -412,9 +412,7 @@ pre-commit run --all-files
 
 **--no-verify is ABSOLUTELY PROHIBITED**. No exceptions.
 
-**The `check-changelog-version` hook** verifies that `CHANGELOG.md` contains an entry matching the
-version in `pyproject.toml`. If this hook fails, add a release entry to `CHANGELOG.md` for the
-current version before committing.
+**No CHANGELOG.md.** Do not create, edit, or file issues against `CHANGELOG.md`. Release notes are generated from commits at release time via `gh release create --generate-notes`. Audit reports MUST NOT flag missing/stale changelog entries.
 
 **After any `pyproject.toml` or `pixi.toml` change**, regenerate the lock file before committing:
 
