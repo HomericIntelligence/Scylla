@@ -39,7 +39,7 @@ dev = [
     "pytest-cov>=7.1.0,<8",
     "pre-commit>=4.6.0,<5",
     "ruff>=0.1.0,<1",
-    "defusedxml>=0.7,<1",
+    "defusedxml>=0.7.1,<1",
 ]
 nats = [
     "nats-py>=2.14.0,<3",
