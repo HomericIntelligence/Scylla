@@ -5321,7 +5321,7 @@ packages:
 - pypi: ./
   name: scylla
   version: 0.1.0
-  sha256: 6341d85c00cc770498401ecafce658071f4c0ff04abbdf1fa0c28b7d799f43fd
+  sha256: fa417492edc18af2fb7e35b4252ff65a04df7da755825948db18904030ed6739
   requires_dist:
   - click>=8.0,<9
   - homericintelligence-hephaestus>=0.7.0,<1
@@ -5336,7 +5336,7 @@ packages:
   - defusedxml>=0.7,<1 ; extra == 'dev'
   - nats-py>=2.14.0,<3 ; extra == 'nats'
   - matplotlib>=3.10.9,<4 ; extra == 'analysis'
-  - numpy>=1.24,<3 ; extra == 'analysis'
+  - numpy>=2.2.6,<3 ; extra == 'analysis'
   - pandas>=2.3.3,<3 ; extra == 'analysis'
   - seaborn>=0.13.2,<1 ; extra == 'analysis'
   - scipy>=1.15.3,<2 ; extra == 'analysis'
