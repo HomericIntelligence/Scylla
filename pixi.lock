@@ -5321,7 +5321,7 @@ packages:
 - pypi: ./
   name: scylla
   version: 0.1.0
-  sha256: dcc4ed3bb8c353e44238d0d7dfd1c0412c35ca1ed5b385dd783d85d6ea6f45f1
+  sha256: f2ddbeadded913f2b9715c9767df360035bd2fd87ddbafc80bb03a11de72942c
   requires_dist:
   - click>=8.0,<9
   - homericintelligence-hephaestus>=0.7.0,<1
@@ -5340,7 +5340,7 @@ packages:
   - pandas>=2.3.3,<3 ; extra == 'analysis'
   - seaborn>=0.13.2,<1 ; extra == 'analysis'
   - scipy>=1.15.3,<2 ; extra == 'analysis'
-  - altair>=5.0,<7 ; extra == 'analysis'
+  - altair>=6.1.0,<7 ; extra == 'analysis'
   - vl-convert-python>=1.9.0.post1,<2 ; extra == 'analysis'
   - krippendorff>=0.8.2,<1 ; extra == 'analysis'
   requires_python: '>=3.10'
