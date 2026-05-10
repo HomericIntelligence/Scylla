@@ -27,7 +27,7 @@ format:
 
 # Run mypy type checker
 typecheck:
-    pixi run mypy scylla scripts tests
+    pixi run mypy src/scylla scripts tests
 
 # Build CI container image
 ci-build:

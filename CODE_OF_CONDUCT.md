@@ -47,11 +47,14 @@ online or offline event.
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders
-responsible for enforcement by reporting issues via GitHub repository Issues. All complaints will be reviewed
-and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported privately to the
+community leaders responsible for enforcement by emailing [research@villmow.us](mailto:research@villmow.us)
+with subject line `[CONDUCT] ProjectScylla - Brief description`. Do **not** use public GitHub Issues for
+conduct reports — they are world-readable and contradict the privacy obligation below. All complaints
+will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the reporter of any incident.
+See [`MAINTAINERS.md`](MAINTAINERS.md) for the current list of leaders responsible for enforcement.
 
 ## Enforcement Guidelines
 
