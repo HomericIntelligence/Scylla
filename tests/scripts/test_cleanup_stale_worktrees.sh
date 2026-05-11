@@ -53,7 +53,10 @@ assert_output_contains() {
     local desc="$1" expected="$2"
     shift 2
     local output
-    output=$("$@" 2>&1) || true
+    local rc=0
+    # Capture output regardless of command exit code; we only assert on stdout/stderr content.
+    output=$("$@" 2>&1) || rc=$?
+    : "${rc:=0}"  # rc intentionally inspected only to suppress set -e
     if [[ "$output" == *"$expected"* ]]; then
         pass "$desc"
     else
@@ -69,7 +72,10 @@ assert_output_not_contains() {
     local desc="$1" unexpected="$2"
     shift 2
     local output
-    output=$("$@" 2>&1) || true
+    local rc=0
+    # Capture output regardless of command exit code; we only assert on stdout/stderr content.
+    output=$("$@" 2>&1) || rc=$?
+    : "${rc:=0}"  # rc intentionally inspected only to suppress set -e
     if [[ "$output" != *"$unexpected"* ]]; then
         pass "$desc"
     else
@@ -136,7 +142,7 @@ run_test "--help exits with 0" 0 "$SCRIPT" --help
 
 # 2. Unknown option exits with non-zero
 echo "2. Unknown option"
-run_test "Unknown option exits non-zero" 1 "$SCRIPT" --unknown-flag 2>/dev/null || true
+run_test "Unknown option exits non-zero" 1 "$SCRIPT" --unknown-flag
 
 # 3. No stale worktrees → clean exit
 echo "3. No stale worktrees"
@@ -157,7 +163,10 @@ REPO=$(setup_repo)
 WT=$(add_worktree "$REPO" "42-merged-feature" "merged")
 (
     cd "$REPO"
-    output=$("$SCRIPT" --force --log-file "${TMPDIR_BASE}/test4.log" 2>&1) || true
+    # Capture combined stdout/stderr; the test inspects content, not exit code.
+    rc=0
+    output="$("$SCRIPT" --force --log-file "${TMPDIR_BASE}/test4.log" 2>&1)" || rc=$?
+    : "${rc:=0}"  # rc intentionally inspected only to suppress set -e
     if [[ "$output" == *"Removed worktree"* ]] || [[ "$output" == *"42-merged-feature"* ]]; then
         pass "Merged worktree detected and processed"
     else
@@ -173,7 +182,10 @@ REPO=$(setup_repo)
 WT=$(add_worktree "$REPO" "99-dry-run-feature" "merged")
 (
     cd "$REPO"
-    "$SCRIPT" --dry-run --log-file "${TMPDIR_BASE}/test5.log" 2>&1 || true
+    # Side-effect test: we only care whether the worktree dir survives, not the exit code.
+    rc=0
+    "$SCRIPT" --dry-run --log-file "${TMPDIR_BASE}/test5.log" >/dev/null 2>&1 || rc=$?
+    : "${rc:=0}"  # rc intentionally inspected only to suppress set -e
     if [[ -d "$WT" ]]; then
         pass "Dry-run: worktree directory still exists"
     else
@@ -201,7 +213,9 @@ WT=$(add_worktree "$REPO" "77-dirty" "merged")
 echo "dirty" > "${WT}/dirty.txt"
 (
     cd "$REPO"
-    output=$("$SCRIPT" --force --log-file "${TMPDIR_BASE}/test7.log" 2>&1) || true
+    rc=0
+    output="$("$SCRIPT" --force --log-file "${TMPDIR_BASE}/test7.log" 2>&1)" || rc=$?
+    : "${rc:=0}"  # rc intentionally inspected only to suppress set -e
     if [[ "$output" == *"uncommitted"* ]] || [[ "$output" == *"SKIP"* ]] || [[ -d "$WT" ]]; then
         pass "Dirty worktree was skipped"
     else
@@ -216,8 +230,10 @@ add_worktree "$REPO" "33-log-test" "merged" > /dev/null
 LOG="${TMPDIR_BASE}/test8.log"
 (
     cd "$REPO"
-    "$SCRIPT" --force --log-file "$LOG" 2>&1 || true
-    # Log created if something was processed
+    # Side-effect test: assertion is on $LOG existence, not the script's exit code.
+    rc=0
+    "$SCRIPT" --force --log-file "$LOG" >/dev/null 2>&1 || rc=$?
+    : "${rc:=0}"  # rc intentionally inspected only to suppress set -e
     if [[ -f "$LOG" ]]; then
         pass "Log file created when action taken"
     else
@@ -231,7 +247,10 @@ echo "9. Main worktree not removed"
 REPO=$(setup_repo)
 (
     cd "$REPO"
-    "$SCRIPT" --force --log-file "${TMPDIR_BASE}/test9.log" 2>&1 || true
+    # Side-effect test: the main worktree must NOT be removed; we ignore the script's exit code.
+    rc=0
+    "$SCRIPT" --force --log-file "${TMPDIR_BASE}/test9.log" >/dev/null 2>&1 || rc=$?
+    : "${rc:=0}"  # rc intentionally inspected only to suppress set -e
     if [[ -d "$REPO" ]]; then
         pass "Main worktree directory still exists"
     else

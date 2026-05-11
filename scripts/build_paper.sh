@@ -22,7 +22,9 @@ command -v bibtex >/dev/null 2>&1 || { error "bibtex not found"; exit 1; }
 success "LaTeX tools available"
 
 info "Setting up build environment..."
-rm -rf "$WORK_DIR" 2>/dev/null || true
+if [ -d "$WORK_DIR" ]; then
+    rm -rf "$WORK_DIR"
+fi
 mkdir -p "$WORK_DIR"
 
 info "Copying source files..."
@@ -40,7 +42,12 @@ fi
 
 info "Building PDF..."
 pdflatex -interaction=nonstopmode main.tex > /dev/null 2>&1
-bibtex main > /dev/null 2>&1 || true
+# bibtex returns non-zero when there are no .aux entries or no citations were
+# emitted by pdflatex on the first pass; that's expected and non-fatal here.
+# Surface unexpected bibtex failures via the log so silent breakage stops happening.
+if ! bibtex main > /tmp/bibtex.log 2>&1; then
+    echo "warn: bibtex returned non-zero (often expected for citation-free runs); see /tmp/bibtex.log" >&2
+fi
 pdflatex -interaction=nonstopmode main.tex > /dev/null 2>&1
 pdflatex -interaction=nonstopmode main.tex
 

@@ -284,8 +284,12 @@ run_agent() {
         log_info "Agent execution completed with exit code: ${exit_code}"
     fi
 
-    # Make output files world-writable so host can overwrite them
-    chmod 666 /output/result.json /output/stdout.log /output/stderr.log 2>/dev/null || true
+    # Make output files world-writable so host can overwrite them.
+    # Best-effort: some files may not exist depending on execution path; log unexpected
+    # failures (other than missing files) to stderr rather than aborting the agent.
+    if ! chmod 666 /output/result.json /output/stdout.log /output/stderr.log 2>/dev/null; then
+        echo "warn: chmod on /output/{result.json,stdout.log,stderr.log} encountered errors (idempotent)" >&2
+    fi
 
     exit ${exit_code}
 }

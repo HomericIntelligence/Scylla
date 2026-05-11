@@ -74,16 +74,17 @@ jobs:
 
       - name: Check npm audit (non-blocking)
         id: npm_audit
-        continue-on-error: true
         run: |
           # Run npm audit inside the built container to check for high/critical vulnerabilities.
-          # This is non-blocking (continue-on-error: true) — findings are reported as warnings.
+          # Non-blocking: findings are reported to the step summary as warnings, the
+          # step itself always succeeds because the script captures and inspects the
+          # audit exit code instead of letting it propagate.
           AUDIT_OUTPUT=$(docker run --rm scylla-experiment:trivy-scan \
             npm audit --audit-level=high 2>&1) || AUDIT_EXIT=$?
           AUDIT_EXIT=${AUDIT_EXIT:-0}
 
           if [ "$AUDIT_EXIT" -ne 0 ]; then
-            VULN_COUNT=$(echo "$AUDIT_OUTPUT" | grep -c 'high\|critical' || true)
+            VULN_COUNT=$(printf '%s\n' "$AUDIT_OUTPUT" | awk '/high|critical/{n++} END{print n+0}')
             echo "::warning file=docker/Dockerfile::npm audit found ${VULN_COUNT} high/critical advisory line(s) in scylla-experiment image"
             {
               echo "## npm audit (high/critical)"
