@@ -28,21 +28,44 @@ def test_npm_audit_uses_high_level() -> None:
 
 
 def test_npm_audit_is_non_blocking() -> None:
-    """Npm audit step must use continue-on-error: true."""
+    """Npm audit step must be non-blocking — the step never fails the workflow.
+
+    Historically this was achieved with ``continue-on-error: true`` on the
+    step itself. That approach silently swallowed *any* failure in the step
+    (not just an npm-audit non-zero exit), so it was replaced by capturing
+    the audit command's exit code in-script:
+
+        AUDIT_OUTPUT=$(docker run ... npm audit ...) || AUDIT_EXIT=$?
+        AUDIT_EXIT=${AUDIT_EXIT:-0}
+
+    Either mechanism keeps PRs unblocked, so accept whichever is present.
+    """
     content = _DOCKER_TEST_WORKFLOW.read_text()
     lines = content.splitlines()
+
     in_audit_step = False
-    found_continue_on_error = False
+    step_body: list[str] = []
     for line in lines:
         if "npm audit" in line and "name:" in line.lower():
             in_audit_step = True
-        elif in_audit_step and "continue-on-error: true" in line:
-            found_continue_on_error = True
+            continue
+        if in_audit_step and line.strip().startswith("- name:"):
             break
-        elif in_audit_step and line.strip().startswith("- name:"):
-            break
-    assert found_continue_on_error, (
-        "npm audit step must have continue-on-error: true to avoid blocking PRs"
+        if in_audit_step:
+            step_body.append(line)
+
+    body = "\n".join(step_body)
+
+    has_continue_on_error = "continue-on-error: true" in body
+    # In-script capture pattern: "|| AUDIT_EXIT=$?" followed by a default
+    # assignment that swallows the exit code so the step itself succeeds.
+    has_inline_capture = "|| AUDIT_EXIT=$?" in body and "AUDIT_EXIT:-0" in body
+
+    assert has_continue_on_error or has_inline_capture, (
+        "npm audit step must be non-blocking: either set "
+        "'continue-on-error: true' on the step or capture the audit exit "
+        "code in-script (|| AUDIT_EXIT=$? + AUDIT_EXIT=${AUDIT_EXIT:-0}) "
+        "so the step itself never fails."
     )
 
 
