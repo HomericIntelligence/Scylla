@@ -13,17 +13,24 @@ State flow for an experiment (6 sequential states):
     -> REPORTS_GENERATED  (generate experiment reports)
   Terminal: COMPLETE | INTERRUPTED | FAILED
 
+Implementation note: the transition table, hook plumbing, and
+advance-to-completion driver live in :mod:`scylla.core.state_machine` as a
+generic ``StateMachine[TState]``. This module composes the generic with the
+experiment-specific state enum, terminal set, and checkpoint persistence;
+the public API (``ExperimentStateMachine``, ``EXPERIMENT_TRANSITION_REGISTRY``,
+``get_next_experiment_transition``, ``is_experiment_terminal_state``,
+``validate_experiment_transition``) is unchanged.
 """
 
 from __future__ import annotations
 
 import logging
-import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scylla.core.state_machine import StateMachine, Transition
 from scylla.e2e.models import ExperimentState
 
 if TYPE_CHECKING:
@@ -49,50 +56,40 @@ _EXPERIMENT_TERMINAL_STATES: frozenset[ExperimentState] = frozenset(
 )
 
 
-@dataclass
-class ExperimentTransition:
-    """Describes a single state transition in the experiment state machine.
-
-    Attributes:
-        from_state: State before this transition
-        to_state: State after this transition completes successfully
-        description: Human-readable description for logging
-
-    """
-
-    from_state: ExperimentState
-    to_state: ExperimentState
-    description: str
+# Backwards-compatible alias: pre-port code used ``ExperimentTransition`` as a
+# dataclass. The generic ``Transition[ExperimentState]`` is a drop-in replacement
+# (same field names and types). Keep the alias to avoid breaking importers.
+ExperimentTransition = Transition[ExperimentState]
 
 
 # Registry of all valid experiment transitions
-EXPERIMENT_TRANSITION_REGISTRY: list[ExperimentTransition] = [
-    ExperimentTransition(
+EXPERIMENT_TRANSITION_REGISTRY: list[Transition[ExperimentState]] = [
+    Transition(
         from_state=ExperimentState.INITIALIZING,
         to_state=ExperimentState.DIR_CREATED,
         description="Create experiment directory tree",
     ),
-    ExperimentTransition(
+    Transition(
         from_state=ExperimentState.DIR_CREATED,
         to_state=ExperimentState.REPO_CLONED,
         description="Clone/setup base repository",
     ),
-    ExperimentTransition(
+    Transition(
         from_state=ExperimentState.REPO_CLONED,
         to_state=ExperimentState.TIERS_RUNNING,
         description="Begin tier group execution",
     ),
-    ExperimentTransition(
+    Transition(
         from_state=ExperimentState.TIERS_RUNNING,
         to_state=ExperimentState.TIERS_COMPLETE,
         description="Execute all tier groups",
     ),
-    ExperimentTransition(
+    Transition(
         from_state=ExperimentState.TIERS_COMPLETE,
         to_state=ExperimentState.REPORTS_GENERATED,
         description="Generate experiment reports",
     ),
-    ExperimentTransition(
+    Transition(
         from_state=ExperimentState.REPORTS_GENERATED,
         to_state=ExperimentState.COMPLETE,
         description="Mark experiment complete",
@@ -100,21 +97,21 @@ EXPERIMENT_TRANSITION_REGISTRY: list[ExperimentTransition] = [
 ]
 
 # Build lookup: from_state -> transition
-_EXPERIMENT_TRANSITION_BY_FROM: dict[ExperimentState, ExperimentTransition] = {
+_EXPERIMENT_TRANSITION_BY_FROM: dict[ExperimentState, Transition[ExperimentState]] = {
     t.from_state: t for t in EXPERIMENT_TRANSITION_REGISTRY
 }
 
 
 def get_next_experiment_transition(
     current_state: ExperimentState,
-) -> ExperimentTransition | None:
+) -> Transition[ExperimentState] | None:
     """Get the next transition from the current experiment state.
 
     Args:
         current_state: The current ExperimentState
 
     Returns:
-        ExperimentTransition to execute next, or None if in a terminal/complete state.
+        Transition to execute next, or None if in a terminal/complete state.
 
     """
     return _EXPERIMENT_TRANSITION_BY_FROM.get(current_state)
@@ -164,6 +161,32 @@ class ExperimentStateMachine:
 
     checkpoint: E2ECheckpoint
     checkpoint_path: Path
+    _sm: StateMachine[ExperimentState] = field(init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        """Wire the generic StateMachine with experiment-specific config."""
+        self._sm = StateMachine[ExperimentState](
+            transitions=EXPERIMENT_TRANSITION_REGISTRY,
+            terminal_states=_EXPERIMENT_TERMINAL_STATES,
+            get_state=self.get_state,
+            apply_state=self._apply_state,
+            persistence_hook=self._persist,
+            label="experiment",
+        )
+
+    # -- generic-state-machine adapters --------------------------------------
+
+    def _apply_state(self, new_state: ExperimentState) -> None:
+        """Write the new state into the in-memory checkpoint."""
+        self.checkpoint.experiment_state = new_state.value
+
+    def _persist(self, _new_state: ExperimentState) -> None:
+        """Atomically save the checkpoint to disk after a transition."""
+        from scylla.e2e.checkpoint import save_checkpoint
+
+        save_checkpoint(self.checkpoint, self.checkpoint_path)
+
+    # -- public API ----------------------------------------------------------
 
     def get_state(self) -> ExperimentState:
         """Get the current ExperimentState.
@@ -213,39 +236,7 @@ class ExperimentStateMachine:
             ValueError: If no transition is defined for the current state
 
         """
-        from scylla.e2e.checkpoint import save_checkpoint
-
-        current = self.get_state()
-
-        if is_experiment_terminal_state(current):
-            raise RuntimeError(f"Cannot advance experiment from terminal state {current.value}")
-
-        transition = get_next_experiment_transition(current)
-        if transition is None:
-            raise ValueError(f"No transition defined from experiment state {current.value}")
-
-        logger.debug(
-            f"[experiment] {current.value} -> {transition.to_state.value}: {transition.description}"
-        )
-
-        # Execute the action if provided
-        action = actions.get(current)
-        if action is not None:
-            _t0 = time.monotonic()
-            action()
-            _elapsed = time.monotonic() - _t0
-            logger.info(
-                f"[experiment] {current.value} -> {transition.to_state.value}: "
-                f"{transition.description} ({_elapsed:.1f}s)"
-            )
-
-        # Update state in checkpoint
-        self.checkpoint.experiment_state = transition.to_state.value
-
-        # Save checkpoint atomically
-        save_checkpoint(self.checkpoint, self.checkpoint_path)
-
-        return transition.to_state
+        return self._sm.advance(actions)
 
     def advance_to_completion(
         self,
@@ -254,7 +245,9 @@ class ExperimentStateMachine:
     ) -> ExperimentState:
         """Advance the experiment through all states until COMPLETE is reached.
 
-        On exception, marks experiment as FAILED in the checkpoint.
+        On exception, marks experiment as FAILED in the checkpoint. RateLimitError
+        and ShutdownInterruptedError mark the experiment as INTERRUPTED instead
+        (resumable, not terminal failure).
 
         If until_state is specified, the experiment stops cleanly once that state
         is reached (inclusive): the action that transitions INTO until_state IS
@@ -270,28 +263,15 @@ class ExperimentStateMachine:
             Final ExperimentState (COMPLETE, FAILED, INTERRUPTED, or until_state)
 
         """
-        from scylla.e2e.checkpoint import save_checkpoint
+        from scylla.e2e.rate_limit import RateLimitError
+        from scylla.e2e.shutdown import ShutdownInterruptedError
 
-        try:
-            while not self.is_complete():
-                new_state = self.advance(actions)
-                if until_state is not None and new_state == until_state:
-                    logger.info(
-                        f"[experiment] Reached --until-experiment target state: {until_state.value}"
-                    )
-                    break
-        except Exception as e:
-            from scylla.e2e.rate_limit import RateLimitError
-            from scylla.e2e.shutdown import ShutdownInterruptedError
-
-            if isinstance(e, (RateLimitError, ShutdownInterruptedError)):
-                logger.warning(f"Experiment interrupted in state {self.get_state().value}: {e}")
-                self.checkpoint.experiment_state = ExperimentState.INTERRUPTED.value
-            else:
-                logger.error(f"Experiment failed in state {self.get_state().value}: {e}")
-                self.checkpoint.experiment_state = ExperimentState.FAILED.value
-
-            save_checkpoint(self.checkpoint, self.checkpoint_path)
-            raise
-
-        return self.get_state()
+        return self._sm.advance_to_completion(
+            actions,
+            until_state=until_state,
+            error_state_map=[
+                (RateLimitError, ExperimentState.INTERRUPTED),
+                (ShutdownInterruptedError, ExperimentState.INTERRUPTED),
+            ],
+            failure_state=ExperimentState.FAILED,
+        )
