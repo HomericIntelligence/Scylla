@@ -1134,7 +1134,13 @@ class TestStageExecuteAgentStdinDevNull:
         """
         import inspect
 
-        source = inspect.getsource(stage_execute_agent)
+        # stage_execute_agent is a thin tracing/metrics wrapper; the Popen call
+        # lives in _stage_execute_agent_body. Inspect both to guard against drift.
+        from scylla.e2e.stages import _stage_execute_agent_body
+
+        source = inspect.getsource(stage_execute_agent) + inspect.getsource(
+            _stage_execute_agent_body
+        )
         assert "stdin=subprocess.DEVNULL" in source, (
             "stage_execute_agent must use stdin=subprocess.DEVNULL in Popen "
             "to prevent TTY sharing and signal delivery issues"

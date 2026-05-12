@@ -807,6 +807,9 @@ class E2ERunner:
             TierResult with all sub-test results.
 
         """
+        import time as _time
+
+        _tier_start = _time.monotonic()
         with _tracer.start_as_current_span(
             "scylla.tier",
             attributes={
@@ -819,6 +822,18 @@ class E2ERunner:
             except Exception as e:
                 _tier_span.record_exception(e)
                 raise
+            finally:
+                try:
+                    self._emitter.emit_gauge(
+                        "scylla_tier_duration_seconds",
+                        float(_time.monotonic() - _tier_start),
+                        labels={
+                            "tier": tier_id.value,
+                            "experiment": self.config.experiment_id,
+                        },
+                    )
+                except Exception as _e:  # never break tier finalization
+                    logger.debug(f"Tier duration emit failed (non-fatal): {_e}")
 
     def _run_tier_body(
         self,
