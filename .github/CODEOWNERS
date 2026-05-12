@@ -40,34 +40,33 @@
 /docs/ @HomericIntelligence/projectscylla-maintainers
 
 # Core Python modules - require maintainer review
-/scylla/core/ @HomericIntelligence/projectscylla-maintainers
-/scylla/config/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/core/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/config/ @HomericIntelligence/projectscylla-maintainers
 
 # Adapters - LLM integration layer
-/scylla/adapters/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/adapters/ @HomericIntelligence/projectscylla-maintainers
 
 # Execution engine
-/scylla/executor/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/executor/ @HomericIntelligence/projectscylla-maintainers
 
 # E2E evaluation framework
-/scylla/e2e/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/e2e/ @HomericIntelligence/projectscylla-maintainers
 
 # LLM Judge system
-/scylla/judge/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/judge/ @HomericIntelligence/projectscylla-maintainers
 
 # Metrics calculation
-/scylla/metrics/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/metrics/ @HomericIntelligence/projectscylla-maintainers
 
 # Statistical analysis and reporting
-/scylla/analysis/ @HomericIntelligence/projectscylla-maintainers
-/scylla/reporting/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/analysis/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/reporting/ @HomericIntelligence/projectscylla-maintainers
 
 # CLI interface
-/scylla/cli/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/cli/ @HomericIntelligence/projectscylla-maintainers
 
-# Discovery and automation
-/scylla/discovery/ @HomericIntelligence/projectscylla-maintainers
-/scylla/automation/ @HomericIntelligence/projectscylla-maintainers
+# Discovery (automation/ package removed in PR #1914)
+/src/scylla/discovery/ @HomericIntelligence/projectscylla-maintainers
 
 # Tests - require review from code owner + test coverage verification
 /tests/ @HomericIntelligence/projectscylla-maintainers
