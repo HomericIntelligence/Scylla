@@ -508,7 +508,11 @@ _checkpoint_write_lock = threading.Lock()
 
 
 def save_checkpoint(checkpoint: E2ECheckpoint, path: Path) -> None:
-    """Save checkpoint to file with atomic write, serialized across threads.
+    """Save checkpoint to file with atomic write and rolling .bak backup.
+
+    Before overwriting, renames the existing checkpoint to ``<path>.bak`` so
+    that ``load_checkpoint`` can fall back to it if the new primary file is
+    ever corrupt on the next read.
 
     All worker threads share the same in-memory checkpoint object. This function
     serializes access so that mutations from one thread are not lost when another
@@ -538,6 +542,14 @@ def save_checkpoint(checkpoint: E2ECheckpoint, path: Path) -> None:
             with open(temp_path, "w") as f:
                 json.dump(data, f, indent=2)
 
+            # Rolling single-level backup: rename existing primary → .bak before
+            # promoting the new temp file.  Both operations are atomic renames on
+            # the same filesystem so the window where neither file exists is
+            # vanishingly small.
+            bak_path = path.with_suffix(".json.bak")
+            if path.exists():
+                path.rename(bak_path)
+
             # Atomic rename — each writer has a unique temp file (PID+TID)
             temp_path.replace(path)
 
@@ -545,28 +557,72 @@ def save_checkpoint(checkpoint: E2ECheckpoint, path: Path) -> None:
             raise CheckpointError(f"Failed to save checkpoint to {path}: {e}") from e
 
 
-def load_checkpoint(path: Path) -> E2ECheckpoint:
-    """Load checkpoint from file.
+def _load_checkpoint_from_path(path: Path) -> E2ECheckpoint:
+    """Parse and validate a single checkpoint file.
 
     Args:
-        path: Path to checkpoint file
+        path: Path to an existing checkpoint file
 
     Returns:
         Loaded E2ECheckpoint
 
     Raises:
-        CheckpointError: If load fails or file doesn't exist
+        CheckpointError: If the file cannot be read, parsed, or validated
 
     """
-    if not path.exists():
-        raise CheckpointError(f"Checkpoint file not found: {path}")
-
     try:
         with open(path) as f:
             data = json.load(f)
         return E2ECheckpoint.from_dict(data)
     except (OSError, json.JSONDecodeError) as e:
         raise CheckpointError(f"Failed to load checkpoint from {path}: {e}") from e
+
+
+def load_checkpoint(path: Path) -> E2ECheckpoint:
+    """Load checkpoint from file, falling back to .bak on parse/validation failure.
+
+    If the primary ``checkpoint.json`` cannot be read or fails JSON parsing or
+    Pydantic validation, the loader tries ``checkpoint.json.bak`` (written by
+    the most recent successful ``save_checkpoint`` call).  A structured warning
+    is emitted when the fallback is used so operators know to investigate.
+
+    Args:
+        path: Path to checkpoint file (primary)
+
+    Returns:
+        Loaded E2ECheckpoint (from primary or .bak)
+
+    Raises:
+        CheckpointError: If primary file doesn't exist AND no .bak is available,
+            or if both primary and .bak fail to load
+
+    """
+    if not path.exists():
+        raise CheckpointError(f"Checkpoint file not found: {path}")
+
+    try:
+        return _load_checkpoint_from_path(path)
+    except CheckpointError as primary_err:
+        bak_path = path.with_suffix(".json.bak")
+        if not bak_path.exists():
+            raise
+
+        logger.warning(
+            "Primary checkpoint failed to load; falling back to backup",
+            extra={
+                "checkpoint_path": str(path),
+                "backup_path": str(bak_path),
+                "primary_error": str(primary_err),
+                "fallback": True,
+            },
+        )
+        try:
+            return _load_checkpoint_from_path(bak_path)
+        except CheckpointError as bak_err:
+            raise CheckpointError(
+                f"Both primary checkpoint ({path}) and backup ({bak_path}) failed to load. "
+                f"Primary error: {primary_err}. Backup error: {bak_err}"
+            ) from bak_err
 
 
 def compute_config_hash(config: ExperimentConfig) -> str:

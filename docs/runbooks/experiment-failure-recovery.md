@@ -56,11 +56,13 @@ not a half-written file — it is one of:
   (extremely rare given the temp-file pattern);
 - a manual edit gone wrong.
 
-> **TODO(#1891):** the writer does **not** keep a rolling `.bak` of the prior
-> checkpoint. Until that lands, the only on-disk historical state is the
-> stray temp file (if any) and any external backups (e.g. snapshotted
-> filesystem, user-made copy). Consider adding a `.bak` rotation in
-> `save_checkpoint()`; track this separately from the runbook.
+> **Rolling backup (added in #1947):** `save_checkpoint()` now renames the
+> current `checkpoint.json` to `checkpoint.json.bak` before writing a new
+> primary.  `load_checkpoint()` automatically falls back to the `.bak` file
+> when the primary fails to parse or validate, logging a structured `WARNING`
+> with `fallback=True`.  In most corruption scenarios (e.g. a half-written
+> file, manual edit gone wrong) the `.bak` produced by the last successful
+> write can be used for recovery without manual intervention.
 
 ### Diagnosis commands
 
@@ -87,14 +89,31 @@ print(get_experiment_status(Path('$EXP_DIR')))
    cp -a "$CKPT" "$CKPT.corrupt.$(date +%s)"
    ```
 
-2. **If a recent atomic-write temp file exists**, validate and promote it:
+2. **Try the automatic `.bak` fallback first.** As of #1947, `load_checkpoint`
+   falls back to `checkpoint.json.bak` automatically when the primary file
+   fails to parse or validate. If `--resume` succeeds after the corruption
+   occurs, no manual intervention is needed. If `--resume` still fails,
+   inspect the backup manually:
+
+   ```bash
+   # Validate the backup
+   python -m json.tool "$CKPT.bak" >/dev/null
+
+   # If the backup is valid but the automatic fallback did not trigger,
+   # promote it manually:
+   cp -a "$CKPT" "$CKPT.corrupt.$(date +%s)"
+   cp "$CKPT.bak" "$CKPT"
+   ```
+
+3. **If a recent atomic-write temp file exists** and the backup is also
+   corrupt, validate and promote the temp file:
 
    ```bash
    TMP=$(ls -t "$EXP_DIR"/checkpoint.tmp.*.json 2>/dev/null | head -1)
    python -m json.tool "$TMP" >/dev/null && mv "$TMP" "$CKPT"
    ```
 
-3. **If you have no usable backup**, the safest minimal fix is to edit the
+4. **If you have no usable backup**, the safest minimal fix is to edit the
    JSON to fix the parse error (e.g. trailing comma, truncated object) and
    re-validate. The schema is enforced by `E2ECheckpoint.from_dict()` at
    `src/scylla/e2e/checkpoint.py:438-499`, which also handles version
@@ -102,7 +121,7 @@ print(get_experiment_status(Path('$EXP_DIR')))
    field, the loader will raise a Pydantic `ValidationError` —
    read the message and fix the offending field.
 
-4. **As a last resort**, run `scripts/manage_experiment.py repair` on the
+5. **As a last resort**, run `scripts/manage_experiment.py repair` on the
    checkpoint. This loader-level repair (`cmd_repair` at
    `scripts/manage_experiment.py:1263-...`) reconciles `completed_runs` and
    `run_states` with the on-disk `run_result.json` files in
@@ -114,7 +133,7 @@ print(get_experiment_status(Path('$EXP_DIR')))
    pixi run python scripts/manage_experiment.py repair "$CKPT"
    ```
 
-5. **Resume.** Once `python -m json.tool "$CKPT"` parses, run:
+6. **Resume.** Once `python -m json.tool "$CKPT"` parses, run:
 
    ```bash
    pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR"
@@ -346,7 +365,7 @@ documented levers, derived from the code, are:
    pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR"
    ```
 
-> **TODO(#1891):** there is no CLI flag like `--no-zombie-check` or
+> **Note:** there is no CLI flag like `--no-zombie-check` or
 > `--heartbeat-timeout`. If operators hit this regularly, file a follow-up
 > to expose `heartbeat_timeout_seconds` on the `run` subcommand.
 
