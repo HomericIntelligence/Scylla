@@ -5,6 +5,7 @@ Tests coverage for functions and exception handling not covered by test_resume.p
 
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from datetime import datetime, timezone
@@ -657,6 +658,100 @@ class TestLoadCheckpointErrors:
         with patch("scylla.e2e.checkpoint.open", side_effect=PermissionError("No access")):
             with pytest.raises(CheckpointError, match="Failed to load checkpoint"):
                 load_checkpoint(checkpoint_path)
+
+
+class TestLoadCheckpointBakFallback:
+    """Tests for load_checkpoint() .bak fallback on primary corruption."""
+
+    def _make_checkpoint(self, tmp_path: Path, experiment_id: str = "bak-test") -> E2ECheckpoint:
+        """Return a minimal valid checkpoint with the given experiment_id."""
+        return E2ECheckpoint(
+            experiment_id=experiment_id,
+            experiment_dir=str(tmp_path),
+            config_hash="abc",
+            completed_runs={},
+            started_at=datetime.now(timezone.utc).isoformat(),
+            last_updated_at=datetime.now(timezone.utc).isoformat(),
+            status="running",
+        )
+
+    def test_save_checkpoint_creates_bak_on_second_save(self, tmp_path: Path) -> None:
+        """Second save_checkpoint() call produces a .bak file."""
+        path = tmp_path / "checkpoint.json"
+        checkpoint = self._make_checkpoint(tmp_path)
+        save_checkpoint(checkpoint, path)
+        # No .bak yet after first save (nothing to back up)
+        bak_path = path.with_suffix(".json.bak")
+        # First save: may or may not create .bak depending on whether file existed
+        # Second save: must create .bak
+        save_checkpoint(checkpoint, path)
+        assert bak_path.exists(), ".bak must exist after second save"
+
+    def test_load_checkpoint_falls_back_to_bak_when_primary_corrupt(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """load_checkpoint returns .bak content and logs a warning when primary is corrupt."""
+        path = tmp_path / "checkpoint.json"
+        checkpoint = self._make_checkpoint(tmp_path, experiment_id="good-data")
+
+        # Write a good checkpoint (creates primary)
+        save_checkpoint(checkpoint, path)
+        # Write again so .bak is the good file
+        save_checkpoint(checkpoint, path)
+
+        # Corrupt the primary
+        path.write_text("{ this is not valid json }")
+
+        with caplog.at_level(logging.WARNING, logger="scylla.e2e.checkpoint"):
+            loaded = load_checkpoint(path)
+
+        assert loaded.experiment_id == "good-data"
+        # Structured warning must be present
+        assert any(
+            "fallback" in r.message.lower() or "backup" in r.message.lower()
+            for r in caplog.records
+            if r.levelno == logging.WARNING
+        ), f"Expected fallback warning, got: {[r.message for r in caplog.records]}"
+
+    def test_load_checkpoint_raises_when_both_primary_and_bak_corrupt(self, tmp_path: Path) -> None:
+        """load_checkpoint raises CheckpointError when both primary and .bak are corrupt."""
+        path = tmp_path / "checkpoint.json"
+        bak_path = path.with_suffix(".json.bak")
+
+        # Write corrupt primary and backup
+        path.write_text("{ bad primary json")
+        bak_path.write_text("{ bad bak json")
+
+        with pytest.raises(CheckpointError, match="Both primary checkpoint"):
+            load_checkpoint(path)
+
+    def test_load_checkpoint_does_not_use_bak_when_primary_valid(self, tmp_path: Path) -> None:
+        """load_checkpoint returns primary content when it is valid (bak is not consulted)."""
+        path = tmp_path / "checkpoint.json"
+        bak_path = path.with_suffix(".json.bak")
+
+        checkpoint_primary = self._make_checkpoint(tmp_path, experiment_id="primary-id")
+        save_checkpoint(checkpoint_primary, path)
+
+        # Write a deliberately different bak (simulates older snapshot)
+        checkpoint_old = self._make_checkpoint(tmp_path, experiment_id="old-bak-id")
+        import json
+
+        bak_path.write_text(json.dumps(checkpoint_old.model_dump(), indent=2))
+
+        loaded = load_checkpoint(path)
+        # Must come from primary
+        assert loaded.experiment_id == "primary-id"
+
+    def test_load_checkpoint_raises_when_no_bak_exists_and_primary_corrupt(
+        self, tmp_path: Path
+    ) -> None:
+        """load_checkpoint raises CheckpointError when primary is corrupt and no .bak exists."""
+        path = tmp_path / "checkpoint.json"
+        path.write_text("{ bad json")
+
+        with pytest.raises(CheckpointError, match="Failed to load checkpoint"):
+            load_checkpoint(path)
 
 
 class TestSetRunStateBackwardCompat:
