@@ -56,6 +56,18 @@ resilience:
     analysis: 120
     judge: 1200
 
+# Docker executor settings
+docker:
+  resource_limits:
+    # Memory cap per agent container — prevents a runaway agent from OOM-killing
+    # the host. Accepts Docker memory format (e.g. "8g", "4096m").
+    memory_limit: "8g"
+    # Fractional CPU cores available to each container.
+    cpu_limit: 2.0
+    # Maximum number of processes (PIDs) inside the container. Guards against
+    # fork-bomb style loops.
+    pids_limit: 512
+
 # Default model used when no --model flag is provided
 default_model: "claude-sonnet-4-6"
 

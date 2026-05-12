@@ -16,6 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from scylla.config.models import ResourceLimitsConfig
 from scylla.executor import (
     ContainerConfig,
     ContainerError,
@@ -237,6 +238,68 @@ class TestBuildRunCommand:
         # Command should be at the end after image
         img_idx = cmd.index("python:3.12-slim")
         assert cmd[img_idx + 1 :] == ["python", "-c", "print('hello')"]
+
+
+class TestResourceLimits:
+    """Tests that --memory, --cpus and --pids-limit are always passed."""
+
+    @patch("subprocess.run")
+    def test_default_resource_limits_present(self, mock_run: MagicMock) -> None:
+        """Default resource limits flags appear in every docker run command."""
+        mock_run.return_value = MagicMock(returncode=0)
+        executor = DockerExecutor()
+
+        config = ContainerConfig(image="python:3.12-slim")
+        cmd = executor._build_run_command(config)
+
+        assert "--memory" in cmd
+        assert "--cpus" in cmd
+        assert "--pids-limit" in cmd
+
+        mem_idx = cmd.index("--memory")
+        assert cmd[mem_idx + 1] == "8g"
+
+        cpu_idx = cmd.index("--cpus")
+        assert cmd[cpu_idx + 1] == "2.0"
+
+        pids_idx = cmd.index("--pids-limit")
+        assert cmd[pids_idx + 1] == "512"
+
+    @patch("subprocess.run")
+    def test_custom_resource_limits_propagated(self, mock_run: MagicMock) -> None:
+        """Custom ResourceLimitsConfig values are reflected in the command."""
+        mock_run.return_value = MagicMock(returncode=0)
+        executor = DockerExecutor()
+
+        limits = ResourceLimitsConfig(memory_limit="4g", cpu_limit=1.5, pids_limit=256)
+        config = ContainerConfig(image="python:3.12-slim", resource_limits=limits)
+        cmd = executor._build_run_command(config)
+
+        mem_idx = cmd.index("--memory")
+        assert cmd[mem_idx + 1] == "4g"
+
+        cpu_idx = cmd.index("--cpus")
+        assert cmd[cpu_idx + 1] == "1.5"
+
+        pids_idx = cmd.index("--pids-limit")
+        assert cmd[pids_idx + 1] == "256"
+
+    @patch("subprocess.run")
+    def test_resource_limits_present_in_detached_run(self, mock_run: MagicMock) -> None:
+        """Resource limits are included when running in detached mode."""
+        mock_run.side_effect = [
+            MagicMock(returncode=0),  # docker info
+            MagicMock(returncode=0, stdout="abc123\n", stderr=""),  # docker run -d
+        ]
+        executor = DockerExecutor()
+
+        config = ContainerConfig(image="python:3.12-slim")
+        executor.run_detached(config)
+
+        run_call_args = mock_run.call_args_list[1][0][0]
+        assert "--memory" in run_call_args
+        assert "--cpus" in run_call_args
+        assert "--pids-limit" in run_call_args
 
 
 class TestContainerRun:

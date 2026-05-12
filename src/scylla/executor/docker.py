@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scylla.config.models import ResourceLimitsConfig
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -62,6 +64,8 @@ class ContainerConfig:
         timeout_seconds: Maximum execution time in seconds.
         working_dir: Working directory inside container.
         network: Docker network mode (default: "none" for isolation).
+        resource_limits: Docker resource limits (memory, CPU, pids).
+            Defaults to the framework defaults (8g RAM, 2.0 CPUs, 512 pids).
 
     """
 
@@ -74,6 +78,7 @@ class ContainerConfig:
     timeout_seconds: int = 3600
     working_dir: str | None = None
     network: str = "none"
+    resource_limits: ResourceLimitsConfig = field(default_factory=ResourceLimitsConfig)
 
 
 @dataclass
@@ -211,6 +216,13 @@ class DockerExecutor:
 
         # Network isolation
         cmd.extend(["--network", config.network])
+
+        # Resource limits — always applied to prevent runaway containers from
+        # exhausting host RAM, CPU, or process-table entries.
+        limits = config.resource_limits
+        cmd.extend(["--memory", limits.memory_limit])
+        cmd.extend(["--cpus", str(limits.cpu_limit)])
+        cmd.extend(["--pids-limit", str(limits.pids_limit)])
 
         # Working directory
         if config.working_dir:

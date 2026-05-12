@@ -418,6 +418,34 @@ window 12:00–19:00 UTC on weekdays
 with HTTP 429 and the framework will rely on its retry/back-off path. With
 `--off-peak`, peak hours add idle time but reduce 429 pressure to ~zero.
 
+### 8.1a Docker resource limits (issue #1948)
+
+Every agent container launched by `DockerExecutor` now carries hard resource
+caps via three flags added in `src/scylla/executor/docker.py:_build_run_command`:
+
+| Docker flag | Default | Config key |
+|-------------|---------|-----------|
+| `--memory` | `8g` | `docker.resource_limits.memory_limit` |
+| `--cpus` | `2.0` | `docker.resource_limits.cpu_limit` |
+| `--pids-limit` | `512` | `docker.resource_limits.pids_limit` |
+
+Defaults live in `config/defaults.yaml` under the `docker.resource_limits`
+block and are modelled by `ResourceLimitsConfig`
+(`src/scylla/config/models.py`). They can be overridden per-tier by
+constructing a `ContainerConfig` with a custom `ResourceLimitsConfig`.
+
+**Sizing guidance:**
+
+- Set `memory_limit` to at most `RAM_host / P_a` so that `P_a` concurrent
+  containers cannot collectively exceed host RAM (see §6).
+- Set `cpu_limit` to at most `cpu_count / P_a` so CPU contention stays
+  bounded.
+- `pids_limit` of 512 is generous for most workloads; lower it to 256 on
+  hosts where the process table is under pressure.
+
+These limits are a *floor* safety net, not a substitute for correct
+`max_concurrent_agents` sizing as described in §6.
+
 ### 8.2 Disk-full failure mode
 
 If free disk drops below `CRITICAL_DISK_GB = 5`

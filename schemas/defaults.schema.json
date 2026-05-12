@@ -201,6 +201,38 @@
         }
       }
     },
+    "docker": {
+      "type": "object",
+      "description": "Docker executor settings",
+      "additionalProperties": false,
+      "properties": {
+        "resource_limits": {
+          "type": "object",
+          "description": "Resource limits applied to every agent container via docker run flags",
+          "additionalProperties": false,
+          "properties": {
+            "memory_limit": {
+              "type": "string",
+              "description": "Memory cap per container passed to --memory (Docker format, e.g. '8g', '4096m')",
+              "minLength": 1,
+              "examples": ["8g", "4096m"]
+            },
+            "cpu_limit": {
+              "type": "number",
+              "description": "Fractional CPU cores available per container, passed to --cpus",
+              "exclusiveMinimum": 0,
+              "examples": [2.0, 1.5]
+            },
+            "pids_limit": {
+              "type": "integer",
+              "description": "Maximum processes (PIDs) inside each container, passed to --pids-limit",
+              "minimum": 1,
+              "examples": [512, 256]
+            }
+          }
+        }
+      }
+    },
     "resilience": {
       "type": "object",
       "description": "Resilience settings for external service calls",
