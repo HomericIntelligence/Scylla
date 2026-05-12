@@ -1,5 +1,9 @@
 # Worktrees for parallel development
 /worktree/
+.claude/worktrees/
+
+# Transient agent prompt files (issue #1936)
+.claude-prompt-*.md
 
 # Build artifacts
 build/
