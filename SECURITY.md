@@ -44,6 +44,26 @@ The following are in scope for security reports:
 - Issues requiring physical access to the machine
 - Social engineering attacks
 
+## Data Sent to Third Parties
+
+When ProjectScylla runs evaluations it sends data to the **Anthropic API**:
+
+- **Prompts**: system prompts, task descriptions, and any CLAUDE.md content included in the run
+- **Repository content**: file snippets and code passed to the agent as context during test execution
+- **Agent outputs**: intermediate tool calls, reasoning traces, and final responses (used as judge inputs)
+
+No data is sent to third-party services other than the Anthropic API unless you explicitly configure
+additional MCP servers or tool integrations.
+
+Users are responsible for ensuring that repository content included in prompts complies with their
+organisation's data-handling policies before running evaluations against the Anthropic API.
+
+Refer to [Anthropic's usage policies](https://www.anthropic.com/legal/usage-policy) and
+[privacy policy](https://www.anthropic.com/legal/privacy) for details on how submitted data is handled.
+
+For guidance on what experiment outputs are stored locally and how long to retain them, see
+[docs/dev/data-policy.md](docs/dev/data-policy.md).
+
 ## Security Practices
 
 ProjectScylla follows these security practices:

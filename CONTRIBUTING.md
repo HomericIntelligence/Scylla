@@ -502,6 +502,8 @@ def calculate_metric(data: pd.DataFrame, threshold: float = 0.5) -> float:
 - **README.md**: Update if changing user-facing features
 - **CLAUDE.md**: Reference for AI agent development (don't modify without discussion)
 - **docs/**: Add design docs for major features
+- **docs/dev/data-policy.md**: Data retention and deletion policy for the `results/` directory
+  (what is stored, how long to keep it, and how to purge runs)
 
 ## Code Review Process
 

@@ -85,10 +85,54 @@ copyright notice and this permission notice appear in all copies.
 THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES.
 
 ================================================================================
+Python runtime dependencies (sdist/wheel and Docker image)
+================================================================================
+
+The following Python packages are installed as runtime dependencies when the
+ProjectScylla package is installed (via pip/pixi) or inside the Docker image.
+They are not modified or redistributed in source form, but are listed here
+for license-compliance transparency.
+
+--------------------------------------------------------------------------------
+click
+--------------------------------------------------------------------------------
+Version: 8.x
+License: BSD-3-Clause
+Source:  https://github.com/pallets/click
+Copyright (c) 2014 by the Pallets team.
+
+--------------------------------------------------------------------------------
+httpx
+--------------------------------------------------------------------------------
+Version: 0.28.x
+License: BSD-3-Clause
+Source:  https://github.com/encode/httpx
+Copyright (c) 2019, Tom Christie. All rights reserved.
+
+--------------------------------------------------------------------------------
+pydantic
+--------------------------------------------------------------------------------
+Version: 2.x
+License: MIT
+Source:  https://github.com/pydantic/pydantic
+Copyright (c) 2017 to present Pydantic Services Inc. and individual contributors.
+
+--------------------------------------------------------------------------------
+PyYAML
+--------------------------------------------------------------------------------
+Version: 6.x
+License: MIT
+Source:  https://github.com/yaml/pyyaml
+Copyright (c) 2017-2021 Ingy dot Net
+Copyright (c) 2006-2016 Kirill Simonov
+
+================================================================================
 Notes
 ================================================================================
 
 This NOTICE file is provided for transparency. ProjectScylla itself is BSD
-3-Clause licensed (see LICENSE). The above MIT/ISC packages are bundled only
+3-Clause licensed (see LICENSE). The npm packages listed above are bundled only
 within the published Docker image, not in the Python distribution, and are
 listed here to document attribution requirements for image distribution.
+The Python runtime dependencies listed above ship in both the sdist/wheel and
+the Docker image.
