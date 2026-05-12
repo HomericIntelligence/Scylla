@@ -337,6 +337,42 @@ class ResilienceConfig(BaseModel):
     timeouts: TimeoutsConfig = Field(default_factory=TimeoutsConfig)
 
 
+class ResourceLimitsConfig(BaseModel):
+    """Docker resource limits applied to every agent container.
+
+    Prevents a runaway agent (infinite loop, fork bomb, memory blowup) from
+    exhausting host resources and affecting concurrent experiments.
+
+    Maps to config/defaults.yaml docker.resource_limits: section.
+    Per-tier overrides are supported by nesting this block inside a tier's
+    executor settings when the tier config schema is extended.
+    """
+
+    memory_limit: str = Field(
+        default="8g",
+        description="Memory limit passed to --memory (Docker format, e.g. '8g', '4096m').",
+    )
+    cpu_limit: float = Field(
+        default=2.0,
+        ge=0.1,
+        description="CPU limit passed to --cpus (fractional cores, e.g. 2.0).",
+    )
+    pids_limit: int = Field(
+        default=512,
+        ge=1,
+        description="Process-ID limit passed to --pids-limit.",
+    )
+
+
+class DockerConfig(BaseModel):
+    """Docker executor configuration.
+
+    Maps to config/defaults.yaml docker: section.
+    """
+
+    resource_limits: ResourceLimitsConfig = Field(default_factory=ResourceLimitsConfig)
+
+
 class DefaultsConfig(BaseModel):
     """Global defaults configuration.
 
@@ -362,6 +398,7 @@ class DefaultsConfig(BaseModel):
     cleanup: CleanupConfig = Field(default_factory=CleanupConfig)
     nats: NATSConfig = Field(default_factory=NATSConfig)
     resilience: ResilienceConfig = Field(default_factory=ResilienceConfig)
+    docker: DockerConfig = Field(default_factory=DockerConfig)
 
 
 # -----------------------------------------------------------------------------
@@ -391,6 +428,7 @@ class ScyllaConfig(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     metrics: MetricsConfig = Field(default_factory=MetricsConfig)
     nats: NATSConfig = Field(default_factory=NATSConfig)
+    docker: DockerConfig = Field(default_factory=DockerConfig)
 
     # From model config (optional)
     model: ModelConfig | None = Field(default=None)
