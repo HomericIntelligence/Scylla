@@ -209,13 +209,13 @@ def _calculate_tier_metrics(
 
     """
     tier_names = {
-        "T0": "Vanilla",
-        "T1": "Prompted",
-        "T2": "Skills",
-        "T3": "Tooling",
-        "T4": "Delegation",
-        "T5": "Hierarchy",
-        "T6": "Hybrid",
+        "T0": "Prompts",
+        "T1": "Skills",
+        "T2": "Tooling",
+        "T3": "Delegation",
+        "T4": "Hierarchy",
+        "T5": "Hybrid",
+        "T6": "Super",
     }
 
     pass_rates = [r["grading"]["pass_rate"] for r in results]
@@ -545,13 +545,13 @@ def list_tiers() -> None:
 
     """
     tiers = [
-        ("T0", "Vanilla", "Base LLM with zero-shot prompting"),
-        ("T1", "Prompted", "System prompts and chain-of-thought"),
-        ("T2", "Skills", "Prompt-encoded domain expertise"),
-        ("T3", "Tooling", "External function calling with JSON schemas"),
-        ("T4", "Delegation", "Flat multi-agent systems"),
-        ("T5", "Hierarchy", "Nested orchestration with self-correction"),
-        ("T6", "Hybrid", "Optimal combinations of proven components"),
+        ("T0", "Prompts", "System prompt ablation (empty → full CLAUDE.md)"),
+        ("T1", "Skills", "Domain expertise via installed skills by category"),
+        ("T2", "Tooling", "External tools and MCP servers"),
+        ("T3", "Delegation", "Flat multi-agent with specialist agents"),
+        ("T4", "Hierarchy", "Nested orchestration with orchestrator agents"),
+        ("T5", "Hybrid", "Best combinations and permutations"),
+        ("T6", "Super", "Everything enabled at maximum capability"),
     ]
 
     click.echo("Evaluation tiers:\n")
