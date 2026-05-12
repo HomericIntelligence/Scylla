@@ -311,31 +311,50 @@ BAD: Updated grading.py (ambiguous - which file?)
 
 ### Skills and Knowledge Sharing
 
-All 82 skills have been migrated to **ProjectMnemosyne** using the flat `skills/<name>.md` format.
+Skills live in two places. Pick the right location based on **scope**, not convenience.
 
-When using `/retrospective` to capture session learnings, push directly to ProjectMnemosyne:
+**Local skills** (in this repo) — for ProjectScylla-specific knowledge:
 
-   ```bash
-   # Clone if needed
-   MNEMOSYNE_DIR="build/$$/ProjectMnemosyne"
-   if [ ! -d "$MNEMOSYNE_DIR" ]; then
-     mkdir -p "build/$$"
-     gh repo clone HomericIntelligence/ProjectMnemosyne "$MNEMOSYNE_DIR"
-   fi
+- Location: `.claude-plugin/skills/<name>/SKILL.md` (39 skills) and `skills/<name>/SKILL.md` (1 skill)
+- Use when the skill is tightly coupled to ProjectScylla's domain:
+  - Evaluation tier semantics (T0–T6 ablation patterns)
+  - Repo-specific config schemas (pixi, model configs, judge prompts)
+  - ProjectScylla automation (e2e runner internals, batch result analysis)
+  - Fixes to this repo's CI, pre-commit hooks, or doc policies
+- Examples: `doc-contradiction-resolution`, `config-default-model-drift`, `wired-runner-fixture`
 
-   # Create PR in ProjectMnemosyne
-   cd "$MNEMOSYNE_DIR"
-   git checkout -b skill/{category}/{name} origin/main
-   # ... create skill files ...
-   git push -u origin skill/{category}/{name}
-   gh pr create --title "feat(skills): Add {name}"
-   ```
+**Mnemosyne skills** (in `HomericIntelligence/ProjectMnemosyne`) — for cross-project reusable patterns:
 
-**Location**: `HomericIntelligence/ProjectMnemosyne/skills/`
-**Purpose**: Central repository for team knowledge and reusable skills
-**Search**: Use `/mnemosyne:advise` to discover and search skills
+- Location: `HomericIntelligence/ProjectMnemosyne/skills/<name>.md` (flat format)
+- Use when the skill benefits other HomericIntelligence repos:
+  - Language/tooling techniques (Python, mypy, pixi, pre-commit) that apply broadly
+  - Generic debugging patterns (e.g., Pydantic None-coercion, rebase conflict resolution)
+  - CI/CD patterns reusable across the 12-repo ecosystem
+  - Cross-cutting research methodology
+- Search: `/mnemosyne:advise` to discover existing Mnemosyne skills
 
-**IMPORTANT**: Do NOT create skills locally in ProjectScylla — all skills go to ProjectMnemosyne only.
+**When `/retrospective` or `/learn` captures a session learning**, decide local-vs-Mnemosyne with the
+criteria above. If the lesson is reusable across repos, push to Mnemosyne:
+
+```bash
+# Clone if needed
+MNEMOSYNE_DIR="build/$$/ProjectMnemosyne"
+if [ ! -d "$MNEMOSYNE_DIR" ]; then
+  mkdir -p "build/$$"
+  gh repo clone HomericIntelligence/ProjectMnemosyne "$MNEMOSYNE_DIR"
+fi
+
+# Create PR in ProjectMnemosyne
+cd "$MNEMOSYNE_DIR"
+git checkout -b skill/{category}/{name} origin/main
+# ... create skill files ...
+git push -u origin skill/{category}/{name}
+gh pr create --title "feat(skills): Add {name}"
+```
+
+If the lesson is ProjectScylla-specific, add it locally under `.claude-plugin/skills/<name>/SKILL.md`.
+
+**When in doubt**, prefer Mnemosyne — broader reach, easier discovery via `/mnemosyne:advise`.
 
 ### Shared Reference Files
 
