@@ -11,16 +11,6 @@ Primary class:
         and LLM API calls for judging.
 """
 
-from scylla.e2e.checkpoint import (
-    CheckpointError,
-    ConfigMismatchError,
-    E2ECheckpoint,
-    compute_config_hash,
-    get_experiment_status,
-    load_checkpoint,
-    save_checkpoint,
-    validate_checkpoint_config,
-)
 from scylla.e2e.llm_judge import run_llm_judge
 from scylla.e2e.llm_judge_models import JudgeResult
 from scylla.e2e.models import (
@@ -42,6 +32,16 @@ from scylla.e2e.rate_limit import (
     wait_for_rate_limit,
 )
 from scylla.e2e.subtest_state_machine import SubtestStateMachine
+from scylla.persistence.checkpoint import (
+    CheckpointError,
+    ConfigMismatchError,
+    E2ECheckpoint,
+    compute_config_hash,
+    get_experiment_status,
+    load_checkpoint,
+    save_checkpoint,
+    validate_checkpoint_config,
+)
 
 __all__ = [
     # Checkpoint

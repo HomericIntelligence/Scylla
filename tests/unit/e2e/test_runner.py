@@ -1644,7 +1644,7 @@ class TestRunAlreadyCompleteEarlyExit:
         with (
             patch.object(runner, "_initialize_or_resume_experiment", side_effect=fake_init),
             patch("scylla.e2e.health.HeartbeatThread", return_value=mock_heartbeat),
-            patch("scylla.e2e.rehydrate.load_experiment_tier_results") as mock_rehydrate,
+            patch("scylla.persistence.rehydrate.load_experiment_tier_results") as mock_rehydrate,
         ):
             result = runner.run()
 

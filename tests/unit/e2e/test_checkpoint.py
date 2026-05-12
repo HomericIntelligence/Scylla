@@ -615,7 +615,7 @@ class TestSaveCheckpointErrors:
         )
         checkpoint_path = tmp_path / "checkpoint.json"
 
-        with patch("scylla.e2e.checkpoint.os.getpid", return_value=12345):
+        with patch("scylla.persistence.checkpoint.os.getpid", return_value=12345):
             save_checkpoint(checkpoint, checkpoint_path)
 
         # Verify final file exists
@@ -655,7 +655,7 @@ class TestLoadCheckpointErrors:
         save_checkpoint(checkpoint, checkpoint_path)
 
         # Mock open to raise PermissionError
-        with patch("scylla.e2e.checkpoint.open", side_effect=PermissionError("No access")):
+        with patch("scylla.persistence.checkpoint.open", side_effect=PermissionError("No access")):
             with pytest.raises(CheckpointError, match="Failed to load checkpoint"):
                 load_checkpoint(checkpoint_path)
 

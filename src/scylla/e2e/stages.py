@@ -99,13 +99,13 @@ from scylla.utils.tracing import get_tracer
 if TYPE_CHECKING:
     from scylla.adapters.base import AdapterConfig, AdapterResult
     from scylla.adapters.claude_code import ClaudeCodeAdapter
-    from scylla.e2e.checkpoint import E2ECheckpoint
     from scylla.e2e.llm_judge_models import BuildPipelineResult
     from scylla.e2e.models import JudgeResultSummary
     from scylla.e2e.parallel_executor import RateLimitCoordinator
     from scylla.e2e.resource_manager import ResourceManager
     from scylla.e2e.tier_manager import TierManager
     from scylla.e2e.workspace_manager import WorkspaceManager
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 _tracer = get_tracer(__name__)

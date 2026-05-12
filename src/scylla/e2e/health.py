@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scylla.e2e.checkpoint import E2ECheckpoint
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ def reset_zombie_checkpoint(checkpoint: E2ECheckpoint, checkpoint_path: Path) ->
         The updated checkpoint (same object, mutated)
 
     """
-    from scylla.e2e.checkpoint import save_checkpoint
+    from scylla.persistence.checkpoint import save_checkpoint
 
     logger.info(
         f"Resetting zombie checkpoint {checkpoint.experiment_id} from 'running' to 'interrupted'"
@@ -221,7 +221,7 @@ class HeartbeatThread(threading.Thread):
         and writes it back atomically. This prevents overwriting run_states and
         other fields written by worker processes.
         """
-        from scylla.e2e.checkpoint import CheckpointError, load_checkpoint, save_checkpoint
+        from scylla.persistence.checkpoint import CheckpointError, load_checkpoint, save_checkpoint
 
         try:
             # Read from disk to get the latest state written by worker processes
