@@ -85,7 +85,7 @@ target-version = "py310"
 # S101 is selected explicitly (not via the full "S"/bandit group) so that
 # assert statements are flagged as errors in production code.  Tests are
 # exempted below via per-file-ignores, where assert is the pytest idiom.
-select = ["E", "F", "W", "I", "N", "D", "UP", "S101", "B", "SIM", "C4", "C901", "RUF"]
+select = ["E", "F", "W", "I", "N", "D", "UP", "S101", "B", "SIM", "C4", "C901", "RUF", "T201"]
 ignore = [
     "D100",  # Missing docstring in public module
     "D104",  # Missing docstring in public package
@@ -104,11 +104,16 @@ ignore = [
 max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
-# assert is idiomatic in pytest; S101 suppressed for all test files only
-"tests/**" = ["S101"]
+# assert is idiomatic in pytest; S101 suppressed for all test files only.
+# T201 (no print) is also suppressed for tests — print is common in fixtures/notebooks.
+"tests/**" = ["S101", "T201"]
 # C901 (mccabe complexity) threshold of 10 is enforced only for src/scylla/ production code.
 # scripts/ utilities are exempt — they are standalone tools, not production modules.
-"scripts/**" = ["C901"]
+# T201 (no print) is also exempted for scripts/ — they are CLI tools that use print for output.
+"scripts/**" = ["C901", "T201"]
+# T201 (no print) is enforced for all src/scylla/ code except the CLI layer,
+# which may legitimately use print() for direct user output.
+"src/scylla/cli/**" = ["T201"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -63,31 +63,29 @@ class RerunJudgeStats(BaseModel):
     runs_skipped_by_filter: int = 0
 
     def print_summary(self, judge_models: list[str]) -> None:
-        """Print a summary of rerun statistics."""
-        print("\n" + "=" * 70)
-        print("JUDGE SLOT CLASSIFICATION")
-        print("=" * 70)
-        print(f"Total expected judge slots: {self.total_expected_slots}")
-        print()
-        print("  Per-slot breakdown:")
+        """Log a summary of rerun statistics."""
+        logger.info("=" * 70)
+        logger.info("JUDGE SLOT CLASSIFICATION")
+        logger.info("=" * 70)
+        logger.info(f"Total expected judge slots: {self.total_expected_slots}")
+        logger.info("  Per-slot breakdown:")
 
         for judge_num in sorted(self.per_slot_stats.keys()):
             stats = self.per_slot_stats[judge_num]
             model = judge_models[judge_num - 1] if judge_num <= len(judge_models) else "unknown"
-            print(f"    judge_{judge_num:02d} ({model}):")
-            print(
-                f"      ✓ complete: {stats.get('complete', 0):4d}    "
-                f"○ missing: {stats.get('missing', 0):4d}     "
-                f"✗ failed: {stats.get('failed', 0):4d}"
+            logger.info(f"    judge_{judge_num:02d} ({model}):")
+            logger.info(
+                f"      complete: {stats.get('complete', 0):4d}    "
+                f"missing: {stats.get('missing', 0):4d}     "
+                f"failed: {stats.get('failed', 0):4d}"
             )
 
-        print()
-        print("RERUN RESULTS")
-        print("=" * 70)
-        print(f"Judge slots rerun successfully:  {self.slots_rerun_success}")
-        print(f"Judge slots failed to rerun:     {self.slots_rerun_failed}")
-        print(f"Consensus regenerated (runs):    {self.consensus_regenerated}")
-        print("=" * 70)
+        logger.info("RERUN RESULTS")
+        logger.info("=" * 70)
+        logger.info(f"Judge slots rerun successfully:  {self.slots_rerun_success}")
+        logger.info(f"Judge slots failed to rerun:     {self.slots_rerun_failed}")
+        logger.info(f"Consensus regenerated (runs):    {self.consensus_regenerated}")
+        logger.info("=" * 70)
 
 
 class JudgeSlotToRerun(BaseModel):
@@ -676,11 +674,11 @@ def rerun_judges_experiment(  # noqa: C901  # judge rerun with many retry/skip p
         logger.info(f"Found {len(runs_to_regenerate)} runs needing consensus regeneration")
 
         if dry_run:
-            print("\n" + "=" * 70)
-            print("DRY RUN MODE - No changes will be made")
-            print("=" * 70)
-            print(f"\nWould regenerate consensus for {len(runs_to_regenerate)} runs")
-            print("(All runs have complete judge slots but missing judge/result.json)")
+            logger.info("=" * 70)
+            logger.info("DRY RUN MODE - No changes will be made")
+            logger.info("=" * 70)
+            logger.info(f"Would regenerate consensus for {len(runs_to_regenerate)} runs")
+            logger.info("(All runs have complete judge slots but missing judge/result.json)")
             stats.print_summary(config.judge_models)
             return stats
 

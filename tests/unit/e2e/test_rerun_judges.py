@@ -689,8 +689,10 @@ class TestRerunJudgeStats:
         assert stats.agent_failed == 0
         assert stats.per_slot_stats == {}
 
-    def test_print_summary(self, capsys: Any) -> None:
-        """Test print_summary output."""
+    def test_print_summary(self, caplog: Any) -> None:
+        """Test print_summary logs the expected output."""
+        import logging
+
         stats = RerunJudgeStats(
             total_expected_slots=10,
             complete=5,
@@ -706,12 +708,13 @@ class TestRerunJudgeStats:
         }
 
         judge_models = ["claude-opus-4-6", "claude-sonnet-4-6"]
-        stats.print_summary(judge_models)
+        with caplog.at_level(logging.INFO, logger="scylla.e2e.rerun_judges"):
+            stats.print_summary(judge_models)
 
-        captured = capsys.readouterr()
-        assert "Total expected judge slots: 10" in captured.out
-        assert "Judge slots rerun successfully:  4" in captured.out
-        assert "Consensus regenerated (runs):    3" in captured.out
+        log_text = "\n".join(caplog.messages)
+        assert "Total expected judge slots: 10" in log_text
+        assert "Judge slots rerun successfully:  4" in log_text
+        assert "Consensus regenerated (runs):    3" in log_text
 
 
 class TestJudgeSlotToRerun:

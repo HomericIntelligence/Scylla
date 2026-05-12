@@ -66,7 +66,7 @@ def install_signal_handlers(shutdown_fn: Callable[[], None]) -> None:
             sys.exit(128 + signum)
         else:
             _shutdown_requested = True
-            print(
+            print(  # noqa: T201
                 f"\nReceived signal {signum}. Shutting down gracefully… "
                 "(press Ctrl+C again to force quit)",
                 flush=True,

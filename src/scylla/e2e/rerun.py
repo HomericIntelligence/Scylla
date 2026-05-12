@@ -59,23 +59,23 @@ class RerunStats(BaseModel):
 
     def print_summary(self) -> None:
         """Print a summary of rerun statistics."""
-        print("\n" + "=" * 70)
-        print("RUN STATUS CLASSIFICATION")
-        print("=" * 70)
-        print(f"Total expected runs:     {self.total_expected_runs}")
-        print(f"  ✓ completed:           {self.completed}")
-        print(f"  ⚠ results:             {self.results}")
-        print(f"  ✗ failed:              {self.failed}")
-        print(f"  ⋯ partial:             {self.partial}")
-        print(f"  ○ missing:             {self.missing}")
-        print(f"  - skipped (filter):    {self.runs_skipped_by_filter}")
-        print()
-        print("RERUN RESULTS")
-        print("=" * 70)
-        print(f"Successfully rerun:      {self.runs_rerun_success}")
-        print(f"Failed rerun:            {self.runs_rerun_failed}")
-        print(f"Regenerated:             {self.runs_regenerated}")
-        print("=" * 70)
+        print("\n" + "=" * 70)  # noqa: T201
+        print("RUN STATUS CLASSIFICATION")  # noqa: T201
+        print("=" * 70)  # noqa: T201
+        print(f"Total expected runs:     {self.total_expected_runs}")  # noqa: T201
+        print(f"  ✓ completed:           {self.completed}")  # noqa: T201
+        print(f"  ⚠ results:             {self.results}")  # noqa: T201
+        print(f"  ✗ failed:              {self.failed}")  # noqa: T201
+        print(f"  ⋯ partial:             {self.partial}")  # noqa: T201
+        print(f"  ○ missing:             {self.missing}")  # noqa: T201
+        print(f"  - skipped (filter):    {self.runs_skipped_by_filter}")  # noqa: T201
+        print()  # noqa: T201
+        print("RERUN RESULTS")  # noqa: T201
+        print("=" * 70)  # noqa: T201
+        print(f"Successfully rerun:      {self.runs_rerun_success}")  # noqa: T201
+        print(f"Failed rerun:            {self.runs_rerun_failed}")  # noqa: T201
+        print(f"Regenerated:             {self.runs_regenerated}")  # noqa: T201
+        print("=" * 70)  # noqa: T201
 
 
 class RunToRerun(BaseModel):

@@ -171,7 +171,7 @@ def fig11_tier_uplift(runs_df: pd.DataFrame, output_dir: Path, render: bool = Tr
     # Also save significance table
     sig_csv = output_dir / "fig11_tier_uplift_significance.csv"
     significance_df.to_csv(sig_csv, index=False)
-    print(f"  Saved significance data: {sig_csv}")
+    print(f"  Saved significance data: {sig_csv}")  # noqa: T201
 
 
 def fig12_consistency(runs_df: pd.DataFrame, output_dir: Path, render: bool = True) -> None:

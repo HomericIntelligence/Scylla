@@ -82,7 +82,7 @@ def fig23_qq_plots(runs_df: pd.DataFrame, output_dir: Path, render: bool = True)
     qq_df = pd.DataFrame(qq_data)
 
     if len(qq_df) == 0:
-        print("  Warning: No data for Q-Q plots")
+        print("  Warning: No data for Q-Q plots")  # noqa: T201
         return
 
     # Generate separate figure for each tier
@@ -186,7 +186,7 @@ def _compute_kde_data(runs_df: pd.DataFrame, tier_order: list[str]) -> pd.DataFr
                         {"agent_model": model, "tier": tier, "score": x, "density": density}
                     )
             except Exception as e:
-                print(f"  Warning: KDE failed for {model}/{tier}: {e}")
+                print(f"  Warning: KDE failed for {model}/{tier}: {e}")  # noqa: T201
     return pd.DataFrame(kde_data)
 
 
