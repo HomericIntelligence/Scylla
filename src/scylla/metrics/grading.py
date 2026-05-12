@@ -8,9 +8,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Default pass threshold (Good grade - B)
-# See docs/design/grading-scale.md for specification
-DEFAULT_PASS_THRESHOLD = 0.60
+# Re-exported from scylla.core.thresholds to preserve the public symbol
+# ``scylla.metrics.grading.DEFAULT_PASS_THRESHOLD`` for any external callers.
+# The canonical home is now ``scylla.core.thresholds`` so that ``config``
+# does not have to import from ``metrics`` (issue #1937, edge 1 of 3).
+# See docs/design/grading-scale.md for specification.
+from scylla.core.thresholds import DEFAULT_PASS_THRESHOLD as DEFAULT_PASS_THRESHOLD
 
 
 @dataclass
