@@ -446,7 +446,6 @@ ProjectScylla/
 |   +-- scylla/                  # Python source code
 |       +-- adapters/            # CLI adapters (.py)
 |       +-- analysis/            # Statistical analysis (.py)
-|       +-- automation/          # Automation utilities (.py)
 |       +-- cli/                 # CLI interface (.py)
 |       +-- config/              # Configuration (.py)
 |       +-- core/                # Core types (.py)
@@ -455,6 +454,7 @@ ProjectScylla/
 |       +-- executor/            # Execution engine (.py)
 |       +-- judge/               # LLM judge system (.py)
 |       +-- metrics/             # Metrics calculation (.py)
+|       +-- nats/                # NATS bridge integration (.py)
 |       +-- reporting/           # Report generation (.py)
 |       +-- utils/               # Utility functions (.py)
 +-- scripts/                     # Python automation scripts
