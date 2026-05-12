@@ -10,8 +10,10 @@
 - [🎯 What is ProjectScylla?](#-what-is-projectscylla)
 - [Core Concepts](#core-concepts)
 - [🚀 Quick Start](#-quick-start)
+- [CLI Reference](#cli-reference)
 - [📊 System Requirements](#-system-requirements)
 - [Analysis Pipeline Architecture](#analysis-pipeline-architecture)
+- [Scripts (Advanced / Internal Tooling)](#scripts-advanced--internal-tooling)
 - [Development](#development)
   - [Git Hooks](#git-hooks)
 - [🔧 Troubleshooting](#-troubleshooting)
@@ -56,24 +58,118 @@ xdg-open results/analysis/figures/*.png  # Linux
 
 ### 💡 Usage Examples
 
-**Compare Two Agent Configurations:**
+**Quick evaluation run:**
 
 ```bash
-pixi run python scripts/generate_all_results.py \
-  --data-dir ~/experiments/ \
-  --output-dir comparison_results/ \
-  --exclude test001-dryrun
+# List available test cases and tiers
+scylla list
+scylla list-tiers
+scylla list-models
+
+# Run a test case across one tier with a specific model
+scylla run 001-justfile-to-makefile --tier T0 --model claude-sonnet-4-6
+
+# Check evaluation status
+scylla status 001-justfile-to-makefile
+
+# Generate a markdown report
+scylla report 001-justfile-to-makefile --format markdown
 ```
 
-**Fast Development Mode (No Rendering):**
+See [CLI Reference](#cli-reference) for the full command set.
+
+---
+
+## CLI Reference
+
+ProjectScylla ships a `scylla` command-line tool (declared in `pyproject.toml` as
+`scylla = "scylla.cli.main:cli"`). After `pixi install` the binary is available in the
+environment:
 
 ```bash
-# Quick iteration - generates Vega-Lite specs only
-pixi run python scripts/generate_all_results.py \
-  --data-dir ~/quick_test \
-  --no-render \
-  --skip-data  # Skip if CSVs already exist
+scylla --help
 ```
+
+```
+Usage: scylla [OPTIONS] COMMAND [ARGS]...
+
+  ProjectScylla - AI Agent Testing Framework.
+  Evaluate and benchmark AI agent architectures across multiple tiers.
+
+Options:
+  --version  Show the version and exit.
+  --help     Show this message and exit.
+
+Commands:
+  audit        Audit configuration files for consistency issues.
+  list         List available test cases.
+  list-models  List configured models.
+  list-tiers   List available evaluation tiers.
+  report       Generate report for a completed test.
+  run          Run evaluation for a test case.
+  status       Show status of a test evaluation.
+```
+
+### Common Workflows
+
+**Discover what is available:**
+
+```bash
+scylla list                  # all test cases
+scylla list --verbose        # with detailed info
+scylla list-tiers            # T0–T6 descriptions
+scylla list-models           # configured models
+```
+
+**Run an evaluation:**
+
+```bash
+# Single tier
+scylla run 001-justfile-to-makefile --tier T0
+
+# Multiple tiers, specific model, 5 runs each
+scylla run 001-justfile-to-makefile --tier T0 --tier T1 \
+  --model claude-sonnet-4-6 --runs 5
+
+# Override output directory
+scylla run 001-justfile-to-makefile --output-dir ~/my-results --verbose
+```
+
+**Inspect results:**
+
+```bash
+scylla status 001-justfile-to-makefile
+
+# Reports in different formats
+scylla report 001-justfile-to-makefile --format markdown
+scylla report 001-justfile-to-makefile --format json --output -
+scylla report 001-justfile-to-makefile --format html --output report.html
+```
+
+**Audit configuration:**
+
+```bash
+scylla audit models          # check filename/model_id consistency
+```
+
+### Shell Completion
+
+Enable tab-completion for your shell once:
+
+```bash
+# bash
+_SCYLLA_COMPLETE=bash_source scylla > ~/.scylla-complete.bash
+echo 'source ~/.scylla-complete.bash' >> ~/.bashrc
+
+# zsh
+_SCYLLA_COMPLETE=zsh_source scylla > ~/.scylla-complete.zsh
+echo 'source ~/.scylla-complete.zsh' >> ~/.zshrc
+
+# fish
+_SCYLLA_COMPLETE=fish_source scylla > ~/.config/fish/completions/scylla.fish
+```
+
+---
 
 ## 📊 System Requirements
 
@@ -122,6 +218,9 @@ Part of a 12-repository ecosystem:
 ---
 
 ## Running the Analysis Pipeline
+
+> **Note:** This section uses internal `scripts/*.py` tools for bulk statistical analysis and
+> publication-pipeline tasks. For running individual evaluations, see the [`scylla` CLI](#cli-reference).
 
 ### Full Analysis (Recommended)
 
@@ -237,9 +336,11 @@ with open('results/analysis/data/statistical_results.json') as f:
 
 ---
 
-## Experiment Management Scripts
+## Scripts (Advanced / Internal Tooling)
 
-ProjectScylla provides comprehensive scripts for running, managing, and analyzing experiments.
+> **Note:** The `scripts/*.py` files are internal automation tools used for bulk experiment management
+> and publication-pipeline tasks. Most users should use the [`scylla` CLI](#cli-reference) instead.
+> These scripts are documented here for contributors and advanced workflows.
 
 ### 🧪 Running Experiments
 
