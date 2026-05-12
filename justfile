@@ -72,3 +72,11 @@ bump-major:
 # Run all pre-commit hooks
 pre-commit:
     pixi run pre-commit run --all-files
+
+# Watch tests and re-run on file changes (requires pytest-watch: pixi add pytest-watch)
+watch:
+    pixi run ptw tests/
+
+# Drop into pdb for a specific test (usage: just debug tests/path/test_foo.py::test_bar)
+debug TEST:
+    pixi run python -m pdb -m pytest -xvs {{TEST}}
