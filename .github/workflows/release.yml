@@ -11,6 +11,11 @@ on:
           - patch
           - minor
           - major
+      testpypi:
+        type: boolean
+        description: "Dry-run: publish to TestPyPI instead of PyPI"
+        required: false
+        default: "false"
   push:
     tags:
       - "v*"
@@ -120,3 +125,101 @@ jobs:
           gh release create "$TAG_NAME" \
             --title "$TAG_NAME" \
             --generate-notes
+
+  # ---------------------------------------------------------------------------
+  # Build distribution artifacts (sdist + wheel)
+  # Runs on every tag push so artifacts are available for both PyPI and TestPyPI.
+  # ---------------------------------------------------------------------------
+  build:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2f  # v5
+        with:
+          python-version: "3.10"
+
+      - name: Install build frontend
+        run: python -m pip install --upgrade build
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b  # v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Publish to PyPI via Trusted Publishing (OIDC — no API token required).
+  # Triggered only on tag push (v*).  A maintainer must configure the PyPI
+  # Trusted Publisher once; see docs/dev/release.md for setup instructions.
+  # ---------------------------------------------------------------------------
+  publish-pypi:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/scylla
+    permissions:
+      id-token: write  # Required for OIDC Trusted Publishing
+
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444306234e0793f6516f1d73  # v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # release/v1
+
+  # ---------------------------------------------------------------------------
+  # TestPyPI dry-run — only on workflow_dispatch with testpypi=true.
+  # Lets maintainers smoke-test the publish pipeline before cutting a real tag.
+  # ---------------------------------------------------------------------------
+  publish-testpypi:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.testpypi == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/scylla
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write  # Required for OIDC Trusted Publishing
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2f  # v5
+        with:
+          python-version: "3.10"
+
+      - name: Install build frontend
+        run: python -m pip install --upgrade build
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc  # release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
