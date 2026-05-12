@@ -9,7 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from scylla.config.constants import DEFAULT_AGENT_MODEL, DEFAULT_JUDGE_MODEL
-from scylla.metrics.grading import DEFAULT_PASS_THRESHOLD
+from scylla.core.thresholds import DEFAULT_PASS_THRESHOLD
 from scylla.nats.config import NATSConfig
 
 
