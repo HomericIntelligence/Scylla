@@ -12,6 +12,8 @@
 # ============================================================================
 # Pinned to SHA256 digest for reproducibility - prevents drift from upstream updates
 # Python 3.12 aligns with pyproject.toml classifiers (3.10-3.13); requires-python = ">=3.10"
+# NOTE: ci/Containerfile pins a different SHA256 for the same python:3.12-slim tag.
+# Both intentionally kept separate; if you update either digest, update both files together.
 FROM python:3.12-slim@sha256:f3fa41d74a768c2fce8016b98c191ae8c1bacd8f1152870a3f9f87d350920b7c AS builder
 
 # Set build environment variables
