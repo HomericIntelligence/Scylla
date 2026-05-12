@@ -336,12 +336,10 @@ def main() -> int:
 
     except RunnerError as e:
         logger.error(f"Runner error: {e}")
-        print(f"Error: {e}", file=sys.stderr)
         return 1
 
     except Exception as e:
         logger.exception(f"Unexpected error: {e}")
-        print(f"Unexpected error: {e}", file=sys.stderr)
         return 1
 
 

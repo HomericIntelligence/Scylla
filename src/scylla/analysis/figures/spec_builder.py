@@ -186,7 +186,7 @@ def save_figure(
     spec = chart.to_dict()
     spec_path = output_dir / f"{name}.vl.json"
     spec_path.write_text(json.dumps(spec, indent=2) + "\n")
-    print(f"  Saved spec: {spec_path}")
+    print(f"  Saved spec: {spec_path}")  # noqa: T201
 
     # Optionally render to images
     if render:
@@ -197,9 +197,9 @@ def save_figure(
                     chart.save(str(img_path), scale_factor=3.0)  # 300 DPI for publication
                 else:
                     chart.save(str(img_path))
-                print(f"  Rendered: {img_path}")
+                print(f"  Rendered: {img_path}")  # noqa: T201
             except Exception as e:
-                print(f"  Warning: Could not render {fmt}: {e}")
+                print(f"  Warning: Could not render {fmt}: {e}")  # noqa: T201
 
         # Generate LaTeX inclusion snippet if PDF was rendered
         if "pdf" in formats:
@@ -246,4 +246,4 @@ def _generate_latex_snippet(
     # Save snippet
     snippet_path = output_dir / f"{name}_include.tex"
     snippet_path.write_text(latex_snippet)
-    print(f"  Saved LaTeX snippet: {snippet_path}")
+    print(f"  Saved LaTeX snippet: {snippet_path}")  # noqa: T201

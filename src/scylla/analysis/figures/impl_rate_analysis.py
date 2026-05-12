@@ -40,7 +40,7 @@ def fig25_impl_rate_by_tier(
     """
     # Check if impl_rate column exists
     if "impl_rate" not in runs_df.columns:
-        print("Warning: impl_rate column not found in runs_df, skipping fig25")
+        print("Warning: impl_rate column not found in runs_df, skipping fig25")  # noqa: T201
         return
 
     # Derive tier order from data
@@ -171,7 +171,7 @@ def fig26_impl_rate_vs_pass_rate(
     """
     # Check required columns
     if "impl_rate" not in runs_df.columns:
-        print("Warning: impl_rate column not found in runs_df, skipping fig26")
+        print("Warning: impl_rate column not found in runs_df, skipping fig26")  # noqa: T201
         return
 
     # Compute aggregate metrics per (agent_model, tier)
@@ -190,7 +190,7 @@ def fig26_impl_rate_vs_pass_rate(
     df = pd.DataFrame(stats)
 
     if len(df) == 0:
-        print("Warning: No valid data for fig26")
+        print("Warning: No valid data for fig26")  # noqa: T201
         return
 
     # Derive tier order
@@ -251,14 +251,14 @@ def fig27_impl_rate_distribution(
     """
     # Check if impl_rate column exists
     if "impl_rate" not in runs_df.columns:
-        print("Warning: impl_rate column not found in runs_df, skipping fig27")
+        print("Warning: impl_rate column not found in runs_df, skipping fig27")  # noqa: T201
         return
 
     # Filter out NaN values
     df = runs_df[["agent_model", "tier", "impl_rate"]].dropna()
 
     if len(df) == 0:
-        print("Warning: No valid data for fig27")
+        print("Warning: No valid data for fig27")  # noqa: T201
         return
 
     # Derive tier order from data

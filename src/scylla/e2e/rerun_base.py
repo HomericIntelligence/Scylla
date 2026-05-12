@@ -115,25 +115,25 @@ def print_dry_run_summary(
         max_preview: Maximum number of items to preview per status (default: 10)
 
     """
-    print("\n" + "=" * 70)
-    print("DRY RUN MODE - No changes will be made")
-    print("=" * 70)
+    print("\n" + "=" * 70)  # noqa: T201
+    print("DRY RUN MODE - No changes will be made")  # noqa: T201
+    print("=" * 70)  # noqa: T201
 
     for status, items in items_by_status.items():
         if items:
             display_name = status_names.get(status, status.value.upper())
-            print(f"\n{display_name} ({len(items)} items):")
+            print(f"\n{display_name} ({len(items)} items):")  # noqa: T201
             for item in items[:max_preview]:
                 # Format item based on its attributes
                 if hasattr(item, "judge_number"):
                     # Judge slot format
-                    print(
+                    print(  # noqa: T201
                         f"  - {item.tier_id}/{item.subtest_id}/run_{item.run_number:02d} "
                         f"judge_{item.judge_number:02d} ({item.judge_model}): {item.reason}"
                     )
                 else:
                     # Run format
                     run_id = f"{item.tier_id}/{item.subtest_id}/run_{item.run_number:02d}"
-                    print(f"  - {run_id}: {item.reason}")
+                    print(f"  - {run_id}: {item.reason}")  # noqa: T201
             if len(items) > max_preview:
-                print(f"  ... and {len(items) - max_preview} more")
+                print(f"  ... and {len(items) - max_preview} more")  # noqa: T201
