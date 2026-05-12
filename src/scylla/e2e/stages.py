@@ -89,10 +89,12 @@ from scylla.e2e.stage_process_metrics import (
 from scylla.e2e.stage_process_metrics import (
     _parse_diff_numstat_output as _parse_diff_numstat_output,
 )
+from scylla.metrics.emitter import get_default_emitter
 from scylla.metrics.process import (
     ChangeResult,
     ProgressStep,
 )
+from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
     from scylla.adapters.base import AdapterConfig, AdapterResult
@@ -106,6 +108,7 @@ if TYPE_CHECKING:
     from scylla.e2e.workspace_manager import WorkspaceManager
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
 
 # Fallback lock for pipeline serialization when no ResourceManager is configured.
 # Prefer ctx.resource_manager.pipeline_slot() when available.
@@ -559,6 +562,10 @@ def stage_execute_agent(ctx: RunContext) -> None:
     If ctx.agent_result is already set (resume), this is a no-op.
     Otherwise, runs via replay.sh and saves all agent artifacts.
 
+    Wraps execution in an OTel span (``scylla.adapter.call``) and emits
+    ``scylla_adapter_call_duration_seconds`` and ``scylla_adapter_tokens_total``
+    via the default MetricEmitter. Both are no-ops when env vars are unset.
+
     Args:
         ctx: Run context (mutates ctx.agent_result, ctx.agent_duration, ctx.agent_ran)
 
@@ -568,6 +575,60 @@ def stage_execute_agent(ctx: RunContext) -> None:
         logger.debug(f"Skipping agent execution for run {ctx.run_number} (resumed)")
         return
 
+    with _tracer.start_as_current_span(
+        "scylla.adapter.call",
+        attributes={
+            "scylla.tier_id": ctx.tier_id.value,
+            "scylla.subtest_id": ctx.subtest.id,
+            "scylla.run_num": ctx.run_number,
+            "scylla.adapter": ctx.adapter.get_name(),
+            "scylla.model": ctx.config.models[0] if ctx.config.models else "",
+        },
+    ) as _adapter_span:
+        try:
+            _stage_execute_agent_body(ctx)
+        except Exception as _exc:
+            _adapter_span.record_exception(_exc)
+            raise
+        finally:
+            _emit_adapter_metrics(ctx)
+
+
+def _emit_adapter_metrics(ctx: RunContext) -> None:
+    """Emit adapter call duration + token counters. Best-effort, never raises."""
+    try:
+        emitter = get_default_emitter()
+        labels = {
+            "tier": ctx.tier_id.value,
+            "subtest": ctx.subtest.id,
+            "model": ctx.config.models[0] if ctx.config.models else "",
+        }
+        if ctx.agent_duration is not None:
+            emitter.emit_gauge(
+                "scylla_adapter_call_duration_seconds",
+                float(ctx.agent_duration),
+                labels=labels,
+            )
+        if ctx.agent_result is not None:
+            tok = ctx.agent_result.token_stats
+            if tok.input_tokens:
+                emitter.emit_counter(
+                    "scylla_adapter_tokens_total",
+                    int(tok.input_tokens),
+                    labels={**labels, "kind": "input"},
+                )
+            if tok.output_tokens:
+                emitter.emit_counter(
+                    "scylla_adapter_tokens_total",
+                    int(tok.output_tokens),
+                    labels={**labels, "kind": "output"},
+                )
+    except Exception as e:  # emitter must never break the run
+        logger.debug(f"Adapter metric emission failed (non-fatal): {e}")
+
+
+def _stage_execute_agent_body(ctx: RunContext) -> None:
+    """Body of :func:`stage_execute_agent`, wrapped in a tracing span by caller."""
     from scylla.adapters.base import AdapterResult
     from scylla.e2e.agent_runner import (
         _create_agent_model_md,

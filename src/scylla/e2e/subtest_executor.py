@@ -59,6 +59,7 @@ from scylla.e2e.workspace_setup import (
     _move_to_failed,
     _setup_workspace,
 )
+from scylla.metrics.emitter import get_default_emitter
 from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
@@ -85,6 +86,30 @@ __all__ = [
     "_setup_workspace",
     "aggregate_run_results",
 ]
+
+
+def _emit_subtest_metrics(
+    tier_id: str,
+    subtest_id: str,
+    duration_seconds: float,
+    outcome: str,
+) -> None:
+    """Emit subtest duration gauge + outcome counter. Best-effort, never raises."""
+    try:
+        emitter = get_default_emitter()
+        labels = {"tier": tier_id, "subtest": subtest_id}
+        emitter.emit_gauge(
+            "scylla_subtest_duration_seconds",
+            float(duration_seconds),
+            labels=labels,
+        )
+        emitter.emit_counter(
+            "scylla_subtest_outcome_total",
+            1,
+            labels={**labels, "outcome": outcome},
+        )
+    except Exception as e:  # emitter must never break subtest execution
+        logger.debug(f"Subtest metric emission failed (non-fatal): {e}")
 
 
 def _restore_run_context(ctx: Any, current_state: str) -> None:
@@ -396,6 +421,10 @@ class SubTestExecutor:
             SubTestResult with aggregated metrics.
 
         """
+        import time as _time
+
+        _subtest_start = _time.monotonic()
+        _outcome = "error"
         with _tracer.start_as_current_span(
             "scylla.subtest",
             attributes={
@@ -405,7 +434,7 @@ class SubTestExecutor:
             },
         ) as _subtest_span:
             try:
-                return self._run_subtest_body(
+                _result = self._run_subtest_body(
                     tier_id=tier_id,
                     tier_config=tier_config,
                     subtest=subtest,
@@ -416,9 +445,18 @@ class SubTestExecutor:
                     coordinator=coordinator,
                     experiment_dir=experiment_dir,
                 )
+                _outcome = "pass" if _result.pass_rate > 0 else "fail"
+                return _result
             except Exception as _exc:
                 _subtest_span.record_exception(_exc)
                 raise
+            finally:
+                _emit_subtest_metrics(
+                    tier_id=tier_id.value,
+                    subtest_id=subtest.id,
+                    duration_seconds=_time.monotonic() - _subtest_start,
+                    outcome=_outcome,
+                )
 
     def _run_subtest_body(  # noqa: C901  # orchestration with many retry/outcome paths
         self,

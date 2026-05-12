@@ -23,10 +23,14 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
+from scylla.metrics.emitter import get_default_emitter
+from scylla.utils.tracing import get_tracer
+
 if TYPE_CHECKING:
     from scylla.e2e.models import ExperimentConfig
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
 
 
 class CheckpointError(Exception):
@@ -522,7 +526,17 @@ def save_checkpoint(checkpoint: E2ECheckpoint, path: Path) -> None:
         CheckpointError: If save fails
 
     """
-    with _checkpoint_write_lock:
+    import time as _time
+
+    _save_start = _time.monotonic()
+    _outcome = "error"
+    with (
+        _checkpoint_write_lock,
+        _tracer.start_as_current_span(
+            "scylla.checkpoint.save",
+            attributes={"scylla.experiment_id": checkpoint.experiment_id},
+        ) as _span,
+    ):
         try:
             # Update timestamp
             checkpoint.last_updated_at = datetime.now(timezone.utc).isoformat()
@@ -540,9 +554,27 @@ def save_checkpoint(checkpoint: E2ECheckpoint, path: Path) -> None:
 
             # Atomic rename — each writer has a unique temp file (PID+TID)
             temp_path.replace(path)
+            _outcome = "ok"
 
         except OSError as e:
+            _span.record_exception(e)
             raise CheckpointError(f"Failed to save checkpoint to {path}: {e}") from e
+        finally:
+            try:
+                emitter = get_default_emitter()
+                labels = {"experiment": checkpoint.experiment_id}
+                emitter.emit_gauge(
+                    "scylla_checkpoint_save_duration_seconds",
+                    float(_time.monotonic() - _save_start),
+                    labels=labels,
+                )
+                emitter.emit_counter(
+                    "scylla_checkpoint_save_total",
+                    1,
+                    labels={**labels, "outcome": _outcome},
+                )
+            except Exception as _e:  # never break checkpoint save
+                logger.debug(f"Checkpoint metric emission failed (non-fatal): {_e}")
 
 
 def load_checkpoint(path: Path) -> E2ECheckpoint:

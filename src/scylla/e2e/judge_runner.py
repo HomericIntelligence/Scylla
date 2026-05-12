@@ -182,8 +182,11 @@ def _run_judge(  # noqa: C901  # multi-judge consensus with rate-limit/error bra
 
         # Use the LLM judge for proper evaluation
         try:
+            import time as _time
+
+            _judge_start = _time.monotonic()
             with _tracer.start_as_current_span(
-                "scylla.judge",
+                "scylla.judge.call",
                 attributes={
                     "scylla.judge_model": model,
                     "scylla.judge_number": judge_num,
@@ -204,6 +207,15 @@ def _run_judge(  # noqa: C901  # multi-judge consensus with rate-limit/error bra
                 except Exception as _exc:
                     _judge_span.record_exception(_exc)
                     raise
+                finally:
+                    try:
+                        _emitter.emit_gauge(
+                            "scylla_judge_call_duration_seconds",
+                            float(_time.monotonic() - _judge_start),
+                            labels={"model": model},
+                        )
+                    except Exception as _e:  # never break judge call
+                        logger.debug(f"Judge duration emit failed (non-fatal): {_e}")
 
             # Store individual judge result
             judge_summary = JudgeResultSummary(
