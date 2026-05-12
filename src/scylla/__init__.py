@@ -14,12 +14,12 @@ except PackageNotFoundError:
 
 __all__ = [
     "adapters",
-    "automation",
     "cli",
     "config",
     "e2e",
     "executor",
     "judge",
     "metrics",
+    "nats",
     "reporting",
 ]
