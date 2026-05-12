@@ -9,6 +9,9 @@ on:
   schedule:
     - cron: "0 8 * * 1"
   workflow_dispatch:
+  # Reusable workflow: _required.yml invokes this via `uses:` to avoid duplicating
+  # the pip-audit and secrets-scan job bodies in two places.
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
