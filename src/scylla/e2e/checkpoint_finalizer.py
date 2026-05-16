@@ -10,8 +10,8 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from scylla.e2e.checkpoint import E2ECheckpoint, load_checkpoint, save_checkpoint
 from scylla.e2e.models import ExperimentConfig, ExperimentState
+from scylla.persistence.checkpoint import E2ECheckpoint, load_checkpoint, save_checkpoint
 
 logger = logging.getLogger(__name__)
 

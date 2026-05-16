@@ -11,9 +11,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from scylla.e2e.agent_runner import _has_valid_agent_result
-from scylla.e2e.checkpoint import E2ECheckpoint, compute_config_hash, save_checkpoint
 from scylla.e2e.health import DEFAULT_HEARTBEAT_TIMEOUT_SECONDS, is_zombie, reset_zombie_checkpoint
 from scylla.e2e.models import ExperimentConfig, RunState, TierID
+from scylla.persistence.checkpoint import E2ECheckpoint, compute_config_hash, save_checkpoint
 
 # Run states past AGENT_COMPLETE where a valid agent_result is required.
 # If the agent result is invalid at these states, the run must be reset.

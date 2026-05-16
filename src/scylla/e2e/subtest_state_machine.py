@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 from scylla.e2e.models import SubtestState
 
 if TYPE_CHECKING:
-    from scylla.e2e.checkpoint import E2ECheckpoint
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -212,7 +212,7 @@ class SubtestStateMachine:
             ValueError: If no transition is defined for the current state
 
         """
-        from scylla.e2e.checkpoint import save_checkpoint
+        from scylla.persistence.checkpoint import save_checkpoint
 
         current = self.get_state(tier_id, subtest_id)
 
@@ -297,8 +297,8 @@ class SubtestStateMachine:
             Final SubtestState (AGGREGATED, FAILED, or until_state)
 
         """
-        from scylla.e2e.checkpoint import save_checkpoint
         from scylla.e2e.shutdown import ShutdownInterruptedError
+        from scylla.persistence.checkpoint import save_checkpoint
 
         try:
             while not self.is_complete(tier_id, subtest_id):

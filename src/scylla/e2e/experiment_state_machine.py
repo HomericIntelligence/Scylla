@@ -34,7 +34,7 @@ from scylla.core.state_machine import StateMachine, Transition
 from scylla.e2e.models import ExperimentState
 
 if TYPE_CHECKING:
-    from scylla.e2e.checkpoint import E2ECheckpoint
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +182,7 @@ class ExperimentStateMachine:
 
     def _persist(self, _new_state: ExperimentState) -> None:
         """Atomically save the checkpoint to disk after a transition."""
-        from scylla.e2e.checkpoint import save_checkpoint
+        from scylla.persistence.checkpoint import save_checkpoint
 
         save_checkpoint(self.checkpoint, self.checkpoint_path)
 

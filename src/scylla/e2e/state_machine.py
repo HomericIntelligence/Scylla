@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING
 from scylla.e2e.models import RunState
 
 if TYPE_CHECKING:
-    from scylla.e2e.checkpoint import E2ECheckpoint
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -331,7 +331,7 @@ class StateMachine:
             ValueError: If no transition is defined for the current state
 
         """
-        from scylla.e2e.checkpoint import save_checkpoint
+        from scylla.persistence.checkpoint import save_checkpoint
 
         current = self.get_state(tier_id, subtest_id, run_num)
 
@@ -403,9 +403,9 @@ class StateMachine:
             Final RunState (WORKTREE_CLEANED, FAILED, RATE_LIMITED, or until_state)
 
         """
-        from scylla.e2e.checkpoint import save_checkpoint
         from scylla.e2e.rate_limit import RateLimitError
         from scylla.e2e.shutdown import ShutdownInterruptedError
+        from scylla.persistence.checkpoint import save_checkpoint
 
         # Early return if already at or past the --until target state
         if until_state is not None:

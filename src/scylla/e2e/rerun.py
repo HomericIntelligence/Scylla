@@ -20,12 +20,12 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict
 
-from scylla.e2e.checkpoint import load_checkpoint, save_checkpoint
 from scylla.e2e.models import E2ERunResult, ExperimentConfig, TierBaseline, TierID
 from scylla.e2e.rerun_base import load_rerun_context, print_dry_run_summary
 from scylla.e2e.subtest_executor import SubTestExecutor, _commit_test_config
 from scylla.e2e.tier_manager import TierManager
 from scylla.e2e.workspace_manager import WorkspaceManager
+from scylla.persistence.checkpoint import load_checkpoint, save_checkpoint
 
 if TYPE_CHECKING:
     pass
@@ -537,7 +537,7 @@ def rerun_experiment(  # noqa: C901  # orchestration with many retry/outcome pat
         logger.info(f"Loaded checkpoint: {checkpoint_path}")
     else:
         logger.warning("No checkpoint found - creating new one")
-        from scylla.e2e.checkpoint import E2ECheckpoint, compute_config_hash
+        from scylla.persistence.checkpoint import E2ECheckpoint, compute_config_hash
 
         checkpoint = E2ECheckpoint(
             experiment_id=config.experiment_id,

@@ -25,11 +25,11 @@ from scylla.e2e.models import (
 from scylla.e2e.parallel_executor import run_tier_subtests_parallel
 
 if TYPE_CHECKING:
-    from scylla.e2e.checkpoint import E2ECheckpoint
     from scylla.e2e.resource_manager import ResourceManager
     from scylla.e2e.runner import TierContext
     from scylla.e2e.tier_manager import TierManager
     from scylla.e2e.workspace_manager import WorkspaceManager
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ class TierActionBuilder:
             # Rehydration reads from completed/ since runs are promoted after diff capture.
             if experiment_dir is not None and not tier_ctx.subtest_results:
                 from scylla.e2e.paths import get_tier_dir
-                from scylla.e2e.rehydrate import load_tier_subtest_results
+                from scylla.persistence.rehydrate import load_tier_subtest_results
 
                 completed_tier_dir = get_tier_dir(experiment_dir, tier_id.value, completed=True)
                 if completed_tier_dir.exists():
@@ -210,7 +210,7 @@ class TierActionBuilder:
             # Rehydration reads from completed/ since runs are promoted after diff capture.
             if experiment_dir is not None and not tier_ctx.subtest_results:
                 from scylla.e2e.paths import get_tier_dir
-                from scylla.e2e.rehydrate import load_tier_subtest_results
+                from scylla.persistence.rehydrate import load_tier_subtest_results
 
                 completed_tier_dir = get_tier_dir(experiment_dir, tier_id.value, completed=True)
                 if completed_tier_dir.exists():
@@ -225,7 +225,7 @@ class TierActionBuilder:
 
             if tier_ctx.selection is None and experiment_dir is not None:
                 from scylla.e2e.paths import get_tier_dir
-                from scylla.e2e.rehydrate import load_tier_selection
+                from scylla.persistence.rehydrate import load_tier_selection
 
                 completed_tier_dir = get_tier_dir(experiment_dir, tier_id.value, completed=True)
                 tier_ctx.selection = load_tier_selection(completed_tier_dir)

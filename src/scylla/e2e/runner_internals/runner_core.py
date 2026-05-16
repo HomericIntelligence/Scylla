@@ -11,15 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from scylla.e2e.checkpoint import (
-    E2ECheckpoint,
-    compute_config_hash,
-    load_checkpoint,
-    save_checkpoint,
-    validate_checkpoint_config,
-)
 from scylla.e2e.checkpoint_finalizer import CheckpointFinalizer
-from scylla.e2e.experiment_result_writer import ExperimentResultWriter
 from scylla.e2e.experiment_setup_manager import ExperimentSetupManager
 
 # Note: Judge prompts are now generated dynamically via scylla.judge.prompts.build_task_prompt()
@@ -45,6 +37,14 @@ from scylla.e2e.tier_action_builder import TierActionBuilder
 from scylla.e2e.tier_manager import TierManager
 from scylla.e2e.workspace_manager import WorkspaceManager
 from scylla.metrics.emitter import MetricEmitter, get_default_emitter
+from scylla.persistence.checkpoint import (
+    E2ECheckpoint,
+    compute_config_hash,
+    load_checkpoint,
+    save_checkpoint,
+    validate_checkpoint_config,
+)
+from scylla.persistence.experiment_result_writer import ExperimentResultWriter
 from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
@@ -494,7 +494,7 @@ class E2ERunner:
         # Re-hydrate tier_results from disk if empty — occurs when ExperimentSM resumes
         # from TIERS_COMPLETE+, which skips _action_exp_tiers_running.
         if not tier_results and self.experiment_dir.exists():
-            from scylla.e2e.rehydrate import load_experiment_tier_results
+            from scylla.persistence.rehydrate import load_experiment_tier_results
 
             rehydrated = load_experiment_tier_results(self.experiment_dir, self.config)
             tier_results.update(rehydrated)
@@ -671,7 +671,7 @@ class E2ERunner:
 
         # Fallback: aggregate from tier_results (e.g. resumed past TIERS_COMPLETE)
         if not tier_results and self.experiment_dir and self.experiment_dir.exists():
-            from scylla.e2e.rehydrate import load_experiment_tier_results
+            from scylla.persistence.rehydrate import load_experiment_tier_results
 
             tier_results.update(load_experiment_tier_results(self.experiment_dir, self.config))
         return self._aggregate_results(tier_results, start_time)
@@ -933,7 +933,7 @@ class E2ERunner:
         subtest_results = tier_ctx.subtest_results
         if not subtest_results and self.experiment_dir:
             from scylla.e2e.paths import get_tier_dir
-            from scylla.e2e.rehydrate import load_tier_subtest_results
+            from scylla.persistence.rehydrate import load_tier_subtest_results
 
             tier_dir = get_tier_dir(self.experiment_dir, tier_id.value, completed=True)
             if tier_dir.exists():

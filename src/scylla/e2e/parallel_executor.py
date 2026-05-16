@@ -32,11 +32,11 @@ from scylla.e2e.rate_limit import (
 )
 
 if TYPE_CHECKING:
-    from scylla.e2e.checkpoint import E2ECheckpoint
     from scylla.e2e.models import SubTestConfig, TierBaseline
     from scylla.e2e.resource_manager import ResourceManager
     from scylla.e2e.tier_manager import TierManager
     from scylla.e2e.workspace_manager import WorkspaceManager
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 

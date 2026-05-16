@@ -21,7 +21,7 @@ from pydantic import BaseModel, model_validator
 from scylla.e2e.paths import get_agent_dir
 
 if TYPE_CHECKING:
-    from scylla.e2e.checkpoint import E2ECheckpoint
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -401,7 +401,7 @@ def wait_for_rate_limit(
     wait_time = retry_after
 
     # Update checkpoint with pause status
-    from scylla.e2e.checkpoint import save_checkpoint
+    from scylla.persistence.checkpoint import save_checkpoint
 
     checkpoint.status = "paused_rate_limit"
     checkpoint.rate_limit_until = (

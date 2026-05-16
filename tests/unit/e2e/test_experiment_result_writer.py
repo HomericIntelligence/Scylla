@@ -143,10 +143,10 @@ class TestSaveTierResult:
         result = _make_tier_result(TierID.T0)
 
         with (
-            patch("scylla.e2e.experiment_result_writer.save_tier_report"),
-            patch("scylla.e2e.experiment_result_writer.save_subtest_report"),
+            patch("scylla.persistence.experiment_result_writer.save_tier_report"),
+            patch("scylla.persistence.experiment_result_writer.save_subtest_report"),
             patch(
-                "scylla.e2e.experiment_result_writer.generate_tier_summary_table",
+                "scylla.persistence.experiment_result_writer.generate_tier_summary_table",
                 return_value="table",
             ),
         ):
@@ -163,10 +163,11 @@ class TestSaveTierResult:
         result = _make_tier_result(TierID.T0)
 
         with (
-            patch("scylla.e2e.experiment_result_writer.save_tier_report"),
-            patch("scylla.e2e.experiment_result_writer.save_subtest_report"),
+            patch("scylla.persistence.experiment_result_writer.save_tier_report"),
+            patch("scylla.persistence.experiment_result_writer.save_subtest_report"),
             patch(
-                "scylla.e2e.experiment_result_writer.generate_tier_summary_table", return_value="t"
+                "scylla.persistence.experiment_result_writer.generate_tier_summary_table",
+                return_value="t",
             ),
         ):
             writer.save_tier_result(TierID.T0, result)
@@ -179,10 +180,10 @@ class TestSaveTierResult:
         result = _make_tier_result(TierID.T0)
 
         with (
-            patch("scylla.e2e.experiment_result_writer.save_tier_report"),
-            patch("scylla.e2e.experiment_result_writer.save_subtest_report"),
+            patch("scylla.persistence.experiment_result_writer.save_tier_report"),
+            patch("scylla.persistence.experiment_result_writer.save_subtest_report"),
             patch(
-                "scylla.e2e.experiment_result_writer.generate_tier_summary_table",
+                "scylla.persistence.experiment_result_writer.generate_tier_summary_table",
                 return_value="summary_content",
             ),
         ):
@@ -312,9 +313,9 @@ class TestGenerateReport:
         )
 
         with (
-            patch("scylla.e2e.experiment_result_writer.save_experiment_report"),
+            patch("scylla.persistence.experiment_result_writer.save_experiment_report"),
             patch(
-                "scylla.e2e.experiment_result_writer.generate_experiment_summary_table",
+                "scylla.persistence.experiment_result_writer.generate_experiment_summary_table",
                 return_value="exp_summary",
             ),
         ):

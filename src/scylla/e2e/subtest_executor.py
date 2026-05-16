@@ -63,8 +63,8 @@ from scylla.metrics.emitter import get_default_emitter
 from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
-    from scylla.e2e.checkpoint import E2ECheckpoint
     from scylla.e2e.parallel_executor import RateLimitCoordinator
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 _tracer = get_tracer(__name__)
@@ -583,7 +583,7 @@ class SubTestExecutor:
                                         checkpoint.unmark_run_completed(
                                             tier_id.value, subtest.id, run_num
                                         )
-                                        from scylla.e2e.checkpoint import save_checkpoint
+                                        from scylla.persistence.checkpoint import save_checkpoint
 
                                         save_checkpoint(checkpoint, checkpoint_path)
                                     # Fall through to re-run
@@ -812,7 +812,7 @@ class SubTestExecutor:
         # Re-hydrate runs from disk if empty — occurs when SubtestSM resumes from
         # AGGREGATED (terminal), which skips _run_loop and leaves `runs` empty.
         if not runs and results_dir.exists():
-            from scylla.e2e.rehydrate import load_subtest_run_results
+            from scylla.persistence.rehydrate import load_subtest_run_results
 
             runs = load_subtest_run_results(results_dir)
             if runs:
