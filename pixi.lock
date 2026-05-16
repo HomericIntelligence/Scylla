@@ -5321,7 +5321,7 @@ packages:
 - pypi: ./
   name: scylla
   version: 0.1.0
-  sha256: b55b1dbc8e45801215f5bf533972fc88d7f12db628cbdeaa05287995af7a146b
+  sha256: 33668a51752c9cf2a81334ff5c209996c1b5dbc44c97c9753d0222cd05d6fd0d
   requires_dist:
   - click>=8.0,<9
   - homericintelligence-hephaestus>=0.7.0,<1
@@ -5343,6 +5343,8 @@ packages:
   - altair>=6.1.0,<7 ; extra == 'analysis'
   - vl-convert-python>=1.9.0.post1,<2 ; extra == 'analysis'
   - krippendorff>=0.8.2,<1 ; extra == 'analysis'
+  - statsmodels>=0.14,<1 ; extra == 'analysis'
+  - jsonschema>=4.0,<5 ; extra == 'analysis'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl
   name: seaborn
