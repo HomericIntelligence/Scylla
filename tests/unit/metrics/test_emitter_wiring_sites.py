@@ -161,8 +161,8 @@ def test_adapter_metrics_skip_when_no_result(monkeypatch: pytest.MonkeyPatch) ->
 
 def test_checkpoint_save_emits_metrics(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """``save_checkpoint`` emits duration + outcome on success."""
-    from scylla.e2e import checkpoint as checkpoint_mod
-    from scylla.e2e.checkpoint import E2ECheckpoint, save_checkpoint
+    from scylla.persistence import checkpoint as checkpoint_mod
+    from scylla.persistence.checkpoint import E2ECheckpoint, save_checkpoint
 
     rec = RecordingEmitter()
     monkeypatch.setattr(checkpoint_mod, "get_default_emitter", lambda: rec)
