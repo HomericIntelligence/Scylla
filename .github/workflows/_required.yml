@@ -265,80 +265,14 @@ jobs:
             junit-integration.xml
           retention-days: 7
 
-  # ── 4. security/dependency-scan ────────────────────────────────────────────
-  security-dependency-scan:
-    name: security/dependency-scan
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
-
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
-        with:
-          environment: lint
-
-      - name: Run pip-audit
-        id: pip-audit
-        run: pixi run --environment lint pip-audit
-
-      - name: Post pip-audit summary
-        if: always()
-        env:
-          AUDIT_OUTCOME: ${{ steps.pip-audit.outcome }}
-        run: |
-          {
-            echo "## pip-audit Security Scan"
-            echo ""
-            if [ "$AUDIT_OUTCOME" = "success" ]; then
-              echo "No HIGH/CRITICAL vulnerabilities found."
-            else
-              echo "Vulnerabilities detected — see job logs for details."
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  # ── 5. security/secrets-scan ───────────────────────────────────────────────
-  security-secrets-scan:
-    name: security/secrets-scan
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-
-    steps:
-      # Full history so gitleaks can scan all commits, not just HEAD.
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
-        with:
-          fetch-depth: 0
-
-      - name: Install Gitleaks
-        run: |
-          GITLEAKS_VERSION=8.30.1
-          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-          ARCH=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/')
-          curl -sSfL \
-            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_${OS}_${ARCH}.tar.gz" \
-            | tar -xz -C /usr/local/bin gitleaks
-          gitleaks version
-
-      - name: Run Gitleaks
-        # --exit-code 0 ensures the step always succeeds; findings are reported
-        # via the SARIF artifact uploaded below. No silent-failure suppression.
-        run: |
-          if [ -f .gitleaks.toml ]; then
-            gitleaks detect --source . --config .gitleaks.toml \
-              --report-format sarif --report-path gitleaks.sarif --exit-code 0
-          else
-            gitleaks detect --source . \
-              --report-format sarif --report-path gitleaks.sarif --exit-code 0
-          fi
-
-      - name: Upload Gitleaks SARIF
-        if: always() && hashFiles('gitleaks.sarif') != ''
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
-        with:
-          name: gitleaks-report
-          path: gitleaks.sarif
-          retention-days: 90
+  # ── 4+5. security (pip-audit + secrets-scan) ──────────────────────────────
+  # Delegated to security.yml via workflow_call — single source of truth.
+  # Branch-protection contexts "Dependency vulnerability scan" and
+  # "Secrets scan (gitleaks)" are produced by the jobs inside security.yml.
+  security:
+    name: security
+    uses: ./.github/workflows/security.yml
+    secrets: inherit
 
   # ── 6. build ───────────────────────────────────────────────────────────────
   build:

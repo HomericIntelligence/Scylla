@@ -228,6 +228,19 @@ git push origin v<VERSION>
 The `.github/workflows/release.yml` workflow automatically creates a GitHub release
 with auto-generated release notes from conventional commits.
 
+### Versioning & Compatibility
+
+ProjectScylla's backwards-compatibility policy, deprecation window, and curated public-API surface
+are documented in [`docs/dev/compatibility.md`](docs/dev/compatibility.md). Key points:
+
+- **MAJOR** bump required for any breaking change to the public API.
+- **Deprecation window**: one full minor release cycle of `DeprecationWarning` before removal.
+- **Migration notes** go in the PR description and in GitHub release notes
+  (auto-generated via `gh release create --generate-notes`); there is no CHANGELOG file.
+
+Read the full policy before landing any change that affects public symbols, CLI flags, or
+experiment/output schemas.
+
 ## Code Quality Standards
 
 ### Python Style
