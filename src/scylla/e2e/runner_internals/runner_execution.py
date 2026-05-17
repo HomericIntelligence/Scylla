@@ -15,7 +15,6 @@ from functools import reduce
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from scylla.persistence.checkpoint import E2ECheckpoint
 from scylla.e2e.models import (
     TIER_DEPENDENCIES,
     TierBaseline,
@@ -28,6 +27,7 @@ from scylla.e2e.parallel_tier_runner import ParallelTierRunner
 from scylla.e2e.runner_internals.constants import _STATUS_RUNNING
 from scylla.e2e.runner_internals.tier_context import TierContext
 from scylla.e2e.tier_action_builder import TierActionBuilder
+from scylla.persistence.checkpoint import E2ECheckpoint
 from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
@@ -128,7 +128,10 @@ class RunnerExecution:
         baseline: TierBaseline | None,
     ) -> TierResult:
         """Run a single tier's evaluation, wrapped in a tracing span."""
+        import time as _time
+
         runner = self._runner
+        _tier_start = _time.monotonic()
         with _tracer.start_as_current_span(
             "scylla.tier",
             attributes={
@@ -137,10 +140,24 @@ class RunnerExecution:
             },
         ) as _tier_span:
             try:
-                return self.run_tier_body(tier_id, baseline)
+                # Dispatch via the runner attribute so tests that monkeypatch
+                # ``runner._run_tier_body`` continue to work after decomposition.
+                return runner._run_tier_body(tier_id, baseline)
             except Exception as e:
                 _tier_span.record_exception(e)
                 raise
+            finally:
+                try:
+                    runner._emitter.emit_gauge(
+                        "scylla_tier_duration_seconds",
+                        float(_time.monotonic() - _tier_start),
+                        labels={
+                            "tier": tier_id.value,
+                            "experiment": runner.config.experiment_id,
+                        },
+                    )
+                except Exception as _e:  # never break tier finalization
+                    logger.debug(f"Tier duration emit failed (non-fatal): {_e}")
 
     def run_tier_body(
         self,

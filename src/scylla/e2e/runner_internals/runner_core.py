@@ -52,6 +52,7 @@ from scylla.e2e.runner_internals.runner_setup import RunnerSetup
 from scylla.e2e.runner_internals.tier_context import TierContext
 from scylla.e2e.shutdown import is_shutdown_requested
 from scylla.metrics.emitter import MetricEmitter, get_default_emitter
+
 # Imported at module scope so tests can patch
 # ``scylla.e2e.runner_internals.runner_core.{load_checkpoint, validate_checkpoint_config}``
 # (see tests/unit/e2e/test_runner.py). After PR #1940 the implementation lives in

@@ -13,13 +13,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scylla.e2e.checkpoint_finalizer import CheckpointFinalizer
-from scylla.persistence.experiment_result_writer import ExperimentResultWriter
 from scylla.e2e.models import (
     ExperimentResult,
     ExperimentState,
     TierID,
     TierResult,
 )
+from scylla.persistence.experiment_result_writer import ExperimentResultWriter
 
 if TYPE_CHECKING:
     from scylla.e2e.runner_internals.runner_core import E2ERunner

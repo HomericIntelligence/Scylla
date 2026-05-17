@@ -15,10 +15,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from scylla.persistence.checkpoint import E2ECheckpoint, compute_config_hash, save_checkpoint
 from scylla.e2e.experiment_setup_manager import ExperimentSetupManager
 from scylla.e2e.runner_internals.constants import _STATUS_RUNNING
 from scylla.e2e.workspace_manager import WorkspaceManager
+from scylla.persistence.checkpoint import E2ECheckpoint, compute_config_hash, save_checkpoint
 
 if TYPE_CHECKING:
     from scylla.e2e.runner_internals.runner_core import E2ERunner

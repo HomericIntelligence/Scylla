@@ -15,8 +15,8 @@ from scylla.e2e.models import ExperimentConfig
 from scylla.e2e.resume_manager import ResumeManager
 
 if TYPE_CHECKING:
-    from scylla.persistence.checkpoint import E2ECheckpoint
     from scylla.e2e.runner_internals.runner_core import E2ERunner
+    from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
 
