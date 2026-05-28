@@ -30,12 +30,13 @@ State flow for a single run (18 sequential states):
 from __future__ import annotations
 
 import logging
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scylla.core.state_machine import StateMachine as GenericStateMachine
+from scylla.core.state_machine import Transition
 from scylla.e2e.models import RunState
 
 if TYPE_CHECKING:
@@ -90,112 +91,100 @@ def is_at_or_past_state(current: RunState, target: RunState) -> bool:
     return cur_idx >= tgt_idx
 
 
-@dataclass
-class StateTransition:
-    """Describes a single state transition in the run state machine.
-
-    Attributes:
-        from_state: State before this transition
-        to_state: State after this transition completes successfully
-        description: Human-readable description for logging
-
-    """
-
-    from_state: RunState
-    to_state: RunState
-    description: str
+# Type alias for run transitions using the generic Transition
+StateTransition = Transition[RunState]
 
 
 # Registry of all valid transitions.
 # Actions (the callables that perform the work) are injected at runtime
 # by callers who hold references to the appropriate stage functions.
 TRANSITION_REGISTRY: list[StateTransition] = [
-    StateTransition(
+    Transition(
         from_state=RunState.PENDING,
         to_state=RunState.DIR_STRUCTURE_CREATED,
         description="Create run_NN/, agent/, judge/ directories",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.DIR_STRUCTURE_CREATED,
         to_state=RunState.WORKTREE_CREATED,
         description="Create git worktree",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.WORKTREE_CREATED,
         to_state=RunState.SYMLINKS_APPLIED,
         description="Symlink tier resources to workspace",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.SYMLINKS_APPLIED,
         to_state=RunState.CONFIG_COMMITTED,
         description="Write CLAUDE.md and settings.json, git commit",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.CONFIG_COMMITTED,
         to_state=RunState.BASELINE_CAPTURED,
         description="Capture pipeline baseline (compileall, ruff, pytest, pre-commit)",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.BASELINE_CAPTURED,
         to_state=RunState.PROMPT_WRITTEN,
         description="Write task_prompt.md, inject thinking keyword if configured",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.PROMPT_WRITTEN,
         to_state=RunState.REPLAY_GENERATED,
         description="Build adapter command, generate replay.sh",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.REPLAY_GENERATED,
         to_state=RunState.AGENT_COMPLETE,
         description="Execute agent in isolated workspace",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.AGENT_COMPLETE,
         to_state=RunState.AGENT_CHANGES_COMMITTED,
         description="Commit agent changes to worktree branch",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.AGENT_CHANGES_COMMITTED,
         to_state=RunState.DIFF_CAPTURED,
         description="Capture git diff and workspace state",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.DIFF_CAPTURED,
         to_state=RunState.PROMOTED_TO_COMPLETED,
         description="Move run directory from in_progress/ to completed/",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.PROMOTED_TO_COMPLETED,
         to_state=RunState.JUDGE_PIPELINE_RUN,
         description="Run build pipeline on agent-modified workspace",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.JUDGE_PIPELINE_RUN,
         to_state=RunState.JUDGE_PROMPT_BUILT,
         description="Assemble judge prompt with all context",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.JUDGE_PROMPT_BUILT,
         to_state=RunState.JUDGE_COMPLETE,
         description="Execute Claude CLI judge(s), compute consensus",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.JUDGE_COMPLETE,
         to_state=RunState.RUN_FINALIZED,
         description="Build E2ERunResult, save run_result.json",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.RUN_FINALIZED,
         to_state=RunState.REPORT_WRITTEN,
         description="Generate report.md and report.json",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.REPORT_WRITTEN,
         to_state=RunState.CHECKPOINTED,
         description="Save checkpoint (no-op — auto-saved after each transition)",
     ),
-    StateTransition(
+    Transition(
         from_state=RunState.CHECKPOINTED,
         to_state=RunState.WORKTREE_CLEANED,
         description="Remove worktree for passed runs",
@@ -247,8 +236,8 @@ def validate_transition(from_state: RunState, to_state: RunState) -> bool:
 class StateMachine:
     """Manages state transitions for a single run with checkpoint persistence.
 
-    Each call to advance() executes the next action, updates the run state
-    in the checkpoint, and saves the checkpoint atomically.
+    Delegates to the generic StateMachine[RunState] for each run, constructing
+    a transient instance per call via _sm_for(tier_id, subtest_id, run_num).
 
     Usage:
         sm = StateMachine(checkpoint, checkpoint_path)
@@ -300,6 +289,38 @@ class StateMachine:
         """
         return is_terminal_state(self.get_state(tier_id, subtest_id, run_num))
 
+    def _sm_for(self, tier_id: str, subtest_id: str, run_num: int) -> GenericStateMachine[RunState]:
+        """Construct a transient StateMachine instance for a run.
+
+        Each call creates a fresh instance with closures capturing tier_id, subtest_id,
+        and run_num, so state access is correctly scoped to the specific run.
+
+        Args:
+            tier_id: Tier identifier
+            subtest_id: Subtest identifier
+            run_num: Run number (1-based)
+
+        Returns:
+            A StateMachine[RunState] configured for this run
+
+        """
+        from scylla.persistence.checkpoint import save_checkpoint
+
+        def apply(state: RunState) -> None:
+            self.checkpoint.set_run_state(tier_id, subtest_id, run_num, state.value)
+
+        def persist(_state: RunState) -> None:
+            save_checkpoint(self.checkpoint, self.checkpoint_path)
+
+        return GenericStateMachine[RunState](
+            transitions=TRANSITION_REGISTRY,
+            terminal_states=_TERMINAL_STATES,
+            get_state=lambda: self.get_state(tier_id, subtest_id, run_num),
+            apply_state=apply,
+            persistence_hook=persist,
+            label=f"run[{tier_id}/{subtest_id}/run_{run_num:02d}]",
+        )
+
     def advance(
         self,
         tier_id: str,
@@ -309,11 +330,7 @@ class StateMachine:
     ) -> RunState:
         """Advance the run by one state transition.
 
-        1. Reads the current state from the checkpoint.
-        2. Looks up the next transition in the registry.
-        3. Executes the transition action (if provided).
-        4. Updates the checkpoint state.
-        5. Saves the checkpoint atomically.
+        Delegates to the generic StateMachine.advance().
 
         Args:
             tier_id: Tier identifier
@@ -331,47 +348,8 @@ class StateMachine:
             ValueError: If no transition is defined for the current state
 
         """
-        from scylla.persistence.checkpoint import save_checkpoint
-
-        current = self.get_state(tier_id, subtest_id, run_num)
-
-        if is_terminal_state(current):
-            raise RuntimeError(
-                f"Cannot advance run {tier_id}/{subtest_id}/run_{run_num:02d} "
-                f"from terminal state {current.value}"
-            )
-
-        transition = get_next_transition(current)
-        if transition is None:
-            raise ValueError(
-                f"No transition defined from state {current.value} "
-                f"for run {tier_id}/{subtest_id}/run_{run_num:02d}"
-            )
-
-        logger.debug(
-            f"[{tier_id}/{subtest_id}/run_{run_num:02d}] "
-            f"{current.value} -> {transition.to_state.value}: {transition.description}"
-        )
-
-        # Execute the action if provided
-        action = actions.get(current)
-        if action is not None:
-            _t0 = time.monotonic()
-            action()
-            _elapsed = time.monotonic() - _t0
-            logger.info(
-                f"[{tier_id}/{subtest_id}/run_{run_num:02d}] "
-                f"{current.value} -> {transition.to_state.value}: "
-                f"{transition.description} ({_elapsed:.1f}s)"
-            )
-
-        # Update state in checkpoint
-        self.checkpoint.set_run_state(tier_id, subtest_id, run_num, transition.to_state.value)
-
-        # Save checkpoint atomically
-        save_checkpoint(self.checkpoint, self.checkpoint_path)
-
-        return transition.to_state
+        sm = self._sm_for(tier_id, subtest_id, run_num)
+        return sm.advance(actions)
 
     def advance_to_completion(
         self,
@@ -383,8 +361,8 @@ class StateMachine:
     ) -> RunState:
         """Advance the run through all states until a terminal state is reached.
 
-        Useful for running a complete run from start or resuming from any state.
-        On exception, the run is marked as FAILED in the checkpoint.
+        Delegates to the generic StateMachine.advance_to_completion() with
+        run-specific exception handling.
 
         If until_state is specified, the run stops cleanly once that state is
         reached (inclusive): the action that transitions INTO until_state IS
@@ -405,7 +383,6 @@ class StateMachine:
         """
         from scylla.e2e.rate_limit import RateLimitError
         from scylla.e2e.shutdown import ShutdownInterruptedError
-        from scylla.persistence.checkpoint import save_checkpoint
 
         # Early return if already at or past the --until target state
         if until_state is not None:
@@ -418,35 +395,13 @@ class StateMachine:
                 )
                 return current
 
-        try:
-            while not self.is_complete(tier_id, subtest_id, run_num):
-                new_state = self.advance(tier_id, subtest_id, run_num, actions)
-                if until_state is not None and new_state == until_state:
-                    logger.info(
-                        f"[{tier_id}/{subtest_id}/run_{run_num:02d}] "
-                        f"Reached --until target state: {until_state.value}"
-                    )
-                    break
-        except RateLimitError:
-            self.checkpoint.set_run_state(tier_id, subtest_id, run_num, RunState.RATE_LIMITED.value)
-            save_checkpoint(self.checkpoint, self.checkpoint_path)
-            raise
-        except ShutdownInterruptedError:
-            # Ctrl+C interrupted this run mid-stage — leave it at its last successfully
-            # checkpointed state so it can be cleanly resumed on the next invocation.
-            current = self.get_state(tier_id, subtest_id, run_num)
-            logger.warning(
-                f"[{tier_id}/{subtest_id}/run_{run_num:02d}] "
-                f"Shutdown interrupted at {current.value} — run left resumable (not FAILED)"
-            )
-            raise
-        except Exception as e:
-            logger.error(
-                f"Run {tier_id}/{subtest_id}/run_{run_num:02d} failed in state "
-                f"{self.get_state(tier_id, subtest_id, run_num).value}: {e}"
-            )
-            self.checkpoint.set_run_state(tier_id, subtest_id, run_num, RunState.FAILED.value)
-            save_checkpoint(self.checkpoint, self.checkpoint_path)
-            raise
-
-        return self.get_state(tier_id, subtest_id, run_num)
+        sm = self._sm_for(tier_id, subtest_id, run_num)
+        return sm.advance_to_completion(
+            actions,
+            until_state=until_state,
+            error_state_map=[
+                (RateLimitError, RunState.RATE_LIMITED),
+                (ShutdownInterruptedError, None),
+            ],
+            failure_state=RunState.FAILED,
+        )

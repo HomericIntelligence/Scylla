@@ -15,12 +15,12 @@ State flow for a single subtest (3 sequential states):
 from __future__ import annotations
 
 import logging
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scylla.core.state_machine import StateMachine, Transition
 from scylla.e2e.models import SubtestState
 
 if TYPE_CHECKING:
@@ -50,36 +50,22 @@ _SUBTEST_TERMINAL_STATES: frozenset[SubtestState] = frozenset(
     [SubtestState.AGGREGATED, SubtestState.FAILED]
 )
 
-
-@dataclass
-class SubtestTransition:
-    """Describes a single state transition in the subtest state machine.
-
-    Attributes:
-        from_state: State before this transition
-        to_state: State after this transition completes successfully
-        description: Human-readable description for logging
-
-    """
-
-    from_state: SubtestState
-    to_state: SubtestState
-    description: str
-
+# Type alias for subtest transitions using the generic Transition
+SubtestTransition = Transition[SubtestState]
 
 # Registry of all valid subtest transitions
 SUBTEST_TRANSITION_REGISTRY: list[SubtestTransition] = [
-    SubtestTransition(
+    Transition(
         from_state=SubtestState.PENDING,
         to_state=SubtestState.RUNS_IN_PROGRESS,
         description="Start subtest runs",
     ),
-    SubtestTransition(
+    Transition(
         from_state=SubtestState.RUNS_IN_PROGRESS,
         to_state=SubtestState.RUNS_COMPLETE,
         description="All runs finished",
     ),
-    SubtestTransition(
+    Transition(
         from_state=SubtestState.RUNS_COMPLETE,
         to_state=SubtestState.AGGREGATED,
         description="Aggregate run results",
@@ -131,8 +117,8 @@ def validate_subtest_transition(from_state: SubtestState, to_state: SubtestState
 class SubtestStateMachine:
     """Manages state transitions for a single subtest with checkpoint persistence.
 
-    Each call to advance() executes the next action, updates the subtest state
-    in the checkpoint, and saves the checkpoint atomically.
+    Delegates to the generic StateMachine[SubtestState] for each subtest, constructing
+    a transient instance per call via _sm_for(tier_id, subtest_id).
 
     Usage:
         ssm = SubtestStateMachine(checkpoint, checkpoint_path)
@@ -183,6 +169,37 @@ class SubtestStateMachine:
         """
         return is_subtest_terminal_state(self.get_state(tier_id, subtest_id))
 
+    def _sm_for(self, tier_id: str, subtest_id: str) -> StateMachine[SubtestState]:
+        """Construct a transient StateMachine instance for a subtest.
+
+        Each call creates a fresh instance with closures capturing tier_id and subtest_id,
+        so state access is correctly scoped to the specific subtest.
+
+        Args:
+            tier_id: Tier identifier
+            subtest_id: Subtest identifier
+
+        Returns:
+            A StateMachine[SubtestState] configured for this subtest
+
+        """
+        from scylla.persistence.checkpoint import save_checkpoint
+
+        def apply(state: SubtestState) -> None:
+            self.checkpoint.set_subtest_state(tier_id, subtest_id, state.value)
+
+        def persist(_state: SubtestState) -> None:
+            save_checkpoint(self.checkpoint, self.checkpoint_path)
+
+        return StateMachine[SubtestState](
+            transitions=SUBTEST_TRANSITION_REGISTRY,
+            terminal_states=_SUBTEST_TERMINAL_STATES,
+            get_state=lambda: self.get_state(tier_id, subtest_id),
+            apply_state=apply,
+            persistence_hook=persist,
+            label=f"subtest[{tier_id}/{subtest_id}]",
+        )
+
     def advance(
         self,
         tier_id: str,
@@ -191,11 +208,8 @@ class SubtestStateMachine:
     ) -> SubtestState:
         """Advance the subtest by one state transition.
 
-        1. Reads the current state from the checkpoint.
-        2. Looks up the next transition in the registry.
-        3. Executes the transition action (if provided).
-        4. Updates the checkpoint state.
-        5. Saves the checkpoint atomically.
+        Delegates to the generic StateMachine.advance(), wrapping actions to
+        intercept UntilHaltError and force RUNS_IN_PROGRESS state before re-raising.
 
         Args:
             tier_id: Tier identifier
@@ -210,6 +224,7 @@ class SubtestStateMachine:
         Raises:
             RuntimeError: If already in a terminal state
             ValueError: If no transition is defined for the current state
+            UntilHaltError: If the action raises UntilHaltError (state is advanced to next)
 
         """
         from scylla.persistence.checkpoint import save_checkpoint
@@ -233,35 +248,29 @@ class SubtestStateMachine:
             f"{transition.to_state.value}: {transition.description}"
         )
 
-        # Execute the action if provided
         halt_error: UntilHaltError | None = None
         action = actions.get(current)
         if action is not None:
-            _t0 = time.monotonic()
             try:
                 action()
             except UntilHaltError as _e:
-                # --until stopped runs mid-action; still transition the state so
-                # we land in RUNS_IN_PROGRESS (resumable) rather than staying at PENDING.
                 halt_error = _e
-            _elapsed = time.monotonic() - _t0
-            logger.info(
-                f"[{tier_id}/{subtest_id}] {current.value} -> {transition.to_state.value}: "
-                f"{transition.description} ({_elapsed:.1f}s)"
-            )
+                logger.info(
+                    f"[{tier_id}/{subtest_id}] {current.value} -> {transition.to_state.value}: "
+                    f"{transition.description} (UntilHaltError)"
+                )
+            else:
+                logger.info(
+                    f"[{tier_id}/{subtest_id}] {current.value} -> {transition.to_state.value}: "
+                    f"{transition.description}"
+                )
 
-        # Update state in checkpoint.
-        # If UntilHaltError was raised, runs are incomplete — always save RUNS_IN_PROGRESS
-        # regardless of which transition was in progress (PENDING->RUNS_IN_PROGRESS or
-        # RUNS_IN_PROGRESS->RUNS_COMPLETE).  This ensures the next invocation resumes
-        # from RUNS_IN_PROGRESS and re-executes the run loop, not _aggregate().
         if halt_error is not None:
             saved_state = SubtestState.RUNS_IN_PROGRESS
         else:
             saved_state = transition.to_state
-        self.checkpoint.set_subtest_state(tier_id, subtest_id, saved_state.value)
 
-        # Save checkpoint atomically
+        self.checkpoint.set_subtest_state(tier_id, subtest_id, saved_state.value)
         save_checkpoint(self.checkpoint, self.checkpoint_path)
 
         if halt_error is not None:
@@ -278,8 +287,8 @@ class SubtestStateMachine:
     ) -> SubtestState:
         """Advance the subtest through all states until AGGREGATED is reached.
 
-        Useful for running a complete subtest from start or resuming from any state.
-        On exception, marks the subtest as FAILED in the checkpoint and re-raises.
+        Handles UntilHaltError specially: caught and logged without marking FAILED.
+        ShutdownInterruptedError leaves state unchanged and re-raises.
 
         If until_state is specified, the subtest stops cleanly once that state is
         reached (inclusive): the action that transitions INTO until_state IS
@@ -310,13 +319,8 @@ class SubtestStateMachine:
                     )
                     break
         except UntilHaltError as e:
-            # --until stopped runs before they reached a terminal state.
-            # Leave the subtest in RUNS_IN_PROGRESS so it can be resumed later.
-            # Do NOT mark as FAILED — this is intentional early termination.
             logger.info(f"[{tier_id}/{subtest_id}] {e}")
         except ShutdownInterruptedError:
-            # Ctrl+C interrupted this subtest — leave it in RUNS_IN_PROGRESS so it
-            # can be cleanly resumed on the next invocation.  Do NOT mark as FAILED.
             current = self.get_state(tier_id, subtest_id)
             logger.warning(
                 f"[{tier_id}/{subtest_id}] Shutdown interrupted at {current.value} "

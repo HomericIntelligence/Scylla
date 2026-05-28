@@ -18,12 +18,12 @@ State flow for a single tier (6 sequential states):
 from __future__ import annotations
 
 import logging
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scylla.core.state_machine import StateMachine, Transition
 from scylla.e2e.models import TierState
 
 if TYPE_CHECKING:
@@ -46,51 +46,37 @@ _TIER_STATE_SEQUENCE: list[TierState] = [
 # Terminal states — do not advance further
 _TIER_TERMINAL_STATES: frozenset[TierState] = frozenset([TierState.COMPLETE, TierState.FAILED])
 
-
-@dataclass
-class TierTransition:
-    """Describes a single state transition in the tier state machine.
-
-    Attributes:
-        from_state: State before this transition
-        to_state: State after this transition completes successfully
-        description: Human-readable description for logging
-
-    """
-
-    from_state: TierState
-    to_state: TierState
-    description: str
-
+# Type alias for tier transitions using the generic Transition
+TierTransition = Transition[TierState]
 
 # Registry of all valid tier transitions
 TIER_TRANSITION_REGISTRY: list[TierTransition] = [
-    TierTransition(
+    Transition(
         from_state=TierState.PENDING,
         to_state=TierState.CONFIG_LOADED,
         description="Load tier config YAML",
     ),
-    TierTransition(
+    Transition(
         from_state=TierState.CONFIG_LOADED,
         to_state=TierState.SUBTESTS_RUNNING,
         description="Start subtest execution",
     ),
-    TierTransition(
+    Transition(
         from_state=TierState.SUBTESTS_RUNNING,
         to_state=TierState.SUBTESTS_COMPLETE,
         description="Execute all subtests",
     ),
-    TierTransition(
+    Transition(
         from_state=TierState.SUBTESTS_COMPLETE,
         to_state=TierState.BEST_SELECTED,
         description="Select best subtest by CoP",
     ),
-    TierTransition(
+    Transition(
         from_state=TierState.BEST_SELECTED,
         to_state=TierState.REPORTS_GENERATED,
         description="Generate tier reports",
     ),
-    TierTransition(
+    Transition(
         from_state=TierState.REPORTS_GENERATED,
         to_state=TierState.COMPLETE,
         description="Mark tier complete",
@@ -142,8 +128,8 @@ def validate_tier_transition(from_state: TierState, to_state: TierState) -> bool
 class TierStateMachine:
     """Manages state transitions for a single tier with checkpoint persistence.
 
-    Each call to advance() executes the next action, updates the tier state
-    in the checkpoint, and saves the checkpoint atomically.
+    Delegates to the generic StateMachine[TierState] for each tier, constructing
+    a transient instance per call via _sm_for(tier_id).
 
     Usage:
         tsm = TierStateMachine(checkpoint, checkpoint_path)
@@ -191,6 +177,36 @@ class TierStateMachine:
         """
         return is_tier_terminal_state(self.get_state(tier_id))
 
+    def _sm_for(self, tier_id: str) -> StateMachine[TierState]:
+        """Construct a transient StateMachine instance for a tier.
+
+        Each call creates a fresh instance with closures capturing tier_id,
+        so state access is correctly scoped to the specific tier.
+
+        Args:
+            tier_id: Tier identifier
+
+        Returns:
+            A StateMachine[TierState] configured for this tier
+
+        """
+        from scylla.persistence.checkpoint import save_checkpoint
+
+        def apply(state: TierState) -> None:
+            self.checkpoint.set_tier_state(tier_id, state.value)
+
+        def persist(_state: TierState) -> None:
+            save_checkpoint(self.checkpoint, self.checkpoint_path)
+
+        return StateMachine[TierState](
+            transitions=TIER_TRANSITION_REGISTRY,
+            terminal_states=_TIER_TERMINAL_STATES,
+            get_state=lambda: self.get_state(tier_id),
+            apply_state=apply,
+            persistence_hook=persist,
+            label=f"tier[{tier_id}]",
+        )
+
     def advance(
         self,
         tier_id: str,
@@ -198,11 +214,7 @@ class TierStateMachine:
     ) -> TierState:
         """Advance the tier by one state transition.
 
-        1. Reads the current state from the checkpoint.
-        2. Looks up the next transition in the registry.
-        3. Executes the transition action (if provided).
-        4. Updates the checkpoint state.
-        5. Saves the checkpoint atomically.
+        Delegates to the generic StateMachine.advance().
 
         Args:
             tier_id: Tier identifier
@@ -218,41 +230,8 @@ class TierStateMachine:
             ValueError: If no transition is defined for the current state
 
         """
-        from scylla.persistence.checkpoint import save_checkpoint
-
-        current = self.get_state(tier_id)
-
-        if is_tier_terminal_state(current):
-            raise RuntimeError(f"Cannot advance tier {tier_id} from terminal state {current.value}")
-
-        transition = get_next_tier_transition(current)
-        if transition is None:
-            raise ValueError(
-                f"No transition defined from tier state {current.value} for tier {tier_id}"
-            )
-
-        logger.debug(
-            f"[{tier_id}] {current.value} -> {transition.to_state.value}: {transition.description}"
-        )
-
-        # Execute the action if provided
-        action = actions.get(current)
-        if action is not None:
-            _t0 = time.monotonic()
-            action()
-            _elapsed = time.monotonic() - _t0
-            logger.info(
-                f"[{tier_id}] {current.value} -> {transition.to_state.value}: "
-                f"{transition.description} ({_elapsed:.1f}s)"
-            )
-
-        # Update state in checkpoint
-        self.checkpoint.set_tier_state(tier_id, transition.to_state.value)
-
-        # Save checkpoint atomically
-        save_checkpoint(self.checkpoint, self.checkpoint_path)
-
-        return transition.to_state
+        sm = self._sm_for(tier_id)
+        return sm.advance(actions)
 
     def advance_to_completion(
         self,
@@ -262,14 +241,12 @@ class TierStateMachine:
     ) -> TierState:
         """Advance the tier through all states until COMPLETE is reached.
 
-        Useful for running a complete tier from start or resuming from any state.
+        Delegates to the generic StateMachine.advance_to_completion() with
+        tier-specific error handling.
+
         On exception, the tier is marked as FAILED in the checkpoint before the
         exception re-raises, enabling the experiment level to detect and continue
         with remaining tiers (partial-failure semantics).
-
-        If until_state is specified, the tier stops cleanly once that state is
-        reached (inclusive): the action that transitions INTO until_state IS
-        executed, but no further transitions run.
 
         Args:
             tier_id: Tier identifier
@@ -282,40 +259,16 @@ class TierStateMachine:
             Final TierState (COMPLETE or until_state)
 
         """
-        try:
-            while not self.is_complete(tier_id):
-                new_state = self.advance(tier_id, actions)
-                if until_state is not None and new_state == until_state:
-                    logger.info(
-                        f"[{tier_id}] Reached --until-tier target state: {until_state.value}"
-                    )
-                    break
-        except Exception as e:
-            from scylla.e2e.rate_limit import RateLimitError
-            from scylla.e2e.shutdown import ShutdownInterruptedError
-            from scylla.persistence.checkpoint import save_checkpoint
+        from scylla.e2e.rate_limit import RateLimitError
+        from scylla.e2e.shutdown import ShutdownInterruptedError
 
-            if isinstance(e, ShutdownInterruptedError):
-                # Ctrl+C interrupted this tier — leave it at CONFIG_LOADED (resumable)
-                # rather than FAILED so the next invocation can continue where we left off.
-                current = self.get_state(tier_id)
-                logger.warning(
-                    f"[{tier_id}] Shutdown interrupted at {current.value} "
-                    "— tier left at config_loaded (not FAILED)"
-                )
-                self.checkpoint.set_tier_state(tier_id, TierState.CONFIG_LOADED.value)
-                save_checkpoint(self.checkpoint, self.checkpoint_path)
-                raise
-
-            if isinstance(e, RateLimitError):
-                # Rate limits propagate to experiment level by design;
-                # TierState has no INTERRUPTED state.
-                logger.warning(
-                    f"[{tier_id}] Rate limit encountered in tier state machine: {e}. "
-                    "Marking tier as FAILED — rate limit handling occurs at experiment level."
-                )
-            self.checkpoint.set_tier_state(tier_id, TierState.FAILED.value)
-            save_checkpoint(self.checkpoint, self.checkpoint_path)
-            raise
-
-        return self.get_state(tier_id)
+        sm = self._sm_for(tier_id)
+        return sm.advance_to_completion(
+            actions,
+            until_state=until_state,
+            error_state_map=[
+                (ShutdownInterruptedError, TierState.CONFIG_LOADED),
+                (RateLimitError, TierState.FAILED),
+            ],
+            failure_state=TierState.FAILED,
+        )
