@@ -19,37 +19,11 @@ Thank you for your interest in contributing to ProjectScylla! This guide will he
 
 ## Quick Start
 
-**New to ProjectScylla?** Start here:
+**New to ProjectScylla?** See [docs/dev/onboarding.md](docs/dev/onboarding.md) for the full setup guide, including prerequisites, IDE configuration, and a first-PR walkthrough.
 
-1. **Fork and Clone**
-
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/ProjectScylla.git
-   cd ProjectScylla
-   ```
-
-2. **Environment Setup**
-
-   ```bash
-   # Install Pixi (package manager)
-   curl -fsSL https://pixi.sh/install.sh | bash
-
-   # Configure environment variables
-   cp .env.example .env
-   # Edit .env and add your API keys
-   ```
-
-3. **Verify Installation**
-
-   ```bash
-   pixi run python --version  # Should be 3.10+
-   pixi run pytest tests/ -v  # Run tests
-   ```
-
-4. **Make Your First Contribution**
-   - Look for issues labeled `good-first-issue`
-   - Read the issue description carefully
-   - Comment on the issue to let others know you're working on it
+```bash
+pixi install && pixi run pytest tests/ -v
+```
 
 ## Development Setup
 

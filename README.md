@@ -642,12 +642,11 @@ We welcome contributions! Please see **[CONTRIBUTING.md](CONTRIBUTING.md)** for 
 
 **Quick Start for Contributors:**
 
-1. Fork the repository and clone locally
-2. Copy `.env.example` to `.env` and configure API keys
-3. Install dependencies: `curl -fsSL https://pixi.sh/install.sh | bash`
-4. Install git hooks: `bash scripts/install_hooks.sh`
-5. Run tests: `pixi run pytest tests/ -v`
-6. Check [CONTRIBUTING.md](CONTRIBUTING.md) for detailed workflow
+```bash
+pixi install && pixi run pytest tests/ -v
+```
+
+See [docs/dev/onboarding.md](docs/dev/onboarding.md) for full onboarding (prerequisites, IDE setup, first PR walkthrough).
 
 **Areas for contribution:**
 
