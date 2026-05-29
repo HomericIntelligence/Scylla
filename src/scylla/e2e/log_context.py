@@ -49,6 +49,11 @@ def clear_log_context() -> None:
     _context.run_num = None
 
 
+def current_tier_id() -> str:
+    """Return the tier_id from the current thread's log context, or empty string."""
+    return getattr(_context, "tier_id", "")
+
+
 class ContextFilter(logging.Filter):
     """Logging filter that injects thread-local tier/subtest/run context.
 

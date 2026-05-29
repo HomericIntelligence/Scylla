@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from scylla.e2e.log_context import current_tier_id
 from scylla.e2e.models import (
     ExperimentConfig,
     SubTestResult,
@@ -30,6 +31,7 @@ from scylla.e2e.rate_limit import (
     is_weekly_limit,
     wait_for_rate_limit,
 )
+from scylla.metrics.emitter import get_default_emitter
 
 if TYPE_CHECKING:
     from scylla.e2e.models import SubTestConfig, TierBaseline
@@ -39,6 +41,7 @@ if TYPE_CHECKING:
     from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
+_emitter = get_default_emitter()
 
 
 class RateLimitCoordinator:
@@ -248,8 +251,24 @@ def run_tier_subtests_parallel(
             logger.warning(
                 f"[SKIP] Subtest {subtest.id} skipped due to infrastructure failure: {e}"
             )
+            try:
+                _emitter.emit_counter(
+                    "scylla_errors_total",
+                    1,
+                    labels={"error_class": type(e).__name__, "tier": current_tier_id()},
+                )
+            except Exception as _me:
+                logger.warning(f"Error metric emission failed (non-fatal): {_me}")
             completed_count += 1
         except RateLimitError as e:
+            try:
+                _emitter.emit_counter(
+                    "scylla_errors_total",
+                    1,
+                    labels={"error_class": type(e).__name__, "tier": current_tier_id()},
+                )
+            except Exception as _me:
+                logger.warning(f"Error metric emission failed (non-fatal): {_me}")
             completed_count = _handle_rate_limit(
                 e,
                 executor=executor,

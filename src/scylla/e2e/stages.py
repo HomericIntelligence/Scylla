@@ -604,9 +604,15 @@ def _emit_adapter_metrics(ctx: RunContext) -> None:
             "model": ctx.config.models[0] if ctx.config.models else "",
         }
         if ctx.agent_duration is not None:
+            _adapter_elapsed = float(ctx.agent_duration)
             emitter.emit_gauge(
                 "scylla_adapter_call_duration_seconds",
-                float(ctx.agent_duration),
+                _adapter_elapsed,
+                labels=labels,
+            )
+            emitter.emit_histogram(
+                "scylla_adapter_call_seconds",
+                _adapter_elapsed,
                 labels=labels,
             )
         if ctx.agent_result is not None:

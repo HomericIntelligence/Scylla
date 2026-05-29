@@ -209,9 +209,15 @@ def _run_judge(  # noqa: C901  # multi-judge consensus with rate-limit/error bra
                     raise
                 finally:
                     try:
+                        _elapsed = float(_time.monotonic() - _judge_start)
                         _emitter.emit_gauge(
                             "scylla_judge_call_duration_seconds",
-                            float(_time.monotonic() - _judge_start),
+                            _elapsed,
+                            labels={"model": model},
+                        )
+                        _emitter.emit_histogram(
+                            "scylla_judge_call_seconds",
+                            _elapsed,
                             labels={"model": model},
                         )
                     except Exception as _e:  # never break judge call

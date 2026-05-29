@@ -5,9 +5,8 @@ abstraction that lets an operator forward ProjectScylla experiment metrics
 (pass rates, Cost-of-Pass, latency, etc.) into a queryable time-series
 database (TSDB) such as Prometheus or VictoriaMetrics.
 
-> **Status: opt-in scaffolding.** No existing metric-computation site is
-> wired to an emitter yet. Wiring is tracked as a follow-up under issue
-> [#1888](https://github.com/HomericIntelligence/ProjectScylla/issues/1888).
+See `docs/dev/tracing.md` for the complete **Instrumentation Map** listing
+every wired call site with its span, counter, histogram, and labels.
 
 ## API
 
@@ -17,16 +16,34 @@ from scylla.metrics.emitter import get_default_emitter
 emitter = get_default_emitter()
 emitter.emit_counter("scylla_runs_total", 1, labels={"tier": "T2"})
 emitter.emit_gauge("scylla_pass_rate", 0.67, labels={"tier": "T2"})
+emitter.emit_histogram("scylla_latency_seconds", 1.23, labels={"tier": "T2"})
 ```
 
-- `MetricEmitter` — abstract base class with `emit_counter` and
-  `emit_gauge`. (Histograms are intentionally out of scope for v1.)
+- `MetricEmitter` — abstract base class with `emit_counter`, `emit_gauge`,
+  and `emit_histogram`. The base `emit_histogram` is a silent no-op so
+  existing operator-implemented subclasses continue to work without changes.
 - `NoOpEmitter` — drops every sample. **Default**.
 - `PrometheusTextfileEmitter(path)` — writes Prometheus textfile-collector
   format to `path` using an atomic `write tmp + os.replace` cycle.
 - `get_default_emitter()` — returns a `PrometheusTextfileEmitter` if the
   environment variable `SCYLLA_METRICS_PATH` is set, otherwise a
   `NoOpEmitter`.
+
+### Histogram bucket boundaries
+
+`PrometheusTextfileEmitter` uses fixed bucket boundaries (in seconds):
+
+```
+0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0, +Inf
+```
+
+Histograms are stored separately from counters/gauges in `_histograms` and
+rendered as canonical Prometheus blocks in the textfile so repeated
+observations never produce duplicate `_bucket` lines.
+
+**Operator-implemented subclasses:** The base `emit_histogram` is a silent
+no-op. Existing custom emitter subclasses continue to work, but histogram
+observations are silently dropped until the operator overrides the method.
 
 ## Output format
 
@@ -78,12 +95,9 @@ both POSIX and Windows when source and destination share a filesystem.
 The textfile collector therefore sees either the previous full snapshot
 or the new full snapshot — never a partially written line.
 
-## What this PR does **not** do
+## What this module does **not** do
 
 - Does **not** add any new runtime dependency (no `prometheus_client`,
   no `statsd`).
-- Does **not** modify any existing metric-computation site. Wiring
-  `emit_counter` / `emit_gauge` calls into the experiment runner,
-  judge, or aggregator is out of scope; see the #1888 follow-up.
 - Does **not** prescribe a TSDB topology. Choosing Prometheus vs.
   VictoriaMetrics vs. another backend is an operator decision.

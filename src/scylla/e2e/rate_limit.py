@@ -19,11 +19,15 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, model_validator
 
 from scylla.e2e.paths import get_agent_dir
+from scylla.metrics.emitter import get_default_emitter
+from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
     from scylla.persistence.checkpoint import E2ECheckpoint
 
 logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
+_emitter = get_default_emitter()
 
 
 class RateLimitInfo(BaseModel):
@@ -400,6 +404,9 @@ def wait_for_rate_limit(
     # Ensure 10% buffer (should already be added by parse_retry_after)
     wait_time = retry_after
 
+    # Use checkpoint.rate_limit_source as the reason label for metrics/spans
+    reason = checkpoint.rate_limit_source or "unknown"
+
     # Update checkpoint with pause status
     from scylla.persistence.checkpoint import save_checkpoint
 
@@ -415,50 +422,64 @@ def wait_for_rate_limit(
         f"⏸️  Rate limit hit. Pausing for {wait_time:.0f}s (until {checkpoint.rate_limit_until})"
     )
 
-    # Wait with Fibonacci backoff for status updates (1s, 1s, 2s, 3s, 5s, 8s... up to 5 min)
-    remaining = wait_time
-    fib_prev, fib_curr = 1, 1  # Start Fibonacci sequence at 1 second
-    max_interval = 300  # Cap at 5 minutes (300 seconds)
+    _pause_start = time.monotonic()
+    with _tracer.start_as_current_span("scylla.rate_limit.pause") as _span:
+        _span.set_attribute("scylla.reason", reason)
+        _span.set_attribute("scylla.retry_after_seconds", float(retry_after or 0.0))
 
-    while remaining > 0:
-        # Calculate next interval with Fibonacci backoff, capped at 5 minutes
-        interval = min(fib_curr, max_interval)
-        sleep_chunk = min(interval, remaining)
-        time.sleep(sleep_chunk)
-        remaining -= sleep_chunk
+        # Wait with Fibonacci backoff for status updates (1s, 1s, 2s, 3s, 5s, 8s... up to 5 min)
+        remaining = wait_time
+        fib_prev, fib_curr = 1, 1  # Start Fibonacci sequence at 1 second
+        max_interval = 300  # Cap at 5 minutes (300 seconds)
 
-        # Check for shutdown between sleep iterations
-        from scylla.e2e.shutdown import ShutdownInterruptedError, is_shutdown_requested
+        while remaining > 0:
+            # Calculate next interval with Fibonacci backoff, capped at 5 minutes
+            interval = min(fib_curr, max_interval)
+            sleep_chunk = min(interval, remaining)
+            time.sleep(sleep_chunk)
+            remaining -= sleep_chunk
 
-        if is_shutdown_requested():
-            # Restore checkpoint to running state before raising
-            checkpoint.status = "running"
-            checkpoint.rate_limit_until = None
-            checkpoint.rate_limit_source = None
-            save_checkpoint(checkpoint, checkpoint_path)
-            raise ShutdownInterruptedError("Shutdown requested during rate limit wait")
+            # Check for shutdown between sleep iterations
+            from scylla.e2e.shutdown import ShutdownInterruptedError, is_shutdown_requested
 
-        if remaining > 0:
-            # Calculate when next update will occur
-            next_fib = fib_prev + fib_curr
-            next_update_sec = min(next_fib, max_interval, remaining)
+            if is_shutdown_requested():
+                # Restore checkpoint to running state before raising
+                checkpoint.status = "running"
+                checkpoint.rate_limit_until = None
+                checkpoint.rate_limit_source = None
+                save_checkpoint(checkpoint, checkpoint_path)
+                raise ShutdownInterruptedError("Shutdown requested during rate limit wait")
 
-            minutes = remaining / 60
-            next_update_min = next_update_sec / 60
+            if remaining > 0:
+                # Calculate when next update will occur
+                next_fib = fib_prev + fib_curr
+                next_update_sec = min(next_fib, max_interval, remaining)
 
-            if minutes >= 1:
-                log_func(
-                    f"   Rate limit wait: {minutes:.1f} minutes remaining "
-                    f"(next update in {next_update_min:.1f} min)"
-                )
-            else:
-                log_func(
-                    f"   Rate limit wait: {remaining:.0f} seconds remaining "
-                    f"(next update in {next_update_sec:.0f} sec)"
-                )
+                minutes = remaining / 60
+                next_update_min = next_update_sec / 60
 
-            # Update Fibonacci sequence for next iteration
-            fib_prev, fib_curr = fib_curr, next_fib
+                if minutes >= 1:
+                    log_func(
+                        f"   Rate limit wait: {minutes:.1f} minutes remaining "
+                        f"(next update in {next_update_min:.1f} min)"
+                    )
+                else:
+                    log_func(
+                        f"   Rate limit wait: {remaining:.0f} seconds remaining "
+                        f"(next update in {next_update_sec:.0f} sec)"
+                    )
+
+                # Update Fibonacci sequence for next iteration
+                fib_prev, fib_curr = fib_curr, next_fib
+
+    _elapsed = time.monotonic() - _pause_start
+    try:
+        _emitter.emit_counter("scylla_rate_limit_pauses_total", 1, labels={"reason": reason})
+        _emitter.emit_histogram(
+            "scylla_rate_limit_pause_seconds", _elapsed, labels={"reason": reason}
+        )
+    except Exception as _me:
+        logger.warning(f"Rate limit metric emission failed (non-fatal): {_me}")
 
     # Update checkpoint - resuming
     checkpoint.status = "running"

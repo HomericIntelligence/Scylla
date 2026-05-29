@@ -14,16 +14,48 @@ Design Decisions (from plan review):
 from __future__ import annotations
 
 import contextlib
+import logging
 import os
 import subprocess
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from scylla.config.models import ResourceLimitsConfig
+from scylla.metrics.emitter import get_default_emitter
+from scylla.utils.tracing import get_tracer
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+logger = logging.getLogger(__name__)
+_tracer = get_tracer(__name__)
+_emitter = get_default_emitter()
+
+
+def _emit_container_lifecycle(event: str, image: str) -> None:
+    """Emit container lifecycle counter. Best-effort, never raises."""
+    try:
+        _emitter.emit_counter(
+            "scylla_container_lifecycle_total",
+            1,
+            labels={"event": event, "image": image},
+        )
+    except Exception as _e:
+        logger.warning(f"Container lifecycle metric emission failed (non-fatal): {_e}")
+
+
+def _emit_container_run_duration(elapsed: float, image: str) -> None:
+    """Emit container run duration histogram. Best-effort, never raises."""
+    try:
+        _emitter.emit_histogram(
+            "scylla_container_run_seconds",
+            elapsed,
+            labels={"image": image},
+        )
+    except Exception as _e:
+        logger.warning(f"Container run duration metric emission failed (non-fatal): {_e}")
 
 
 class DockerError(Exception):
@@ -263,42 +295,56 @@ class DockerExecutor:
 
         """
         cmd = self._build_run_command(config)
+        _run_start = time.monotonic()
 
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=config.timeout_seconds,
-            )
+        with _tracer.start_as_current_span("scylla.container.run") as _span:
+            _span.set_attribute("scylla.image", config.image)
+            try:
+                _emit_container_lifecycle("start", config.image)
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=config.timeout_seconds,
+                )
 
-            # Extract container ID from output (for named containers, use name)
-            container_id = config.name or self._get_last_container_id()
+                # Extract container ID from output (for named containers, use name)
+                container_id = config.name or self._get_last_container_id()
+                _span.set_attribute("scylla.container_id", container_id or "unknown")
+                _span.set_attribute("scylla.exit_code", result.returncode)
+                _emit_container_lifecycle("stop", config.image)
+                _emit_container_run_duration(time.monotonic() - _run_start, config.image)
 
-            return ContainerResult(
-                container_id=container_id or "unknown",
-                exit_code=result.returncode,
-                stdout=result.stdout,
-                stderr=result.stderr,
-                timed_out=False,
-            )
+                return ContainerResult(
+                    container_id=container_id or "unknown",
+                    exit_code=result.returncode,
+                    stdout=result.stdout,
+                    stderr=result.stderr,
+                    timed_out=False,
+                )
 
-        except subprocess.TimeoutExpired as e:
-            # Container is still running - stop it
-            container_id = config.name or self._get_last_container_id()
-            if container_id:
-                self.stop(container_id)
+            except subprocess.TimeoutExpired as e:
+                _span.record_exception(e)
+                _emit_container_lifecycle("fail", config.image)
+                _emit_container_run_duration(time.monotonic() - _run_start, config.image)
+                # Container is still running - stop it
+                container_id = config.name or self._get_last_container_id()
+                if container_id:
+                    self.stop(container_id)
 
-            return ContainerResult(
-                container_id=container_id or "unknown",
-                exit_code=-1,
-                stdout=e.stdout.decode() if e.stdout else "",
-                stderr=e.stderr.decode() if e.stderr else "",
-                timed_out=True,
-            )
+                return ContainerResult(
+                    container_id=container_id or "unknown",
+                    exit_code=-1,
+                    stdout=e.stdout.decode() if e.stdout else "",
+                    stderr=e.stderr.decode() if e.stderr else "",
+                    timed_out=True,
+                )
 
-        except subprocess.SubprocessError as e:
-            raise ContainerError(f"Failed to run container: {e}") from e
+            except subprocess.SubprocessError as e:
+                _span.record_exception(e)
+                _emit_container_lifecycle("fail", config.image)
+                _emit_container_run_duration(time.monotonic() - _run_start, config.image)
+                raise ContainerError(f"Failed to run container: {e}") from e
 
     def run_detached(self, config: ContainerConfig) -> str:
         """Run a container in detached mode.
@@ -317,24 +363,32 @@ class DockerExecutor:
         # Insert -d flag after "docker run"
         cmd.insert(2, "-d")
 
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
+        with _tracer.start_as_current_span("scylla.container.run_detached") as _span:
+            _span.set_attribute("scylla.image", config.image)
+            try:
+                _emit_container_lifecycle("start", config.image)
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
 
-            if result.returncode != 0:
-                raise ContainerError(f"Failed to start container: {result.stderr.strip()}")
+                if result.returncode != 0:
+                    raise ContainerError(f"Failed to start container: {result.stderr.strip()}")
 
-            container_id = result.stdout.strip()
-            return container_id
+                container_id = result.stdout.strip()
+                _span.set_attribute("scylla.container_id", container_id)
+                return container_id
 
-        except subprocess.TimeoutExpired:
-            raise ContainerError("Timed out starting container") from None
-        except subprocess.SubprocessError as e:
-            raise ContainerError(f"Failed to start container: {e}") from e
+            except subprocess.TimeoutExpired as e:
+                _span.record_exception(e)
+                _emit_container_lifecycle("fail", config.image)
+                raise ContainerError("Timed out starting container") from None
+            except subprocess.SubprocessError as e:
+                _span.record_exception(e)
+                _emit_container_lifecycle("fail", config.image)
+                raise ContainerError(f"Failed to start container: {e}") from e
 
     def stop(self, container_id: str, timeout: int = 10) -> None:
         """Stop a running container (preserves container for analysis).
@@ -347,24 +401,37 @@ class DockerExecutor:
             ContainerError: If stop operation fails.
 
         """
-        try:
-            result = subprocess.run(
-                ["docker", "stop", "-t", str(timeout), container_id],
-                capture_output=True,
-                text=True,
-                timeout=timeout + 30,  # Allow extra time for graceful shutdown
-            )
-
-            if result.returncode != 0 and "No such container" not in result.stderr:
-                raise ContainerError(
-                    f"Failed to stop container {container_id}: {result.stderr.strip()}"
+        _stop_start = time.monotonic()
+        with _tracer.start_as_current_span("scylla.container.stop") as _span:
+            _span.set_attribute("scylla.container_id", container_id)
+            try:
+                result = subprocess.run(
+                    ["docker", "stop", "-t", str(timeout), container_id],
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout + 30,  # Allow extra time for graceful shutdown
                 )
 
-        except subprocess.TimeoutExpired:
-            # Force kill if stop times out
-            self._kill(container_id)
-        except subprocess.SubprocessError as e:
-            raise ContainerError(f"Failed to stop container: {e}") from e
+                if result.returncode != 0 and "No such container" not in result.stderr:
+                    raise ContainerError(
+                        f"Failed to stop container {container_id}: {result.stderr.strip()}"
+                    )
+
+            except subprocess.TimeoutExpired:
+                # Force kill if stop times out
+                self._kill(container_id)
+            except subprocess.SubprocessError as e:
+                raise ContainerError(f"Failed to stop container: {e}") from e
+
+        try:
+            _emitter.emit_counter("scylla_container_lifecycle_total", 1, labels={"event": "stop"})
+            _emitter.emit_histogram(
+                "scylla_container_stop_seconds",
+                time.monotonic() - _stop_start,
+                labels={"event": "stop"},
+            )
+        except Exception as _me:
+            logger.warning(f"Container stop metric emission failed (non-fatal): {_me}")
 
     def _kill(self, container_id: str) -> None:
         """Force kill a container.
