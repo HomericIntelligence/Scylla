@@ -4,9 +4,9 @@ name: Test
 # expands to two job names that branch protection requires:
 #   - test (unit, tests/unit)
 #   - test (integration, tests/integration)
-# Together with the jobs in `_required.yml` (lint, pre-commit, dependency
-# vulnerability scan, gitleaks secrets scan), these constitute the full
-# required-check surface. Adding, removing, or renaming a matrix entry below
+# Together with `pre-commit` (from pre-commit.yml), these are the three
+# contexts that gate merges. The `_required.yml` jobs are advisory quality
+# checks, not gates. Adding, removing, or renaming a matrix entry below
 # also requires updating branch protection. The authoritative list lives at
 # `gh api repos/HomericIntelligence/ProjectScylla/branches/main/protection`.
 
