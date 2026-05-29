@@ -126,7 +126,54 @@ def load_all_experiments(
     return experiments
 
 
-def load_rubric_weights(  # noqa: C901  # config loading with many format/version branches
+def _resolve_rubric_conflict(
+    rubric_conflict: RubricConflict,
+    cat_name: str,
+    existing_exp: str,
+    existing_weight: float,
+    exp_name: str,
+    new_weight: float,
+    accumulated: dict[str, tuple[float, str]],
+) -> None:
+    """Apply rubric conflict resolution policy for a single category.
+
+    Args:
+        rubric_conflict: Conflict resolution policy
+        cat_name: Category name with conflict
+        existing_exp: Name of first experiment that defined this category
+        existing_weight: Weight from first experiment
+        exp_name: Name of second (conflicting) experiment
+        new_weight: Weight from second experiment
+        accumulated: Accumulated weight mapping (modified in place for 'last' policy)
+
+    Raises:
+        RubricConflictError: If policy is 'error'.
+
+    """
+    if rubric_conflict == "error":
+        raise RubricConflictError(
+            category=cat_name,
+            exp_first=existing_exp,
+            weight_first=existing_weight,
+            exp_second=exp_name,
+            weight_second=new_weight,
+        )
+    if rubric_conflict == "warn":
+        warnings.warn(
+            f"Rubric conflict for category '{cat_name}': "
+            f"experiment '{existing_exp}' defines weight={existing_weight}, "
+            f"but experiment '{exp_name}' defines weight={new_weight}. "
+            "Keeping first value.",
+            UserWarning,
+            stacklevel=3,
+        )
+        # Keep first – no update to accumulated.
+    elif rubric_conflict == "last":
+        accumulated[cat_name] = (new_weight, exp_name)
+    # rubric_conflict == "first": keep first, no action needed
+
+
+def load_rubric_weights(
     data_dir: Path,
     exclude: list[str] | None = None,
     rubric_conflict: RubricConflict = "error",
@@ -200,28 +247,12 @@ def load_rubric_weights(  # noqa: C901  # config loading with many format/versio
                 continue
 
             # Genuine conflict – apply policy.
-            if rubric_conflict == "error":
-                raise RubricConflictError(
-                    category=cat_name,
-                    exp_first=existing_exp,
-                    weight_first=existing_weight,
-                    exp_second=exp_name,
-                    weight_second=new_weight,
-                )
-            elif rubric_conflict == "warn":
-                warnings.warn(
-                    f"Rubric conflict for category '{cat_name}': "
-                    f"experiment '{existing_exp}' defines weight={existing_weight}, "
-                    f"but experiment '{exp_name}' defines weight={new_weight}. "
-                    "Keeping first value.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-                # Keep first – no update to accumulated.
-            elif rubric_conflict == "first":
-                pass  # Keep first – no update to accumulated.
-            elif rubric_conflict == "last":
-                accumulated[cat_name] = (new_weight, exp_name)
+            _resolve_rubric_conflict(
+                rubric_conflict, cat_name,
+                existing_exp, existing_weight,
+                exp_name, new_weight,
+                accumulated,
+            )
 
     if not found_any:
         return {}

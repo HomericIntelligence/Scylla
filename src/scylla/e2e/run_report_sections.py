@@ -536,7 +536,86 @@ def _generate_criteria_comparison_table(
     return lines
 
 
-def _get_workspace_files(workspace_path: Path) -> list[tuple[str, str]]:  # noqa: C901  # workspace state detection with many file patterns
+def _parse_porcelain_file_path(line: str) -> str:
+    """Extract file path from a git status --porcelain output line.
+
+    Args:
+        line: A single git status porcelain output line
+
+    Returns:
+        Extracted file path string, or empty string on parse failure.
+
+    """
+    if len(line) > 3 and line[2] == " ":
+        return line[3:].strip()
+    if " " in line:
+        return line.split(" ", 1)[1].strip() if " " in line[1:] else ""
+    return ""
+
+
+def _collect_committed_files(workspace_path: Path) -> list[tuple[str, str]]:
+    """Return (path, 'committed') pairs from HEAD~1..HEAD diff.
+
+    Args:
+        workspace_path: Git repository root to inspect
+
+    Returns:
+        List of (file_path, "committed") tuples for non-config files.
+
+    """
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
+        cwd=workspace_path,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        return []
+    return [
+        (line.strip(), "committed")
+        for line in result.stdout.strip().split("\n")
+        if line.strip() and not is_test_config_file(line.strip())
+    ]
+
+
+def _collect_uncommitted_files(
+    workspace_path: Path, committed_paths: set[str]
+) -> list[tuple[str, str]]:
+    """Return (path, 'uncommitted') pairs from git status --porcelain.
+
+    Args:
+        workspace_path: Git repository root to inspect
+        committed_paths: Paths already captured as committed (excluded)
+
+    Returns:
+        List of (file_path, "uncommitted") tuples for non-config, non-committed files.
+
+    """
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=workspace_path,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode != 0:
+        return []
+    entries: list[tuple[str, str]] = []
+    for line in result.stdout.strip().split("\n"):
+        if not line:
+            continue
+        file_path = _parse_porcelain_file_path(line)
+        if file_path and not is_test_config_file(file_path) and file_path not in committed_paths:
+            entries.append((file_path, "uncommitted"))
+    return entries
+
+
+def _get_workspace_files(workspace_path: Path) -> list[tuple[str, str]]:
     """Get files created/modified by agent, with their status.
 
     Returns both committed and uncommitted files created by the agent.
@@ -548,65 +627,13 @@ def _get_workspace_files(workspace_path: Path) -> list[tuple[str, str]]:  # noqa
         List of (file_path, status) tuples where status is "committed" or "uncommitted".
 
     """
-    import subprocess
-
     if not workspace_path.exists():
         return []
 
-    files_with_status = []
-
     try:
-        # 1. Get committed files by comparing HEAD with previous commits
-        # Try to find files in the latest commit(s) made by agent
-        result = subprocess.run(
-            ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
-            cwd=workspace_path,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-
-        if result.returncode == 0 and result.stdout.strip():
-            for line in result.stdout.strip().split("\n"):
-                file_path = line.strip()
-                if file_path and not is_test_config_file(file_path):
-                    files_with_status.append((file_path, "committed"))
-
-        # 2. Get untracked/modified files using git status
-        result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=workspace_path,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-
-        if result.returncode == 0:
-            for line in result.stdout.strip().split("\n"):
-                if not line:
-                    continue
-                # Status format: "XY filename" where X=index, Y=working tree
-                # Examples: "?? file" (untracked), " M file" (modified), "A  file" (added)
-                # Git porcelain format: XY filename (2 status chars + space + path)
-                # Handle edge cases where format may vary
-                if len(line) > 3 and line[2] == " ":
-                    file_path = line[3:].strip()
-                elif " " in line:
-                    # Fallback: split on first space after status
-                    file_path = line.split(" ", 1)[1].strip() if " " in line[1:] else ""
-                else:
-                    file_path = ""
-
-                if not file_path or is_test_config_file(file_path):
-                    continue
-
-                # Skip if already added as committed
-                if any(f[0] == file_path for f in files_with_status):
-                    continue
-
-                files_with_status.append((file_path, "uncommitted"))
-
-        return sorted(files_with_status, key=lambda x: x[0])
-
+        committed = _collect_committed_files(workspace_path)
+        committed_paths = {f[0] for f in committed}
+        uncommitted = _collect_uncommitted_files(workspace_path, committed_paths)
+        return sorted(committed + uncommitted, key=lambda x: x[0])
     except Exception:
         return []

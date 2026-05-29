@@ -86,7 +86,23 @@ def _grade_to_points(grade: str) -> float:
     return max(0.0, min(5.0, points))
 
 
-def _points_to_grade(points: float) -> str:  # noqa: C901  # grade mapping with many score thresholds
+_GRADE_THRESHOLDS: list[tuple[float, str]] = [
+    (4.85, "S"),
+    (3.85, "A"),
+    (3.50, "A-"),
+    (3.15, "B+"),
+    (2.85, "B"),
+    (2.50, "B-"),
+    (2.15, "C+"),
+    (1.85, "C"),
+    (1.50, "C-"),
+    (1.15, "D+"),
+    (0.85, "D"),
+    (0.50, "D-"),
+]
+
+
+def _points_to_grade(points: float) -> str:
     """Convert point value back to letter grade.
 
     Uses industry-aligned scale where S is the highest grade.
@@ -98,32 +114,10 @@ def _points_to_grade(points: float) -> str:  # noqa: C901  # grade mapping with 
         Letter grade string (S, A, B, C, D, or F with optional +/-)
 
     """
-    if points >= 4.85:
-        return "S"
-    elif points >= 3.85:
-        return "A"
-    elif points >= 3.5:
-        return "A-"
-    elif points >= 3.15:
-        return "B+"
-    elif points >= 2.85:
-        return "B"
-    elif points >= 2.5:
-        return "B-"
-    elif points >= 2.15:
-        return "C+"
-    elif points >= 1.85:
-        return "C"
-    elif points >= 1.5:
-        return "C-"
-    elif points >= 1.15:
-        return "D+"
-    elif points >= 0.85:
-        return "D"
-    elif points >= 0.5:
-        return "D-"
-    else:
-        return "F"
+    for threshold, grade in _GRADE_THRESHOLDS:
+        if points >= threshold:
+            return grade
+    return "F"
 
 
 class ScorecardGenerator:
