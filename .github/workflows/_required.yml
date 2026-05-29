@@ -1,9 +1,11 @@
-# Gold-standard reference implementation for the org-wide homeric-main-baseline ruleset.
-# This workflow defines the 8 canonical status-check contexts that the branch protection
-# ruleset requires. All other HomericIntelligence repos should mirror this structure,
-# adapting only the implementation steps to their own tech stack.
-#
-# Job name: strings are the EXACT context strings registered in the ruleset — do not rename.
+# Advisory quality checks for the repo. The three contexts that ACTUALLY gate
+# merges on `main` are produced by per-workflow files (verified via
+# `gh api repos/HomericIntelligence/ProjectScylla/branches/main/protection`):
+#   - `pre-commit`                            → .github/workflows/pre-commit.yml
+#   - `test (unit, tests/unit)`               → .github/workflows/test.yml
+#   - `test (integration, tests/integration)` → .github/workflows/test.yml
+# This file MUST NOT duplicate logic that lives in those files — delegate via
+# `uses: ./.github/workflows/<file>.yml` (see `lint:` and `security:`).
 name: Required Checks
 
 on:
@@ -78,192 +80,20 @@ jobs:
           echo 'OK: no "continue-on-error: true" found'
 
   # ── 1. lint ────────────────────────────────────────────────────────────────
+  # Delegated to pre-commit.yml via workflow_call — single source of truth.
+  # The bare `pre-commit` required context is produced by pre-commit.yml's own
+  # pull_request trigger; this advisory job produces `Required Checks / lint / pre-commit`.
   lint:
     name: lint
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    uses: ./.github/workflows/pre-commit.yml
+    secrets: inherit
 
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
-        with:
-          environment: lint
-
-      - name: Cache pre-commit environments
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: |
-            pre-commit-${{ runner.os }}-
-
-      - name: Run pre-commit (all files)
-        run: |
-          pixi install --environment lint
-          pixi run --environment lint pre-commit run --all-files --show-diff-on-failure
-
-      - name: Enforce complexity limit (C901)
-        run: pixi run --environment lint ruff check --select C901 src/scylla/ scripts/
-
-      - name: Run mypy
-        run: pixi run --environment lint mypy scripts/ src/scylla/ tests/
-
-  # ── 2. unit-tests ──────────────────────────────────────────────────────────
-  unit-tests:
-    name: unit-tests
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
-
-      - name: Enforce no new deprecated BaseExecutionInfo usage
-        run: |
-          count=$(grep -rn "BaseExecutionInfo" . \
-            --include="*.py" \
-            --exclude-dir=".pixi" \
-            | grep -v "src/scylla/core/results.py" \
-            | grep -v "src/scylla/core/__init__.py" \
-            | grep -v "# deprecated" \
-            | grep -v "(deprecated)" \
-            | grep -v "test_results.py" \
-            | wc -l)
-          echo "BaseExecutionInfo usage count: $count"
-          if [ "$count" -gt "0" ]; then
-            echo "::error::Found $count usages of deprecated BaseExecutionInfo — remove before merging"
-            exit 1
-          fi
-
-      - name: Enforce no new deprecated BaseRunMetrics usage
-        run: |
-          count=$(grep -rn "BaseRunMetrics" . \
-            --include="*.py" \
-            --exclude-dir=".pixi" \
-            | grep -v "src/scylla/core/results.py" \
-            | grep -v "# deprecated" \
-            | grep -v "(deprecated)" \
-            | grep -v "test_results.py" \
-            | wc -l)
-          echo "BaseRunMetrics usage count: $count"
-          if [ "$count" -gt "0" ]; then
-            echo "::error::Found $count usages of deprecated BaseRunMetrics — remove before merging"
-            exit 1
-          fi
-
-      - name: Enforce tier label consistency in metrics-definitions.md
-        run: |
-          BAD_PATS="T3.{0,10}Tool|T4.{0,10}Deleg|T5.{0,10}Hier|T2.{0,10}Skill|T2.{0,10}Deleg|T3.{0,10}Hier|T4.{0,10}Hybrid|T1.{0,10}Tool|T0.{0,10}Skill|T1.{0,10}Prompt|T2.{0,10}Prompt|T3.{0,10}Skill|T4.{0,10}Tool|T5.{0,10}Deleg|T6.{0,10}Hier|T6.{0,10}Hybrid|T0.{0,10}Tool|T0.{0,10}Deleg|T5.{0,10}Skill|T6.{0,10}Deleg"
-          count=$(grep -En "$BAD_PATS" .claude/shared/metrics-definitions.md | wc -l)
-          echo "Bad tier label count: $count"
-          if [ "$count" -gt "0" ]; then
-            echo "::error::Found $count tier label mismatch(es) in metrics-definitions.md"
-            grep -En "$BAD_PATS" .claude/shared/metrics-definitions.md
-            exit 1
-          fi
-
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
-
-      - name: Check Python version consistency (pyproject.toml vs Dockerfile)
-        run: pixi run python scripts/check_python_version_consistency.py
-
-      - name: Check version consistency (pyproject.toml, pixi.toml, src/scylla/__init__.py)
-        run: pixi run python scripts/check_version_consistency.py
-
-      - name: Validate pixi.lock is up-to-date
-        run: |
-          if ! pixi install --locked 2>/dev/null; then
-            echo "::error::pixi.lock is stale — run 'pixi install' locally and commit pixi.lock"
-            exit 1
-          fi
-
-      - name: Check doc/config consistency
-        run: pixi run python scripts/check_doc_config_consistency.py --verbose
-
-      - name: Enforce tests/unit/ structure conventions
-        run: pixi run python scripts/check_unit_test_structure.py
-
-      - name: Validate config schemas
-        run: pixi run python scripts/validate_config_schemas.py config/defaults.yaml config/models/*.yaml tests/fixtures/config/tiers/*.yaml
-
-      - name: Check cyclomatic complexity
-        run: pixi run hephaestus-check-complexity --threshold 10
-
-      - name: Run unit tests
-        run: |
-          pixi run pip install -e .
-          pixi run pytest tests/unit/ --override-ini="addopts=" -v --strict-markers \
-            --cov=src/scylla --cov-report=term-missing --cov-report=xml --cov-fail-under=75 \
-            --junitxml="junit-unit.xml"
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v5
-        with:
-          files: ./coverage.xml
-          flags: unit
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
-
-      - name: Upload test artifacts on failure
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
-        with:
-          name: test-results-unit
-          path: |
-            coverage.xml
-            junit-unit.xml
-          retention-days: 7
-
-  # ── 3. integration-tests ───────────────────────────────────────────────────
-  integration-tests:
-    name: integration-tests
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
-
-      - name: Install nats-server
-        run: |
-          NATS_VERSION="v2.10.24"
-          NATS_SHA256="ee6500f364e3a741b496ae0296c04f2a9d53bbaabac457104ac74596b4a59d85"
-          curl -fsSL "https://github.com/nats-io/nats-server/releases/download/${NATS_VERSION}/nats-server-${NATS_VERSION}-linux-amd64.tar.gz" -o nats-server.tar.gz
-          echo "${NATS_SHA256}  nats-server.tar.gz" | sha256sum --check
-          tar xz -f nats-server.tar.gz
-          sudo mv nats-server-${NATS_VERSION}-linux-amd64/nats-server /usr/local/bin/
-          rm nats-server.tar.gz
-          nats-server --version
-
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
-
-      - name: Validate pixi.lock is up-to-date
-        run: |
-          if ! pixi install --locked 2>/dev/null; then
-            echo "::error::pixi.lock is stale — run 'pixi install' locally and commit pixi.lock"
-            exit 1
-          fi
-
-      - name: Run integration tests
-        run: |
-          pixi run pytest tests/integration/ -v \
-            --cov=src/scylla --cov-report=term-missing --cov-report=xml --cov-fail-under=5 \
-            --reruns 2 --reruns-delay 5 \
-            --junitxml="junit-integration.xml"
-
-      - name: Upload test artifacts on failure
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
-        with:
-          name: test-results-integration
-          path: |
-            coverage.xml
-            junit-integration.xml
-          retention-days: 7
+  # ── 2+3. unit-tests / integration-tests ────────────────────────────────────
+  # REMOVED: these jobs duplicated test.yml which already runs as the canonical
+  # source and produces the required contexts `test (unit, tests/unit)` and
+  # `test (integration, tests/integration)` via its own pull_request trigger.
+  # Running them here doubled CI minutes for every PR with zero added coverage.
+  # See: gh api repos/HomericIntelligence/ProjectScylla/branches/main/protection
 
   # ── 4+5. security (pip-audit + secrets-scan) ──────────────────────────────
   # Delegated to security.yml via workflow_call — single source of truth.

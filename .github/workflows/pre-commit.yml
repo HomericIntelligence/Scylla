@@ -4,6 +4,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Reusable workflow: _required.yml invokes this via `uses:` so the lint job
+  # body lives in exactly one place (here) rather than being copy-pasted there.
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
@@ -47,6 +50,9 @@ jobs:
 
       - name: Enforce complexity limit (C901)
         run: pixi run --environment lint ruff check --select C901 src/scylla/ scripts/
+
+      - name: Run mypy
+        run: pixi run --environment lint mypy scripts/ src/scylla/ tests/
 
       - name: Upload pre-commit diff
         if: failure()
