@@ -1,4 +1,4 @@
-"""Tier-config / baseline mixin for :class:`TierManager`.
+"""Tier-config / baseline collaborator for :class:`TierManager`.
 
 Methods that read tier configuration, derive baselines from completed
 sub-tests, and persist resource manifests for reproducibility.
@@ -10,7 +10,6 @@ import hashlib
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from scylla.e2e.models import (
     ResourceManifest,
@@ -19,19 +18,35 @@ from scylla.e2e.models import (
     TierConfig,
     TierID,
 )
-
-if TYPE_CHECKING:
-    from scylla.e2e.tier_manager_internals.base import TierManagerBase
-
-    _Base = TierManagerBase
-else:
-    _Base = object
+from scylla.e2e.subtest_provider import SubtestProvider
+from scylla.executor.tier_config import TierConfigLoader
 
 logger = logging.getLogger(__name__)
 
 
-class BaselineMixin(_Base):
+class BaselineHandler:
     """Tier-config and baseline methods for :class:`TierManager`."""
+
+    def __init__(
+        self,
+        tier_config_loader: TierConfigLoader,
+        subtest_provider: SubtestProvider,
+        shared_dir: Path,
+        tiers_dir: Path,
+    ) -> None:
+        """Initialize baseline handler.
+
+        Args:
+            tier_config_loader: Loader for tier configurations
+            subtest_provider: Provider for discovering subtests
+            shared_dir: Path to shared resources directory
+            tiers_dir: Path to the test-specific tiers directory
+
+        """
+        self._tier_config_loader = tier_config_loader
+        self._subtest_provider = subtest_provider
+        self._shared_dir = shared_dir
+        self._tiers_dir = tiers_dir
 
     def load_tier_config(self, tier_id: TierID, skip_agent_teams: bool = False) -> TierConfig:
         """Load configuration for a specific tier.
@@ -47,10 +62,10 @@ class BaselineMixin(_Base):
 
         """
         # Load global tier configuration from tests/claude-code/shared/
-        global_tier_config = self.tier_config_loader.get_tier(tier_id.value)
+        global_tier_config = self._tier_config_loader.get_tier(tier_id.value)
 
         # Discover sub-tests using the provider
-        subtests = self.subtest_provider.discover_subtests(tier_id, skip_agent_teams)
+        subtests = self._subtest_provider.discover_subtests(tier_id, skip_agent_teams)
 
         # Create TierConfig with both global settings and subtests
         # Note: system_prompt_mode is determined per-subtest, not per-tier
@@ -148,3 +163,21 @@ class BaselineMixin(_Base):
         )
 
         manifest.save(results_dir / "config_manifest.json")
+
+    def _get_fixture_config_path(self, tier_id: TierID, subtest_id: str) -> Path:
+        """Get path to the fixture's config file in shared directory.
+
+        Args:
+            tier_id: The tier identifier
+            subtest_id: The subtest identifier
+
+        Returns:
+            Path to config.yaml in the shared subtests directory.
+
+        """
+        shared_subtests_dir = self._shared_dir / "subtests" / tier_id.value.lower()
+        # Find config file starting with subtest_id (e.g., "00-empty.yaml")
+        for config_file in shared_subtests_dir.glob(f"{subtest_id}-*.yaml"):
+            return config_file
+        # Fallback if exact match not found
+        return shared_subtests_dir / f"{subtest_id}.yaml"

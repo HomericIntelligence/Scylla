@@ -771,7 +771,95 @@ def get_experiment_status(experiment_dir: Path) -> dict[str, Any]:
     return result
 
 
-def reset_runs_for_from_state(  # noqa: C901  # state reset with many filter/condition branches
+def _should_reset_run(
+    checkpoint: E2ECheckpoint,
+    tier_id: str,
+    subtest_id: str,
+    run_num: int,
+    run_state_str: str,
+    from_index: int,
+    state_index: dict[str, int],
+    run_filter: list[int] | None,
+    status_filter: list[str] | None,
+) -> bool:
+    """Determine whether a single run qualifies for reset.
+
+    Args:
+        checkpoint: The experiment checkpoint
+        tier_id: Tier identifier string
+        subtest_id: Subtest identifier string
+        run_num: Run number (1-based)
+        run_state_str: Current run state string
+        from_index: Target state index to reset from
+        state_index: Mapping of state name to sequence index
+        run_filter: If set, only reset these run numbers
+        status_filter: If set, only reset runs with these statuses
+
+    Returns:
+        True if the run should be reset.
+
+    """
+    if run_filter and run_num not in run_filter:
+        return False
+
+    if status_filter:
+        run_status = checkpoint.get_run_status(tier_id, subtest_id, run_num)
+        if run_status not in status_filter:
+            return False
+
+    # Terminal states (failed, rate_limited) are not in the normal sequence
+    # (index == -1). If they passed status_filter, reset them.
+    current_index = state_index.get(run_state_str, -1)
+    return current_index >= from_index or (current_index == -1 and bool(status_filter))
+
+
+def _reset_subtest_runs(
+    checkpoint: E2ECheckpoint,
+    tier_id: str,
+    subtest_id: str,
+    runs: dict[str, str],
+    from_index: int,
+    state_index: dict[str, int],
+    run_filter: list[int] | None,
+    status_filter: list[str] | None,
+) -> int:
+    """Reset qualifying runs within a single subtest.
+
+    Args:
+        checkpoint: The experiment checkpoint (mutated in place)
+        tier_id: Tier identifier string
+        subtest_id: Subtest identifier string
+        runs: Mapping of run_num_str -> run_state_str for this subtest
+        from_index: Target state index threshold
+        state_index: Mapping of state name to sequence index
+        run_filter: If set, only reset these run numbers
+        status_filter: If set, only reset runs with these statuses
+
+    Returns:
+        Count of runs reset in this subtest.
+
+    """
+    count = 0
+    for run_num_str, run_state_str in runs.items():
+        run_num = int(run_num_str)
+        if _should_reset_run(
+            checkpoint,
+            tier_id,
+            subtest_id,
+            run_num,
+            run_state_str,
+            from_index,
+            state_index,
+            run_filter,
+            status_filter,
+        ):
+            checkpoint.run_states[tier_id][subtest_id][run_num_str] = "pending"
+            checkpoint.unmark_run_completed(tier_id, subtest_id, run_num)
+            count += 1
+    return count
+
+
+def reset_runs_for_from_state(
     checkpoint: E2ECheckpoint,
     from_state: str,
     tier_filter: list[str] | None = None,
@@ -819,27 +907,20 @@ def reset_runs_for_from_state(  # noqa: C901  # state reset with many filter/con
         for subtest_id, runs in subtests.items():
             if subtest_filter and subtest_id not in subtest_filter:
                 continue
-            for run_num_str, run_state_str in runs.items():
-                run_num = int(run_num_str)
-                if run_filter and run_num not in run_filter:
-                    continue
-
-                # Check status filter (from completed_runs)
-                if status_filter:
-                    run_status = checkpoint.get_run_status(tier_id, subtest_id, run_num)
-                    if run_status not in status_filter:
-                        continue
-
-                # Check if current state is at or past from_state.
-                # Terminal states (failed, rate_limited) are not in the normal
-                # sequence (index == -1). If they passed status_filter, reset them.
-                current_index = state_index.get(run_state_str, -1)
-                if current_index >= from_index or (current_index == -1 and status_filter):
-                    checkpoint.run_states[tier_id][subtest_id][run_num_str] = "pending"
-                    checkpoint.unmark_run_completed(tier_id, subtest_id, run_num)
-                    affected_tiers.add(tier_id)
-                    affected_subtests.add((tier_id, subtest_id))
-                    reset_count += 1
+            n = _reset_subtest_runs(
+                checkpoint,
+                tier_id,
+                subtest_id,
+                runs,
+                from_index,
+                state_index,
+                run_filter,
+                status_filter,
+            )
+            if n:
+                reset_count += n
+                affected_tiers.add(tier_id)
+                affected_subtests.add((tier_id, subtest_id))
 
     # Cascade: reset affected subtest states to pending
     for tier_id, subtest_id in affected_subtests:

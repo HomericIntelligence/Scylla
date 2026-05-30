@@ -35,7 +35,52 @@ logger = logging.getLogger(__name__)
 # This module now imports and uses that consolidated implementation.
 
 
-def _get_workspace_state(workspace: Path) -> str:  # noqa: C901  # workspace state detection with many file patterns
+_GIT_STATUS_LABELS: dict[str, str] = {
+    "M": "modified",
+    "A": "added",
+    "??": "created",
+    "D": "deleted",
+}
+
+
+def _parse_git_status_line(line: str) -> tuple[str, str]:
+    """Parse a single git status --porcelain output line.
+
+    Args:
+        line: A single porcelain status line
+
+    Returns:
+        Tuple of (status_code, file_path)
+
+    """
+    status = line[:2].strip()
+    # Git porcelain format: XY filename (2 status chars + space + path)
+    if len(line) > 3 and line[2] == " ":
+        file_path = line[3:].strip()
+    elif " " in line:
+        file_path = line.split(" ", 1)[1].strip() if " " in line[1:] else ""
+    else:
+        file_path = ""
+    return status, file_path
+
+
+def _expand_untracked_dir(workspace: Path, full_path: Path, lines: list[str]) -> None:
+    """Expand an untracked directory into individual file entries.
+
+    Args:
+        workspace: Root workspace path for computing relative paths
+        full_path: Absolute path to the untracked directory
+        lines: List to append formatted entries to
+
+    """
+    for child in sorted(full_path.rglob("*")):
+        if child.is_file():
+            rel_path = child.relative_to(workspace)
+            if not is_test_config_file(str(rel_path)):
+                lines.append(f"- `{rel_path}` (created)")
+
+
+def _get_workspace_state(workspace: Path) -> str:
     """Get a description of modified/created files in the workspace.
 
     Only lists files that were modified or created by the agent (using git status),
@@ -72,43 +117,18 @@ def _get_workspace_state(workspace: Path) -> str:  # noqa: C901  # workspace sta
         for line in result.stdout.strip().split("\n"):
             if not line:
                 continue
-            # Status codes: M=modified, A=added, ??=untracked, D=deleted
-            status = line[:2].strip()
-            # Git porcelain format: XY filename (2 status chars + space + path)
-            # Handle edge cases where format may vary
-            if len(line) > 3 and line[2] == " ":
-                file_path = line[3:].strip()
-            elif " " in line:
-                # Fallback: split on first space after status
-                file_path = line.split(" ", 1)[1].strip() if " " in line[1:] else ""
-            else:
-                file_path = ""
+            status, file_path = _parse_git_status_line(line)
 
-            # Skip test configuration files
             if is_test_config_file(file_path):
                 continue
 
             full_path = workspace / file_path
 
-            # Handle untracked directories - expand to show all files
             if status == "??" and full_path.is_dir():
-                for child in sorted(full_path.rglob("*")):
-                    if child.is_file():
-                        rel_path = child.relative_to(workspace)
-                        if not is_test_config_file(str(rel_path)):
-                            lines.append(f"- `{rel_path}` (created)")
+                _expand_untracked_dir(workspace, full_path, lines)
             else:
-                # Existing file handling
-                if status == "M":
-                    lines.append(f"- `{file_path}` (modified)")
-                elif status == "A":
-                    lines.append(f"- `{file_path}` (added)")
-                elif status == "??":
-                    lines.append(f"- `{file_path}` (created)")
-                elif status == "D":
-                    lines.append(f"- `{file_path}` (deleted)")
-                else:
-                    lines.append(f"- `{file_path}` ({status})")
+                label = _GIT_STATUS_LABELS.get(status, status)
+                lines.append(f"- `{file_path}` ({label})")
 
         if len(lines) == 1:
             lines.append("(no changes detected)")
