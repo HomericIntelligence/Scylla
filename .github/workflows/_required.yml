@@ -4,8 +4,9 @@
 #   - `pre-commit`                            → .github/workflows/pre-commit.yml
 #   - `test (unit, tests/unit)`               → .github/workflows/test.yml
 #   - `test (integration, tests/integration)` → .github/workflows/test.yml
-# This file MUST NOT duplicate logic that lives in those files — delegate via
-# `uses: ./.github/workflows/<file>.yml` (see `lint:` and `security:`).
+# This file MUST NOT duplicate logic that lives in those files; the pre-commit,
+# test, and security checks each run from their own per-workflow file on
+# pull_request, so they are intentionally NOT re-invoked here.
 name: Required Checks
 
 on:
@@ -80,13 +81,13 @@ jobs:
           echo 'OK: no "continue-on-error: true" found'
 
   # ── 1. lint ────────────────────────────────────────────────────────────────
-  # Delegated to pre-commit.yml via workflow_call — single source of truth.
-  # The bare `pre-commit` required context is produced by pre-commit.yml's own
-  # pull_request trigger; this advisory job produces `Required Checks / lint / pre-commit`.
-  lint:
-    name: lint
-    uses: ./.github/workflows/pre-commit.yml
-    secrets: inherit
+  # REMOVED: re-invoking pre-commit.yml here via workflow_call produced only an
+  # advisory `lint / pre-commit` context that is NOT a branch-protection required
+  # check. Worse, it shared pre-commit.yml's concurrency group with that
+  # workflow's own pull_request run (which DOES produce the required `pre-commit`
+  # context), so `cancel-in-progress` cancelled one of the two and left the PR's
+  # Required Checks run perpetually "cancelled". The required `pre-commit`
+  # context comes from pre-commit.yml's own pull_request trigger — single source.
 
   # ── 2+3. unit-tests / integration-tests ────────────────────────────────────
   # REMOVED: these jobs duplicated test.yml which already runs as the canonical
@@ -96,13 +97,10 @@ jobs:
   # See: gh api repos/HomericIntelligence/ProjectScylla/branches/main/protection
 
   # ── 4+5. security (pip-audit + secrets-scan) ──────────────────────────────
-  # Delegated to security.yml via workflow_call — single source of truth.
-  # Branch-protection contexts "Dependency vulnerability scan" and
-  # "Secrets scan (gitleaks)" are produced by the jobs inside security.yml.
-  security:
-    name: security
-    uses: ./.github/workflows/security.yml
-    secrets: inherit
+  # REMOVED for the same reason as lint above: the workflow_call instance shared
+  # security.yml's concurrency group with that workflow's own pull_request run
+  # and cancelled it. The "Dependency vulnerability scan" / "Secrets scan
+  # (gitleaks)" contexts are produced by security.yml's own pull_request trigger.
 
   # ── 6. build ───────────────────────────────────────────────────────────────
   build:
@@ -223,7 +221,6 @@ jobs:
     name: markdownlint
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    needs: lint
     permissions:
       contents: read
     steps:
@@ -240,7 +237,6 @@ jobs:
     name: pixi-check
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    needs: lint
     permissions:
       contents: read
     steps:
@@ -275,7 +271,6 @@ jobs:
     name: justfile-check
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    needs: lint
     permissions:
       contents: read
     steps:
@@ -305,7 +300,6 @@ jobs:
     name: symlink-check
     runs-on: ubuntu-24.04
     timeout-minutes: 3
-    needs: lint
     permissions:
       contents: read
     steps:
