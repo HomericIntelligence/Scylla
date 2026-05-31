@@ -116,9 +116,15 @@ def save_checkpoint(checkpoint: E2ECheckpoint, path: Path) -> None:
             try:
                 emitter = get_default_emitter()
                 labels = {"experiment": checkpoint.experiment_id}
+                _elapsed = float(_time.monotonic() - _save_start)
                 emitter.emit_gauge(
                     "scylla_checkpoint_save_duration_seconds",
-                    float(_time.monotonic() - _save_start),
+                    _elapsed,
+                    labels=labels,
+                )
+                emitter.emit_histogram(
+                    "scylla_checkpoint_save_seconds",
+                    _elapsed,
                     labels=labels,
                 )
                 emitter.emit_counter(

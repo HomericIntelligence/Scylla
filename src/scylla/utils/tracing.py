@@ -28,8 +28,8 @@ Recognised values:
   ``OTEL_EXPORTER_OTLP_ENDPOINT`` env var (defaults to ``http://localhost:4317``)
 * unset / empty — NoOp tracing; no SDK imports happen
 
-Exhaustive instrumentation across every logging site is intentionally out of
-scope for this scaffold — see issue #1887 for the follow-up.
+See ``docs/dev/tracing.md`` for the complete Instrumentation Map and
+troubleshooting guide.
 """
 
 from __future__ import annotations

@@ -41,6 +41,7 @@ from scylla.e2e.judge_runner import (
     _run_judge,
     _save_judge_result,
 )
+from scylla.e2e.log_context import current_tier_id
 from scylla.e2e.models import (
     E2ERunResult,
     ExperimentConfig,
@@ -68,6 +69,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 _tracer = get_tracer(__name__)
+_emitter = get_default_emitter()
 
 __all__ = [
     "SubTestExecutor",
@@ -736,6 +738,18 @@ class SubTestExecutor:
                             if run_dir.exists():
                                 _move_to_failed(run_dir)
 
+                            try:
+                                _emitter.emit_counter(
+                                    "scylla_errors_total",
+                                    1,
+                                    labels={
+                                        "error_class": type(e).__name__,
+                                        "tier": current_tier_id(),
+                                    },
+                                )
+                            except Exception as _me:
+                                logger.warning(f"Error metric emission failed (non-fatal): {_me}")
+
                             # Signal coordinator if available
                             if coordinator:
                                 coordinator.signal_rate_limit(e.info)
@@ -743,6 +757,17 @@ class SubTestExecutor:
                             raise
 
                     except Exception as _exc:
+                        try:
+                            _emitter.emit_counter(
+                                "scylla_errors_total",
+                                1,
+                                labels={
+                                    "error_class": type(_exc).__name__,
+                                    "tier": current_tier_id(),
+                                },
+                            )
+                        except Exception as _me:
+                            logger.warning(f"Error metric emission failed (non-fatal): {_me}")
                         _run_span.record_exception(_exc)
                         raise
 

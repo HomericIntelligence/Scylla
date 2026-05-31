@@ -81,16 +81,56 @@ Child spans below this root cover the rest of the runtime — see
 Beyond the single root `scylla.experiment.run` span, the runtime emits
 child spans at every meaningful execution boundary. The full hierarchy is:
 
-| Span name              | Emitted by                                        | Attributes                                                                                       |
-|------------------------|---------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| `scylla.experiment.run` | `src/scylla/cli/main.py`                          | `experiment.test_id`, `experiment.model`, `experiment.runs_per_tier`, `experiment.tiers`         |
-| `scylla.tier`          | `src/scylla/e2e/runner_internals/runner_core.py`  | `scylla.tier_id`, `scylla.experiment_id`                                                         |
-| `scylla.subtest`       | `src/scylla/e2e/subtest_executor.py`              | `scylla.tier_id`, `scylla.subtest_id`, `scylla.experiment_id`                                    |
-| `scylla.run`           | `src/scylla/e2e/subtest_executor.py`              | `scylla.tier_id`, `scylla.subtest_id`, `scylla.run_num`, `scylla.experiment_id`                  |
-| `scylla.judge`         | `src/scylla/e2e/judge_runner.py`                  | `scylla.judge_model`, `scylla.judge_number`                                                      |
+| Span name                        | Emitted by                                        | Attributes                                                                                       |
+|----------------------------------|---------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `scylla.experiment.run`          | `src/scylla/cli/main.py`                          | `experiment.test_id`, `experiment.model`, `experiment.runs_per_tier`, `experiment.tiers`         |
+| `scylla.tier`                    | `src/scylla/e2e/runner_internals/runner_core.py`  | `scylla.tier_id`, `scylla.experiment_id`                                                         |
+| `scylla.subtest`                 | `src/scylla/e2e/subtest_executor.py`              | `scylla.tier_id`, `scylla.subtest_id`, `scylla.experiment_id`                                    |
+| `scylla.run`                     | `src/scylla/e2e/subtest_executor.py`              | `scylla.tier_id`, `scylla.subtest_id`, `scylla.run_num`, `scylla.experiment_id`                  |
+| `scylla.judge`                   | `src/scylla/e2e/judge_runner.py`                  | `scylla.judge_model`, `scylla.judge_number`                                                      |
+| `scylla.container.run`           | `src/scylla/executor/docker.py`                   | `scylla.image`, `scylla.container_id`, `scylla.exit_code`                                        |
+| `scylla.container.run_detached`  | `src/scylla/executor/docker.py`                   | `scylla.image`, `scylla.container_id`                                                            |
+| `scylla.container.stop`          | `src/scylla/executor/docker.py`                   | `scylla.container_id`                                                                            |
+| `scylla.rate_limit.pause`        | `src/scylla/e2e/rate_limit.py`                    | `scylla.reason`, `scylla.retry_after_seconds`                                                    |
 
 Failures at any level call `span.record_exception(exc)` before re-raising,
 so spans carry exception events even when the run itself fails.
+
+## Instrumentation Map
+
+Every actively-wired call site, with its span, counter, histogram, labels, and source file.
+
+| Instrumentation Point | Span | Counter | Histogram | Labels | Source File |
+|-----------------------|------|---------|-----------|--------|-------------|
+| Experiment run (root) | `scylla.experiment.run` | — | — | `experiment.test_id`, `experiment.model` | `src/scylla/cli/main.py` |
+| Tier start/end | `scylla.tier` | `scylla_tier_runs_total` | — | `tier`, `outcome`, `experiment` | `src/scylla/e2e/runner_internals/runner_finalization.py` |
+| Subtest start/end | `scylla.subtest` | `scylla_subtest_runs_total` | — | `tier`, `outcome` | `src/scylla/e2e/subtest_executor.py` |
+| Run start/end | `scylla.run` | `scylla_experiment_pass_rate` (gauge) | — | `tier`, `outcome` | `src/scylla/e2e/subtest_executor.py` |
+| Judge call | `scylla.judge` | `scylla_judge_evaluations_total` | `scylla_judge_call_seconds` | `model` | `src/scylla/e2e/judge_runner.py` |
+| Adapter call | — | — | `scylla_adapter_call_seconds` | `tier`, `subtest`, `model` | `src/scylla/e2e/stages.py` |
+| Checkpoint save | — | `scylla_checkpoint_save_total` | `scylla_checkpoint_save_seconds` | `experiment`, `outcome` | `src/scylla/persistence/checkpoint.py` |
+| Rate-limit pause | `scylla.rate_limit.pause` | `scylla_rate_limit_pauses_total` | `scylla_rate_limit_pause_seconds` | `reason` | `src/scylla/e2e/rate_limit.py` |
+| Container run | `scylla.container.run` | `scylla_container_lifecycle_total` | `scylla_container_run_seconds` | `event`, `image` | `src/scylla/executor/docker.py` |
+| Container stop | `scylla.container.stop` | `scylla_container_lifecycle_total` | `scylla_container_stop_seconds` | `event` | `src/scylla/executor/docker.py` |
+| Error dispatch | — | `scylla_errors_total` | — | `error_class`, `tier` | `src/scylla/e2e/parallel_executor.py`, `src/scylla/e2e/subtest_executor.py` |
+| Config startup | — | — (gauge) | — | — | `src/scylla/cli/main.py` |
+
+## Troubleshooting
+
+**Empty textfile (`$SCYLLA_METRICS_PATH`):**
+
+- Check that `SCYLLA_METRICS_PATH` is set and the parent directory is writable.
+- Check that the process has write permission: `touch $SCYLLA_METRICS_PATH`.
+
+**Missing `trace_id` / `span_id` in JSON logs:**
+
+- Verify `opentelemetry-api` is installed: `pip show opentelemetry-api`.
+- Confirm `SCYLLA_OTEL_EXPORTER` is set (even to `console`) — the trace fields are injected only when an active span exists.
+
+**Traces and logs not correlated:**
+
+- Set both `SCYLLA_OTEL_EXPORTER` and `SCYLLA_JSON_LOGS=1` together. The JSON formatter injects `trace_id`/`span_id` from the currently active OTel span; if tracing is not configured there is no active span to read.
+- Verify the same process sets both env vars (not split across a shell wrapper and the subprocess).
 
 > **Cardinality note.** `scylla.subtest_id` is recorded as a span attribute
 > only — never as a metric label. The OTLP collector budgets cardinality

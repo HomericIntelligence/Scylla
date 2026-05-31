@@ -1,6 +1,7 @@
 """Command-line interface for ProjectScylla."""
 
 import json
+import os
 import statistics
 import sys
 from datetime import datetime, timezone
@@ -12,6 +13,7 @@ import click
 from scylla import __version__
 from scylla.config import DEFAULT_JUDGE_MODEL, ConfigLoader
 from scylla.e2e.orchestrator import EvalOrchestrator, OrchestratorConfig
+from scylla.metrics.emitter import get_default_emitter
 from scylla.reporting import (
     HtmlReportGenerator,
     JsonReportGenerator,
@@ -53,6 +55,19 @@ def cli() -> None:
     # Opt-in OpenTelemetry tracing via SCYLLA_OTEL_EXPORTER=console|otlp.
     # When unset, this is a no-op and no SDK imports happen.
     configure_tracing()
+    # Emit one-shot startup gauges so operators can verify observability is active.
+    try:
+        _startup_emitter = get_default_emitter()
+        _startup_emitter.emit_gauge(
+            "scylla_config_otel_enabled",
+            1.0 if os.environ.get("SCYLLA_OTEL_EXPORTER") else 0.0,
+        )
+        _startup_emitter.emit_gauge(
+            "scylla_config_json_logs_enabled",
+            1.0 if is_json_logging_enabled() else 0.0,
+        )
+    except Exception:
+        pass
 
 
 @cli.command()
