@@ -1,4 +1,4 @@
-"""Workspace preparation mixin for :class:`TierManager`.
+"""Workspace preparation collaborator for :class:`TierManager`.
 
 Methods that materialize tier configuration onto a workspace directory:
 copying baselines, overlaying subtest configs, creating symlinks/settings.
@@ -11,26 +11,59 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import yaml
 
 from scylla.e2e.models import SubTestConfig, TierBaseline, TierID
 
 if TYPE_CHECKING:
-    from scylla.e2e.tier_manager_internals.base import TierManagerBase
-
-    _Base = TierManagerBase
-else:
-    _Base = object
+    pass
 
 logger = logging.getLogger(__name__)
 
 
-class WorkspaceMixin(_Base):
+class _ResourceProtocol(Protocol):
+    """Protocol for methods WorkspaceHandler needs from ResourcesHandler."""
+
+    def build_resource_suffix(self, subtest: SubTestConfig) -> str: ...
+
+    def _merge_tier_resources(
+        self,
+        merged_resources: dict[str, Any],
+        new_resources: dict[str, Any],
+        source_tier: TierID,
+    ) -> None: ...
+
+
+class _BaselineProtocol(Protocol):
+    """Protocol for methods WorkspaceHandler needs from BaselineHandler."""
+
+    def load_tier_config(self, tier_id: TierID, skip_agent_teams: bool = False) -> Any: ...
+
+
+class WorkspaceHandler:
     """Workspace preparation methods for :class:`TierManager`."""
 
-    def prepare_workspace(  # noqa: C901  # workspace setup with many config scenarios
+    def __init__(
+        self,
+        shared_dir: Path,
+        resources: _ResourceProtocol,
+        baseline: _BaselineProtocol,
+    ) -> None:
+        """Initialize workspace handler with collaborators.
+
+        Args:
+            shared_dir: Path to shared resources directory
+            resources: ResourcesHandler collaborator
+            baseline: BaselineHandler collaborator
+
+        """
+        self._shared_dir = shared_dir
+        self._resources = resources
+        self._baseline = baseline
+
+    def prepare_workspace(
         self,
         workspace: Path,
         tier_id: TierID,
@@ -63,68 +96,19 @@ class WorkspaceMixin(_Base):
             thinking_enabled: Whether to enable extended thinking mode
 
         """
-        tier_config = self.load_tier_config(tier_id)
+        tier_config = self._baseline.load_tier_config(tier_id)
         subtest = next((s for s in tier_config.subtests if s.id == subtest_id), None)
 
         if not subtest:
             raise ValueError(f"Sub-test {subtest_id} not found for tier {tier_id.value}")
 
-        # Special handling for T0 sub-tests
         if tier_id == TierID.T0:
-            claude_md = workspace / "CLAUDE.md"
-            claude_dir = workspace / ".claude"
+            self._handle_t0_workspace(workspace, subtest, subtest_id, thinking_enabled)
+            return
 
-            if subtest_id == "00":
-                # 00-empty: Remove all configuration (no system prompt)
-                if claude_md.exists():
-                    claude_md.unlink()
-                if claude_dir.exists():
-                    shutil.rmtree(claude_dir)
-                # Still create settings.json for thinking control
-                self._create_settings_json(workspace, subtest, thinking_enabled)
-                return
-            elif subtest_id == "01":
-                # 01-vanilla: Use tool defaults (no changes needed)
-                # But still remove any existing CLAUDE.md to ensure clean state
-                if claude_md.exists():
-                    claude_md.unlink()
-                if claude_dir.exists():
-                    shutil.rmtree(claude_dir)
-                # Still create settings.json for thinking control
-                self._create_settings_json(workspace, subtest, thinking_enabled)
-                return
-            # 02+: Fall through to normal overlay logic
-
-        # Build resource suffix for CLAUDE.md
-        # For T5 with merged resources, create temporary SubTestConfig with merged resources
-        if merged_resources and tier_id == TierID.T5:
-            # Merge subtest resources with inherited resources if needed
-            final_merged = merged_resources.copy()
-            if subtest.resources:
-                for resource_type, resource_spec in subtest.resources.items():
-                    if resource_type not in final_merged:
-                        final_merged[resource_type] = resource_spec
-                    else:
-                        temp_merged = final_merged.copy()
-                        temp_new = {resource_type: resource_spec}
-                        self._merge_tier_resources(temp_merged, temp_new, TierID.T5)
-                        final_merged = temp_merged
-
-            # Create temporary SubTestConfig for resource suffix generation
-            temp_subtest = subtest.model_copy(update={"resources": final_merged})
-            resource_suffix = self.build_resource_suffix(temp_subtest)
-
-            # Apply merged resources with suffix
-            self._create_symlinks(workspace, final_merged, resource_suffix)
-        # Normal baseline extension for other tiers
-        elif baseline and subtest.extends_previous:
-            # Build resource suffix from baseline
-            temp_subtest = subtest.model_copy(update={"resources": baseline.resources})
-            resource_suffix = self.build_resource_suffix(temp_subtest)
-            self._apply_baseline(workspace, baseline, resource_suffix)
-        else:
-            # Build resource suffix from subtest
-            resource_suffix = self.build_resource_suffix(subtest)
+        resource_suffix = self._compute_resource_suffix(
+            workspace, tier_id, subtest, baseline, merged_resources
+        )
 
         # Step 2: Overlay sub-test configuration (skip for T5 with merged_resources)
         if not (merged_resources and tier_id == TierID.T5):
@@ -132,6 +116,126 @@ class WorkspaceMixin(_Base):
 
         # Create settings.json with thinking configuration
         self._create_settings_json(workspace, subtest, thinking_enabled)
+
+    def _handle_t0_workspace(
+        self,
+        workspace: Path,
+        subtest: SubTestConfig,
+        subtest_id: str,
+        thinking_enabled: bool,
+    ) -> None:
+        """Handle special T0 workspace setup (empty/vanilla/custom).
+
+        Args:
+            workspace: Target workspace directory
+            subtest: SubTestConfig for this subtest
+            subtest_id: The subtest ID string
+            thinking_enabled: Whether extended thinking is enabled
+
+        """
+        claude_md = workspace / "CLAUDE.md"
+        claude_dir = workspace / ".claude"
+
+        if subtest_id in ("00", "01"):
+            # 00-empty: Remove all configuration (no system prompt)
+            # 01-vanilla: Use tool defaults (no changes needed)
+            if claude_md.exists():
+                claude_md.unlink()
+            if claude_dir.exists():
+                shutil.rmtree(claude_dir)
+            self._create_settings_json(workspace, subtest, thinking_enabled)
+            return
+
+        # 02+: Fall through to normal overlay logic
+        resource_suffix = self._resources.build_resource_suffix(subtest)
+        self._overlay_subtest(workspace, subtest, resource_suffix)
+        self._create_settings_json(workspace, subtest, thinking_enabled)
+
+    def _compute_resource_suffix(
+        self,
+        workspace: Path,
+        tier_id: TierID,
+        subtest: SubTestConfig,
+        baseline: TierBaseline | None,
+        merged_resources: dict[str, Any] | None,
+    ) -> str | None:
+        """Compute resource suffix and apply resources to the workspace.
+
+        Args:
+            workspace: Target workspace directory
+            tier_id: Current tier identifier
+            subtest: Sub-test configuration
+            baseline: Previous tier baseline (if any)
+            merged_resources: Pre-merged resources for T5 (if any)
+
+        Returns:
+            Resource suffix string, or None.
+
+        """
+        if merged_resources and tier_id == TierID.T5:
+            return self._apply_merged_resources(workspace, subtest, merged_resources, tier_id)
+
+        if baseline and subtest.extends_previous:
+            return self._apply_baseline_resources(workspace, subtest, baseline)
+
+        return self._resources.build_resource_suffix(subtest)
+
+    def _apply_merged_resources(
+        self,
+        workspace: Path,
+        subtest: SubTestConfig,
+        merged_resources: dict[str, Any],
+        tier_id: TierID,
+    ) -> str:
+        """Apply merged T5 resources and return suffix.
+
+        Args:
+            workspace: Target workspace directory
+            subtest: Sub-test configuration
+            merged_resources: Pre-merged resources from multiple tiers
+            tier_id: Current tier identifier
+
+        Returns:
+            Resource suffix string.
+
+        """
+        final_merged = merged_resources.copy()
+        if subtest.resources:
+            for resource_type, resource_spec in subtest.resources.items():
+                if resource_type not in final_merged:
+                    final_merged[resource_type] = resource_spec
+                else:
+                    temp_merged = final_merged.copy()
+                    temp_new = {resource_type: resource_spec}
+                    self._resources._merge_tier_resources(temp_merged, temp_new, tier_id)
+                    final_merged = temp_merged
+
+        temp_subtest = subtest.model_copy(update={"resources": final_merged})
+        resource_suffix = self._resources.build_resource_suffix(temp_subtest)
+        self._create_symlinks(workspace, final_merged, resource_suffix)
+        return resource_suffix
+
+    def _apply_baseline_resources(
+        self,
+        workspace: Path,
+        subtest: SubTestConfig,
+        baseline: TierBaseline,
+    ) -> str:
+        """Apply baseline resources to workspace and return suffix.
+
+        Args:
+            workspace: Target workspace directory
+            subtest: Sub-test configuration
+            baseline: Previous tier's winning baseline
+
+        Returns:
+            Resource suffix string.
+
+        """
+        temp_subtest = subtest.model_copy(update={"resources": baseline.resources})
+        resource_suffix = self._resources.build_resource_suffix(temp_subtest)
+        self._apply_baseline(workspace, baseline, resource_suffix)
+        return resource_suffix
 
     def _apply_baseline(
         self, workspace: Path, baseline: TierBaseline, resource_suffix: str | None = None
@@ -223,7 +327,7 @@ class WorkspaceMixin(_Base):
 
         return cast(dict[str, Any], config.get("resources", {}))
 
-    def _create_symlinks(  # noqa: C901  # symlink creation with many source/target patterns
+    def _create_symlinks(
         self,
         workspace: Path,
         resources: dict[str, Any],
@@ -239,63 +343,122 @@ class WorkspaceMixin(_Base):
         """
         shared_dir = self._shared_dir
 
-        # Symlink skills by category
-        if "skills" in resources:
-            skills_spec = resources["skills"]
-            skills_dir = workspace / ".claude" / "skills"
-            skills_dir.mkdir(parents=True, exist_ok=True)
+        self._link_skills(workspace, resources, shared_dir)
+        self._link_agents(workspace, resources, shared_dir)
+        self._write_claude_md(workspace, resources, shared_dir, resource_suffix)
 
-            # Handle categories (e.g., ["agent", "github"])
-            for category in skills_spec.get("categories", []):
-                category_dir = shared_dir / "skills" / category
-                if category_dir.exists():
-                    for skill in category_dir.iterdir():
-                        if skill.is_dir():
-                            link_path = skills_dir / skill.name
-                            if not link_path.exists():
-                                os.symlink(skill.resolve(), link_path)
+    @staticmethod
+    def _symlink_if_missing(target: Path, link_path: Path) -> None:
+        """Create a symlink at link_path -> target if it does not already exist.
 
-            # Handle individual skill names (e.g., ["gh-create-pr-linked"])
-            for skill_name in skills_spec.get("names", []):
-                # Search all categories for this skill
-                for category_dir in (shared_dir / "skills").iterdir():
-                    if category_dir.is_dir():
-                        skill_path = category_dir / skill_name
-                        if skill_path.exists():
-                            link_path = skills_dir / skill_name
-                            if not link_path.exists():
-                                os.symlink(skill_path.resolve(), link_path)
-                            break
+        Args:
+            target: Resolved path to the target
+            link_path: Path where the symlink should be created
 
-        # Symlink agents by level
-        if "agents" in resources:
-            agents_spec = resources["agents"]
-            agents_dir = workspace / ".claude" / "agents"
-            agents_dir.mkdir(parents=True, exist_ok=True)
+        """
+        if not link_path.exists():
+            os.symlink(target, link_path)
 
-            # Handle levels (e.g., [0, 1, 3])
-            for level in agents_spec.get("levels", []):
-                level_dir = shared_dir / "agents" / f"L{level}"
-                if level_dir.exists():
-                    for agent in level_dir.iterdir():
-                        if agent.is_file() and agent.suffix == ".md":
-                            link_path = agents_dir / agent.name
-                            if not link_path.exists():
-                                os.symlink(agent.resolve(), link_path)
+    def _link_skill_by_name(self, skill_name: str, skills_dir: Path, shared_dir: Path) -> None:
+        """Search all skill categories and symlink a skill by name.
 
-            # Handle individual agent names (e.g., ["chief-architect.md"])
-            for agent_name in agents_spec.get("names", []):
-                # Search all levels for this agent
-                for level_dir in (shared_dir / "agents").iterdir():
-                    if level_dir.is_dir() and level_dir.name.startswith("L"):
-                        agent_path = level_dir / agent_name
-                        if agent_path.exists():
-                            link_path = agents_dir / agent_name
-                            if not link_path.exists():
-                                os.symlink(agent_path.resolve(), link_path)
-                            break
+        Args:
+            skill_name: Skill directory name to find and link
+            skills_dir: Target .claude/skills/ directory
+            shared_dir: Path to shared resources
 
-        # Compose CLAUDE.md from blocks (with optional resource suffix)
+        """
+        for category_dir in (shared_dir / "skills").iterdir():
+            if category_dir.is_dir():
+                skill_path = category_dir / skill_name
+                if skill_path.exists():
+                    self._symlink_if_missing(skill_path.resolve(), skills_dir / skill_name)
+                    break
+
+    def _link_agent_by_name(self, agent_name: str, agents_dir: Path, shared_dir: Path) -> None:
+        """Search all agent levels and symlink an agent file by name.
+
+        Args:
+            agent_name: Agent filename (with .md extension) to find and link
+            agents_dir: Target .claude/agents/ directory
+            shared_dir: Path to shared resources
+
+        """
+        for level_dir in (shared_dir / "agents").iterdir():
+            if level_dir.is_dir() and level_dir.name.startswith("L"):
+                agent_path = level_dir / agent_name
+                if agent_path.exists():
+                    self._symlink_if_missing(agent_path.resolve(), agents_dir / agent_name)
+                    break
+
+    def _link_skills(self, workspace: Path, resources: dict[str, Any], shared_dir: Path) -> None:
+        """Symlink skill directories into the workspace.
+
+        Args:
+            workspace: Target workspace directory
+            resources: Resource specification
+            shared_dir: Path to shared resources
+
+        """
+        if "skills" not in resources:
+            return
+
+        skills_spec = resources["skills"]
+        skills_dir = workspace / ".claude" / "skills"
+        skills_dir.mkdir(parents=True, exist_ok=True)
+
+        for category in skills_spec.get("categories", []):
+            category_dir = shared_dir / "skills" / category
+            if category_dir.exists():
+                for skill in category_dir.iterdir():
+                    if skill.is_dir():
+                        self._symlink_if_missing(skill.resolve(), skills_dir / skill.name)
+
+        for skill_name in skills_spec.get("names", []):
+            self._link_skill_by_name(skill_name, skills_dir, shared_dir)
+
+    def _link_agents(self, workspace: Path, resources: dict[str, Any], shared_dir: Path) -> None:
+        """Symlink agent files into the workspace.
+
+        Args:
+            workspace: Target workspace directory
+            resources: Resource specification
+            shared_dir: Path to shared resources
+
+        """
+        if "agents" not in resources:
+            return
+
+        agents_spec = resources["agents"]
+        agents_dir = workspace / ".claude" / "agents"
+        agents_dir.mkdir(parents=True, exist_ok=True)
+
+        for level in agents_spec.get("levels", []):
+            level_dir = shared_dir / "agents" / f"L{level}"
+            if level_dir.exists():
+                for agent in level_dir.iterdir():
+                    if agent.is_file() and agent.suffix == ".md":
+                        self._symlink_if_missing(agent.resolve(), agents_dir / agent.name)
+
+        for agent_name in agents_spec.get("names", []):
+            self._link_agent_by_name(agent_name, agents_dir, shared_dir)
+
+    def _write_claude_md(
+        self,
+        workspace: Path,
+        resources: dict[str, Any],
+        shared_dir: Path,
+        resource_suffix: str | None,
+    ) -> None:
+        """Write CLAUDE.md from blocks and resource suffix.
+
+        Args:
+            workspace: Target workspace directory
+            resources: Resource specification
+            shared_dir: Path to shared resources
+            resource_suffix: Optional suffix to append
+
+        """
         if "claude_md" in resources:
             claude_md_spec = resources["claude_md"]
             self._compose_claude_md(workspace, claude_md_spec, shared_dir, resource_suffix)
@@ -413,20 +576,3 @@ class WorkspaceMixin(_Base):
         settings_path = settings_dir / "settings.json"
         with open(settings_path, "w") as f:
             json.dump(settings, f, indent=2)
-
-    # Forward declarations for methods provided by sibling mixins; satisfied at
-    # runtime by MRO on the composed :class:`TierManager`.
-    if TYPE_CHECKING:
-
-        def load_tier_config(  # noqa: D102
-            self, tier_id: TierID, skip_agent_teams: bool = False
-        ) -> Any: ...
-
-        def build_resource_suffix(self, subtest: SubTestConfig) -> str: ...  # noqa: D102
-
-        def _merge_tier_resources(
-            self,
-            merged_resources: dict[str, Any],
-            new_resources: dict[str, Any],
-            source_tier: TierID,
-        ) -> None: ...

@@ -237,7 +237,182 @@ def scan_run_results(
     return results
 
 
-def rejudge_missing_runs(  # noqa: C901  # workspace state detection with many file patterns
+def _rejudge_single_run(
+    experiment_dir: Path,
+    config: ExperimentConfig,
+    run: E2ERunResult,
+    run_dir: Path,
+    judge_model: str,
+    stats: RegenerateStats,
+) -> None:
+    """Perform judge re-execution for a single run.
+
+    Args:
+        experiment_dir: Path to experiment directory
+        config: Experiment configuration
+        run: The run result to rejudge
+        run_dir: Path to the run directory
+        judge_model: Judge model to use
+        stats: Statistics object to update
+
+    """
+    import time
+    from datetime import datetime, timezone
+
+    workspace = run_dir / "workspace"
+
+    # Load agent output
+    agent_output_file = run_dir / "agent" / "output.txt"
+    if not agent_output_file.exists():
+        logger.warning(f"⚠️  Agent output not found: {agent_output_file}")
+        return
+    agent_output = agent_output_file.read_text()
+
+    # Load task prompt
+    task_prompt_file = experiment_dir / "prompt.md"
+    if not task_prompt_file.exists():
+        task_prompt_file = run_dir / "task_prompt.md"
+    if not task_prompt_file.exists():
+        logger.warning(f"⚠️  Task prompt not found for {run_dir}")
+        return
+    task_prompt = task_prompt_file.read_text()
+
+    # Backup old run_result.json
+    run_result_file = run_dir / "run_result.json"
+    if run_result_file.exists():
+        backup_file = run_dir / "run_result.json.pre-rejudge"
+        shutil.copy2(run_result_file, backup_file)
+
+    judge_dir = run_dir / "judge"
+    judge_dir.mkdir(exist_ok=True)
+    saved_judge_prompt_path = run_dir / "judge_prompt.md"
+
+    try:
+        if saved_judge_prompt_path.exists():
+            # Reuse the original judge prompt to avoid rebuilding
+            # from potentially corrupted workspace
+            logger.info(f"Re-judging {run_dir} with model {judge_model} (using saved prompt)")
+
+            from scylla.e2e.llm_judge import _call_claude_judge, _parse_judge_response
+            from scylla.e2e.pipeline_scripts import _save_judge_logs
+
+            judge_prompt = saved_judge_prompt_path.read_text()
+            judge_start = time.time()
+
+            stdout, stderr, result = _call_claude_judge(judge_prompt, judge_model, workspace)
+            judge_result = _parse_judge_response(result)
+
+            _save_judge_logs(
+                judge_dir,
+                judge_prompt,
+                result,
+                judge_result,
+                judge_model,
+                workspace,
+                raw_stdout=stdout,
+                raw_stderr=stderr,
+                language=config.language,
+            )
+
+            judge_duration = time.time() - judge_start
+            timing_file = judge_dir / "timing.json"
+            with open(timing_file, "w") as f:
+                json.dump(
+                    {
+                        "judge_duration_seconds": judge_duration,
+                        "measured_at": datetime.now(timezone.utc).isoformat(),
+                        "rejudge": True,
+                        "used_saved_prompt": True,
+                    },
+                    f,
+                    indent=2,
+                )
+        else:
+            # Fallback: rebuild from workspace (old behavior, but log warning)
+            logger.warning(
+                f"Saved judge_prompt.md not found at {saved_judge_prompt_path}, "
+                f"rebuilding from workspace (may be inaccurate)"
+            )
+            judge_result = run_llm_judge(
+                workspace=workspace,
+                task_prompt=task_prompt,
+                agent_output=agent_output,
+                model=judge_model,
+                judge_dir=judge_dir,
+                reference_patch_path=(
+                    experiment_dir / "reference.patch"
+                    if (experiment_dir / "reference.patch").exists()
+                    else None
+                ),
+                rubric_path=(
+                    experiment_dir / "rubric.yaml"
+                    if (experiment_dir / "rubric.yaml").exists()
+                    else None
+                ),
+            )
+
+        # Update run result with new judge scores
+        run.judge_score = judge_result.score
+        run.judge_passed = judge_result.passed
+        run.judge_grade = judge_result.grade
+        run.judge_reasoning = judge_result.reasoning
+        run.criteria_scores = judge_result.criteria_scores or {}
+
+        # Save updated run_result.json
+        with open(run_result_file, "w") as f:
+            json.dump(
+                {
+                    "run_number": run.run_number,
+                    "exit_code": run.exit_code,
+                    "token_stats": run.token_stats.to_dict(),
+                    "cost_usd": run.cost_usd,
+                    "duration_seconds": run.duration_seconds,
+                    "agent_duration_seconds": run.agent_duration_seconds,
+                    "judge_duration_seconds": run.judge_duration_seconds,
+                    "judge_score": run.judge_score,
+                    "judge_passed": run.judge_passed,
+                    "judge_grade": run.judge_grade,
+                    "judge_reasoning": run.judge_reasoning,
+                    "workspace_path": str(run.workspace_path),
+                    "logs_path": str(run.logs_path),
+                    "command_log_path": (
+                        str(run.command_log_path) if run.command_log_path else None
+                    ),
+                    "criteria_scores": run.criteria_scores,
+                },
+                f,
+                indent=2,
+            )
+
+        stats.runs_rejudged += 1
+        logger.info(f"✅ Re-judged {run_dir}: score={judge_result.score:.2f}")
+
+    except Exception as judge_error:
+        # Log error with context
+        logger.error(
+            f"❌ Judge failed for {run_dir} with model {judge_model}: {judge_error}",
+            exc_info=True,
+        )
+
+        # Save error artifacts
+        timing_file = judge_dir / "timing.json"
+        with open(timing_file, "w") as f:
+            json.dump(
+                {
+                    "judge_duration_seconds": 0.0,
+                    "measured_at": datetime.now(timezone.utc).isoformat(),
+                    "failed": True,
+                    "error": str(judge_error),
+                },
+                f,
+                indent=2,
+            )
+
+        error_file = judge_dir / "error.log"
+        error_file.write_text(f"Judge failed: {judge_error}\n")
+
+
+def rejudge_missing_runs(
     experiment_dir: Path,
     config: ExperimentConfig,
     run_results: dict[str, dict[str, list[E2ERunResult]]],
@@ -288,184 +463,7 @@ def rejudge_missing_runs(  # noqa: C901  # workspace state detection with many f
                     continue
 
                 try:
-                    # Load agent output
-                    agent_output_file = run_dir / "agent" / "output.txt"
-                    if not agent_output_file.exists():
-                        logger.warning(f"⚠️  Agent output not found: {agent_output_file}")
-                        continue
-                    agent_output = agent_output_file.read_text()
-
-                    # Load task prompt
-                    task_prompt_file = experiment_dir / "prompt.md"
-                    if not task_prompt_file.exists():
-                        task_prompt_file = run_dir / "task_prompt.md"
-                    if not task_prompt_file.exists():
-                        logger.warning(f"⚠️  Task prompt not found for {run_dir}")
-                        continue
-                    task_prompt = task_prompt_file.read_text()
-
-                    # Backup old run_result.json
-                    run_result_file = run_dir / "run_result.json"
-                    if run_result_file.exists():
-                        backup_file = run_dir / "run_result.json.pre-rejudge"
-                        shutil.copy2(run_result_file, backup_file)
-
-                    # Run judge
-                    judge_dir = run_dir / "judge"
-                    judge_dir.mkdir(exist_ok=True)
-
-                    # Check if saved judge_prompt.md exists (from original run)
-                    saved_judge_prompt_path = run_dir / "judge_prompt.md"
-
-                    try:
-                        if saved_judge_prompt_path.exists():
-                            # Reuse the original judge prompt to avoid rebuilding
-                            # from potentially corrupted workspace
-                            logger.info(
-                                f"Re-judging {run_dir} with model {judge_model} "
-                                f"(using saved prompt)"
-                            )
-
-                            judge_prompt = saved_judge_prompt_path.read_text()
-
-                            # Run judge using the saved prompt directly
-                            # (bypass run_llm_judge which would rebuild prompt)
-                            import time
-                            from datetime import datetime, timezone
-
-                            from scylla.e2e.llm_judge import (
-                                _call_claude_judge,
-                                _parse_judge_response,
-                            )
-                            from scylla.e2e.pipeline_scripts import _save_judge_logs
-
-                            judge_start = time.time()
-
-                            # Call Claude with saved prompt
-                            stdout, stderr, result = _call_claude_judge(
-                                judge_prompt, judge_model, workspace
-                            )
-                            judge_result = _parse_judge_response(result)
-
-                            # Save logs
-                            _save_judge_logs(
-                                judge_dir,
-                                judge_prompt,
-                                result,
-                                judge_result,
-                                judge_model,
-                                workspace,
-                                raw_stdout=stdout,
-                                raw_stderr=stderr,
-                                language=config.language,
-                            )
-
-                            # Save timing
-                            judge_duration = time.time() - judge_start
-                            timing_file = judge_dir / "timing.json"
-                            with open(timing_file, "w") as f:
-                                json.dump(
-                                    {
-                                        "judge_duration_seconds": judge_duration,
-                                        "measured_at": datetime.now(timezone.utc).isoformat(),
-                                        "rejudge": True,
-                                        "used_saved_prompt": True,
-                                    },
-                                    f,
-                                    indent=2,
-                                )
-
-                        else:
-                            # Fallback: rebuild from workspace (old behavior, but log warning)
-                            logger.warning(
-                                f"Saved judge_prompt.md not found at {saved_judge_prompt_path}, "
-                                f"rebuilding from workspace (may be inaccurate)"
-                            )
-
-                            judge_result = run_llm_judge(
-                                workspace=workspace,
-                                task_prompt=task_prompt,
-                                agent_output=agent_output,
-                                model=judge_model,
-                                judge_dir=judge_dir,
-                                reference_patch_path=(
-                                    experiment_dir / "reference.patch"
-                                    if (experiment_dir / "reference.patch").exists()
-                                    else None
-                                ),
-                                rubric_path=(
-                                    experiment_dir / "rubric.yaml"
-                                    if (experiment_dir / "rubric.yaml").exists()
-                                    else None
-                                ),
-                            )
-
-                        # Update run result with new judge scores
-                        run.judge_score = judge_result.score
-                        run.judge_passed = judge_result.passed
-                        run.judge_grade = judge_result.grade
-                        run.judge_reasoning = judge_result.reasoning
-                        run.criteria_scores = judge_result.criteria_scores or {}
-
-                        # Save updated run_result.json
-                        with open(run_result_file, "w") as f:
-                            json.dump(
-                                {
-                                    "run_number": run.run_number,
-                                    "exit_code": run.exit_code,
-                                    "token_stats": run.token_stats.to_dict(),
-                                    "cost_usd": run.cost_usd,
-                                    "duration_seconds": run.duration_seconds,
-                                    "agent_duration_seconds": run.agent_duration_seconds,
-                                    "judge_duration_seconds": run.judge_duration_seconds,
-                                    "judge_score": run.judge_score,
-                                    "judge_passed": run.judge_passed,
-                                    "judge_grade": run.judge_grade,
-                                    "judge_reasoning": run.judge_reasoning,
-                                    "workspace_path": str(run.workspace_path),
-                                    "logs_path": str(run.logs_path),
-                                    "command_log_path": (
-                                        str(run.command_log_path) if run.command_log_path else None
-                                    ),
-                                    "criteria_scores": run.criteria_scores,
-                                },
-                                f,
-                                indent=2,
-                            )
-
-                        stats.runs_rejudged += 1
-                        logger.info(f"✅ Re-judged {run_dir}: score={judge_result.score:.2f}")
-
-                    except Exception as judge_error:
-                        from datetime import datetime, timezone
-
-                        # Log error with context
-                        logger.error(
-                            f"❌ Judge failed for {run_dir} with model {judge_model}: "
-                            f"{judge_error}",
-                            exc_info=True,
-                        )
-
-                        # Save error artifacts
-                        timing_file = judge_dir / "timing.json"
-                        with open(timing_file, "w") as f:
-                            json.dump(
-                                {
-                                    "judge_duration_seconds": 0.0,
-                                    "measured_at": datetime.now(timezone.utc).isoformat(),
-                                    "failed": True,
-                                    "error": str(judge_error),
-                                },
-                                f,
-                                indent=2,
-                            )
-
-                        error_file = judge_dir / "error.log"
-                        error_file.write_text(f"Judge failed: {judge_error}\n")
-
-                        # Continue to next run instead of crashing
-                        continue
-
+                    _rejudge_single_run(experiment_dir, config, run, run_dir, judge_model, stats)
                 except Exception as e:
                     logger.error(f"❌ Failed to re-judge {run_dir}: {e}")
                     continue
