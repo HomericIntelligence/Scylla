@@ -50,10 +50,10 @@ repos:
           Medium+ severity only (-ll) to avoid low-severity noise.
         entry: pixi run --environment lint bandit
         language: system
-        args: [-c, pyproject.toml, --severity-level, medium]
+        args: [-r, -c, pyproject.toml, --severity-level, medium, scripts/, src/scylla/]
         files: ^(scripts|src/scylla)/.*\.py$
         types: [python]
-        pass_filenames: true
+        pass_filenames: false
       - id: check-mojo-artifacts
         name: Check for Mojo Migration Artifacts
         description: >-
