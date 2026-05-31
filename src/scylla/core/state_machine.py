@@ -262,29 +262,45 @@ class StateMachine(Generic[TState]):
                 )
                 return self.get_state()
 
-            matched = False
-            mapped: TState | None = None
-            if error_state_map is not None:
-                for exc_type, target in error_state_map:
-                    if isinstance(exc, exc_type):
-                        matched = True
-                        mapped = target
-                        break
-
-            if not matched and failure_state is not None:
-                mapped = failure_state
-
-            if mapped is not None:
-                logger.warning(
-                    f"[{self.label}] {type(exc).__name__} during "
-                    f"{self.get_state().value} -> applying {mapped.value}"
-                )
-                self.apply_state(mapped)
-                if self.persistence_hook is not None:
-                    self.persistence_hook(mapped)
+            self._handle_advance_exception(exc, error_state_map, failure_state)
             raise
 
         return self.get_state()
+
+    def _handle_advance_exception(
+        self,
+        exc: BaseException,
+        error_state_map: list[tuple[type[BaseException], TState | None]] | None,
+        failure_state: TState | None,
+    ) -> None:
+        """Apply the mapped error/failure state (if any) before the caller re-raises.
+
+        Resolves the target state via `error_state_map` precedence, falling back to
+        `failure_state`. When a concrete target is resolved it is applied and persisted.
+        """
+        mapped = self._resolve_error_state(exc, error_state_map, failure_state)
+        if mapped is None:
+            return
+        logger.warning(
+            f"[{self.label}] {type(exc).__name__} during "
+            f"{self.get_state().value} -> applying {mapped.value}"
+        )
+        self.apply_state(mapped)
+        if self.persistence_hook is not None:
+            self.persistence_hook(mapped)
+
+    @staticmethod
+    def _resolve_error_state(
+        exc: BaseException,
+        error_state_map: list[tuple[type[BaseException], TState | None]] | None,
+        failure_state: TState | None,
+    ) -> TState | None:
+        """Return the target state for `exc`, or None to leave state unchanged."""
+        if error_state_map is not None:
+            for exc_type, target in error_state_map:
+                if isinstance(exc, exc_type):
+                    return target
+        return failure_state
 
 
 __all__ = [

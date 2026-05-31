@@ -263,15 +263,15 @@ class TestAdvanceToCompletionNewBehaviors:
         persistence_calls: list[_S] = []
         sm = _build(state, persistence_calls=persistence_calls)
 
-        class _SwallowMe(RuntimeError):
+        class _SwallowMeError(RuntimeError):
             """Custom error to be swallowed."""
 
         def boom() -> None:
-            raise _SwallowMe("swallow me")
+            raise _SwallowMeError("swallow me")
 
         final = sm.advance_to_completion(
             {_S.A: boom},
-            swallow_types=(_SwallowMe,),
+            swallow_types=(_SwallowMeError,),
         )
         # Swallowed exception returns current state without state change.
         assert final == _S.A
@@ -287,16 +287,16 @@ class TestAdvanceToCompletionNewBehaviors:
         persistence_calls: list[_S] = []
         sm = _build(state, persistence_calls=persistence_calls)
 
-        class _SwallowMe(RuntimeError):
+        class _SwallowMeError(RuntimeError):
             """Custom error that matches both swallow_types and error_state_map."""
 
         def boom() -> None:
-            raise _SwallowMe("swallow me")
+            raise _SwallowMeError("swallow me")
 
         final = sm.advance_to_completion(
             {_S.A: boom},
-            swallow_types=(_SwallowMe,),
-            error_state_map=[(_SwallowMe, _S.FAILED)],
+            swallow_types=(_SwallowMeError,),
+            error_state_map=[(_SwallowMeError, _S.FAILED)],
         )
         # swallow_types takes precedence; no state change, no error_state_map application.
         assert final == _S.A
