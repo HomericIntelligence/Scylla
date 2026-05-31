@@ -208,10 +208,22 @@ class StateMachine(Generic[TState]):
         actions: dict[TState, Callable[[], None]],
         *,
         until_state: TState | None = None,
-        error_state_map: list[tuple[type[BaseException], TState]] | None = None,
+        error_state_map: list[tuple[type[BaseException], TState | None]] | None = None,
         failure_state: TState | None = None,
+        swallow_types: tuple[type[BaseException], ...] = (),
     ) -> TState:
         """Drive the FSM until a terminal state, `until_state`, or exception.
+
+        Exceptions are handled with the following precedence:
+        1. `swallow_types`: Exception is caught, logged at info level, and the
+           current state is returned normally without state change.
+        2. `error_state_map`: If the exception matches an entry, the FSM is moved
+           to the mapped `target_state`. If `target_state` is None, no state change
+           occurs (the exception is re-raised unchanged). If `target_state` is
+           concrete, it is applied and persisted before re-raising.
+        3. `failure_state`: If no `error_state_map` entry matches, `failure_state`
+           (if provided) is applied and persisted before re-raising.
+        4. Unhandled exceptions propagate without state change.
 
         Args:
             actions: `from_state -> callable` map (see `advance`).
@@ -220,14 +232,18 @@ class StateMachine(Generic[TState]):
                 transitions are executed. The FSM is *not* marked failed.
             error_state_map: Ordered list of `(exception_type, target_state)`
                 pairs. When an exception of any listed type is raised during
-                a transition, the FSM is moved to the associated target
-                state and persisted before the exception is re-raised. The
-                first matching entry wins (so subclasses should appear
-                before parents).
-            failure_state: Optional fallback state to apply when an
-                exception does not match any entry in `error_state_map`. If
-                omitted, generic failures simply propagate without changing
-                state.
+                a transition, the FSM is moved to the associated target_state
+                and persisted before the exception is re-raised. If
+                target_state is None, the state is left unchanged. The first
+                matching entry wins (so subclasses should appear before parents).
+            failure_state: Optional fallback state to apply when an exception
+                does not match any entry in `error_state_map`. If omitted,
+                exceptions not in the map propagate without changing state.
+            swallow_types: Tuple of exception types to catch and suppress
+                without state change. These are checked before error_state_map,
+                so swallowed exceptions never trigger the error map. Caught
+                exceptions are logged at info level and the current state is
+                returned normally.
 
         Returns:
             The final state on clean completion or `until_state` early exit.
@@ -240,26 +256,51 @@ class StateMachine(Generic[TState]):
                     logger.info(f"[{self.label}] Reached --until target state: {until_state.value}")
                     break
         except BaseException as exc:
-            mapped: TState | None = None
-            if error_state_map is not None:
-                for exc_type, target in error_state_map:
-                    if isinstance(exc, exc_type):
-                        mapped = target
-                        break
-            if mapped is None and failure_state is not None:
-                mapped = failure_state
-
-            if mapped is not None:
-                logger.warning(
-                    f"[{self.label}] {type(exc).__name__} during "
-                    f"{self.get_state().value} -> applying {mapped.value}"
+            if swallow_types and isinstance(exc, swallow_types):
+                logger.info(
+                    f"[{self.label}] Swallowed {type(exc).__name__} at {self.get_state().value}"
                 )
-                self.apply_state(mapped)
-                if self.persistence_hook is not None:
-                    self.persistence_hook(mapped)
+                return self.get_state()
+
+            self._handle_advance_exception(exc, error_state_map, failure_state)
             raise
 
         return self.get_state()
+
+    def _handle_advance_exception(
+        self,
+        exc: BaseException,
+        error_state_map: list[tuple[type[BaseException], TState | None]] | None,
+        failure_state: TState | None,
+    ) -> None:
+        """Apply the mapped error/failure state (if any) before the caller re-raises.
+
+        Resolves the target state via `error_state_map` precedence, falling back to
+        `failure_state`. When a concrete target is resolved it is applied and persisted.
+        """
+        mapped = self._resolve_error_state(exc, error_state_map, failure_state)
+        if mapped is None:
+            return
+        logger.warning(
+            f"[{self.label}] {type(exc).__name__} during "
+            f"{self.get_state().value} -> applying {mapped.value}"
+        )
+        self.apply_state(mapped)
+        if self.persistence_hook is not None:
+            self.persistence_hook(mapped)
+
+    @staticmethod
+    def _resolve_error_state(
+        exc: BaseException,
+        error_state_map: list[tuple[type[BaseException], TState | None]] | None,
+        failure_state: TState | None,
+    ) -> TState | None:
+        """Return the target state for `exc`, or None to leave state unchanged."""
+        if error_state_map is not None:
+            for exc_type, target in error_state_map:
+                if isinstance(exc, exc_type):
+                    return target
+        return failure_state
 
 
 __all__ = [

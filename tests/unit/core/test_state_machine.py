@@ -252,3 +252,96 @@ class TestStateMachineAdvanceToCompletion:
         final = sm.advance_to_completion({_S.A: lambda: called.append("x")})
         assert final == _S.DONE
         assert called == []
+
+
+class TestAdvanceToCompletionNewBehaviors:
+    """Tests for the new swallow_types and target=None features."""
+
+    def test_advance_to_completion_swallow_type_returns_current_state_unchanged(self) -> None:
+        """swallow_types exceptions are caught, logged, and return current state unchanged."""
+        state = [_S.A]
+        persistence_calls: list[_S] = []
+        sm = _build(state, persistence_calls=persistence_calls)
+
+        class _SwallowMeError(RuntimeError):
+            """Custom error to be swallowed."""
+
+        def boom() -> None:
+            raise _SwallowMeError("swallow me")
+
+        final = sm.advance_to_completion(
+            {_S.A: boom},
+            swallow_types=(_SwallowMeError,),
+        )
+        # Swallowed exception returns current state without state change.
+        assert final == _S.A
+        assert state[0] == _S.A
+        # No persistence hook called.
+        assert persistence_calls == []
+
+    def test_advance_to_completion_swallow_type_takes_precedence_over_error_map(
+        self,
+    ) -> None:
+        """swallow_types takes precedence over error_state_map."""
+        state = [_S.A]
+        persistence_calls: list[_S] = []
+        sm = _build(state, persistence_calls=persistence_calls)
+
+        class _SwallowMeError(RuntimeError):
+            """Custom error that matches both swallow_types and error_state_map."""
+
+        def boom() -> None:
+            raise _SwallowMeError("swallow me")
+
+        final = sm.advance_to_completion(
+            {_S.A: boom},
+            swallow_types=(_SwallowMeError,),
+            error_state_map=[(_SwallowMeError, _S.FAILED)],
+        )
+        # swallow_types takes precedence; no state change, no error_state_map application.
+        assert final == _S.A
+        assert state[0] == _S.A
+        assert persistence_calls == []
+
+    def test_advance_to_completion_error_state_map_target_none_re_raises_without_state_change(
+        self,
+    ) -> None:
+        """error_state_map with target=None re-raises without changing state."""
+        state = [_S.A]
+        persistence_calls: list[_S] = []
+        sm = _build(state, persistence_calls=persistence_calls)
+
+        def boom() -> None:
+            raise RuntimeError("no state change")
+
+        # target=None in the error_state_map means "matched but don't apply state".
+        with pytest.raises(RuntimeError, match="no state change"):
+            sm.advance_to_completion(
+                {_S.A: boom},
+                error_state_map=[(RuntimeError, None)],
+                failure_state=_S.FAILED,
+            )
+        # Exception matched with target=None: state untouched, no persistence.
+        assert state[0] == _S.A
+        assert persistence_calls == []
+
+    def test_advance_to_completion_error_state_map_target_concrete_applies_state_then_re_raises(
+        self,
+    ) -> None:
+        """error_state_map with concrete target applies state and persistence before re-raising."""
+        state = [_S.A]
+        persistence_calls: list[_S] = []
+        sm = _build(state, persistence_calls=persistence_calls)
+
+        def boom() -> None:
+            raise RuntimeError("apply state")
+
+        # target=_S.FAILED in the error_state_map means "matched, apply state, then re-raise".
+        with pytest.raises(RuntimeError, match="apply state"):
+            sm.advance_to_completion(
+                {_S.A: boom},
+                error_state_map=[(RuntimeError, _S.FAILED)],
+            )
+        # Exception matched with concrete target: state applied, persistence called.
+        assert state[0] == _S.FAILED
+        assert persistence_calls == [_S.FAILED]
