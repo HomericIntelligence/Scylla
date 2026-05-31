@@ -113,6 +113,7 @@ Full automated re-audit via `hephaestus:repo-analyze-strict-full` was deferred (
 per plan review); instead, all 15 dimensions were re-assessed against the finding evidence table above.
 
 **Pass criteria (from Implementation Plan):**
+
 1. Overall score strictly greater than 82% — **MET** (estimated 91%, see table below)
 2. All 3 critical blockers show closed evidence — **MET** (verified in Critical Blockers section above)
 3. No new Critical-severity findings introduced by remediation — **MET** (all remediation was targeted)
