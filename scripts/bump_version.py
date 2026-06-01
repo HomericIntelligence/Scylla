@@ -201,7 +201,7 @@ def create_git_tag(version: str, repo_root: Path, verbose: bool = False) -> int:
     tag = f"v{version}"
     try:
         subprocess.run(
-            ["git", "tag", "-m", f"Release {tag}", tag],
+            ["git", "tag", tag],
             cwd=repo_root,
             check=True,
             capture_output=True,
