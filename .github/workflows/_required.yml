@@ -1,12 +1,25 @@
-# Advisory quality checks for the repo. The three contexts that ACTUALLY gate
-# merges on `main` are produced by per-workflow files (verified via
-# `gh api repos/HomericIntelligence/ProjectScylla/branches/main/protection`):
-#   - `pre-commit`                            → .github/workflows/pre-commit.yml
-#   - `test (unit, tests/unit)`               → .github/workflows/test.yml
-#   - `test (integration, tests/integration)` → .github/workflows/test.yml
-# This file MUST NOT duplicate logic that lives in those files; the pre-commit,
-# test, and security checks each run from their own per-workflow file on
-# pull_request, so they are intentionally NOT re-invoked here.
+# Single source of truth for every status check that gates merges on `main`.
+#
+# The org ruleset `homeric-main-baseline` (NOT classic branch protection)
+# requires these EXACT contexts. Each is produced by a job named identically
+# below, all in THIS workflow so they share one concurrency group and one run:
+#   - lint
+#   - unit-tests
+#   - integration-tests
+#   - security/dependency-scan
+#   - security/secrets-scan
+#   - build
+#   - schema-validation
+#   - deps/version-sync
+#
+# These jobs previously lived in separate workflows (test.yml, pre-commit.yml,
+# security.yml) under non-matching names (`test (unit, tests/unit)`,
+# `Dependency vulnerability scan`, …), so the required contexts NEVER reported
+# and every PR sat permanently BLOCKED. Consolidating here makes the emitted
+# check names match the ruleset exactly. A prior attempt to bridge them via
+# `workflow_call` failed because the called workflow shared a concurrency group
+# and `cancel-in-progress` cancelled one of the two runs — inlining the job
+# bodies removes that hazard entirely. Closes #2016.
 name: Required Checks
 
 on:
@@ -14,9 +27,12 @@ on:
   push:
     branches: [main]
 
-# One run per branch at a time; cancel any in-progress run when a new commit arrives.
+# One run per branch at a time; cancel any in-progress run when a new commit
+# arrives. The group includes ${{ github.workflow }} so it cannot collide with
+# any other workflow's concurrency group (the bug that cancelled the old
+# workflow_call bridge).
 concurrency:
-  group: required-${{ github.head_ref || github.sha }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
 
 permissions:
@@ -81,26 +97,335 @@ jobs:
           echo 'OK: no "continue-on-error: true" found'
 
   # ── 1. lint ────────────────────────────────────────────────────────────────
-  # REMOVED: re-invoking pre-commit.yml here via workflow_call produced only an
-  # advisory `lint / pre-commit` context that is NOT a branch-protection required
-  # check. Worse, it shared pre-commit.yml's concurrency group with that
-  # workflow's own pull_request run (which DOES produce the required `pre-commit`
-  # context), so `cancel-in-progress` cancelled one of the two and left the PR's
-  # Required Checks run perpetually "cancelled". The required `pre-commit`
-  # context comes from pre-commit.yml's own pull_request trigger — single source.
+  # Emits the required `lint` context. Body inlined from the former
+  # pre-commit.yml (deleted in this change) so it runs exactly once, in this
+  # workflow's single concurrency group.
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          fetch-depth: 0
 
-  # ── 2+3. unit-tests / integration-tests ────────────────────────────────────
-  # REMOVED: these jobs duplicated test.yml which already runs as the canonical
-  # source and produces the required contexts `test (unit, tests/unit)` and
-  # `test (integration, tests/integration)` via its own pull_request trigger.
-  # Running them here doubled CI minutes for every PR with zero added coverage.
-  # See: gh api repos/HomericIntelligence/ProjectScylla/branches/main/protection
+      - name: Set up Pixi
+        uses: ./.github/actions/setup-pixi
+        with:
+          environment: lint
 
-  # ── 4+5. security (pip-audit + secrets-scan) ──────────────────────────────
-  # REMOVED for the same reason as lint above: the workflow_call instance shared
-  # security.yml's concurrency group with that workflow's own pull_request run
-  # and cancelled it. The "Dependency vulnerability scan" / "Secrets scan
-  # (gitleaks)" contexts are produced by security.yml's own pull_request trigger.
+      - name: Cache pre-commit environments
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      - name: Run pre-commit
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Use lightweight lint environment (skips heavy scientific packages)
+          pixi install --environment lint
+          pixi --version
+          pixi run --environment lint pre-commit run --all-files --show-diff-on-failure
+
+      - name: Enforce complexity limit (C901)
+        run: pixi run --environment lint ruff check --select C901 src/scylla/ scripts/
+
+      - name: Run mypy
+        run: pixi run --environment lint mypy scripts/ src/scylla/ tests/
+
+      - name: Upload pre-commit diff
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: pre-commit-diffs
+          retention-days: 7
+          path: |
+            .git/pre-commit-*
+
+  # ── 2. unit-tests ──────────────────────────────────────────────────────────
+  # Emits the required `unit-tests` context. Split out of the former test.yml
+  # matrix (deleted in this change) into a discrete job so the emitted name is
+  # `unit-tests`, not `test (unit, tests/unit)`.
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+
+      - name: Enforce no new deprecated BaseExecutionInfo usage
+        run: |
+          count=$(grep -rn "BaseExecutionInfo" . \
+            --include="*.py" \
+            --exclude-dir=".pixi" \
+            | grep -v "src/scylla/core/results.py" \
+            | grep -v "src/scylla/core/__init__.py" \
+            | grep -v "# deprecated" \
+            | grep -v "(deprecated)" \
+            | grep -v "test_results.py" \
+            | wc -l)
+          echo "BaseExecutionInfo usage count (excluding definition, re-export, and tests): $count"
+          if [ "$count" -gt "0" ]; then
+            echo "::error::Found $count usages of deprecated BaseExecutionInfo — remove before merging"
+            grep -rn "BaseExecutionInfo" . --include="*.py" --exclude-dir=".pixi" \
+              | grep -v "src/scylla/core/results.py" \
+              | grep -v "src/scylla/core/__init__.py" \
+              | grep -v "# deprecated" \
+              | grep -v "(deprecated)" \
+              | grep -v "test_results.py"
+            exit 1
+          fi
+
+      - name: Enforce no new deprecated BaseRunMetrics usage
+        run: |
+          count=$(grep -rn "BaseRunMetrics" . \
+            --include="*.py" \
+            --exclude-dir=".pixi" \
+            | grep -v "src/scylla/core/results.py" \
+            | grep -v "# deprecated" \
+            | grep -v "(deprecated)" \
+            | grep -v "test_results.py" \
+            | wc -l)
+          echo "BaseRunMetrics usage count (excluding definition and tests): $count"
+          if [ "$count" -gt "0" ]; then
+            echo "::error::Found $count usages of deprecated BaseRunMetrics — remove before merging"
+            grep -rn "BaseRunMetrics" . --include="*.py" --exclude-dir=".pixi" \
+              | grep -v "src/scylla/core/results.py" \
+              | grep -v "# deprecated" \
+              | grep -v "(deprecated)" \
+              | grep -v "test_results.py"
+            exit 1
+          fi
+
+      - name: Enforce tier label consistency in metrics-definitions.md
+        run: |
+          BAD_PATS="T3.{0,10}Tool|T4.{0,10}Deleg|T5.{0,10}Hier|T2.{0,10}Skill|T2.{0,10}Deleg|T3.{0,10}Hier|T4.{0,10}Hybrid|T1.{0,10}Tool|T0.{0,10}Skill|T1.{0,10}Prompt|T2.{0,10}Prompt|T3.{0,10}Skill|T4.{0,10}Tool|T5.{0,10}Deleg|T6.{0,10}Hier|T6.{0,10}Hybrid|T0.{0,10}Tool|T0.{0,10}Deleg|T5.{0,10}Skill|T6.{0,10}Deleg"
+          count=$(grep -En "$BAD_PATS" \
+            .claude/shared/metrics-definitions.md | wc -l)
+          echo "Bad tier label count: $count"
+          if [ "$count" -gt "0" ]; then
+            echo "::error::Found $count tier label mismatch(es) in metrics-definitions.md"
+            grep -En "$BAD_PATS" .claude/shared/metrics-definitions.md
+            exit 1
+          fi
+
+      - name: Set up Pixi
+        uses: ./.github/actions/setup-pixi
+
+      - name: Check Python version consistency (pyproject.toml vs Dockerfile)
+        run: pixi run python scripts/check_python_version_consistency.py
+
+      - name: Check version consistency (pyproject.toml, pixi.toml, src/scylla/__init__.py)
+        run: pixi run python scripts/check_version_consistency.py
+
+      # Early gate: fail fast if pixi.lock is out of date before running expensive tests.
+      - name: Validate pixi.lock is up-to-date
+        run: |
+          if ! pixi install --locked 2>/dev/null; then
+            echo "::error::pixi.lock is stale — run 'pixi install' locally and commit pixi.lock"
+            exit 1
+          fi
+
+      - name: Check doc/config consistency
+        run: pixi run python scripts/check_doc_config_consistency.py --verbose
+
+      - name: Enforce tests/unit/ structure conventions
+        run: pixi run python scripts/check_unit_test_structure.py
+
+      - name: Validate config schemas
+        run: pixi run python scripts/validate_config_schemas.py config/defaults.yaml config/models/*.yaml tests/fixtures/config/tiers/*.yaml
+
+      - name: Check cyclomatic complexity
+        run: pixi run hephaestus-check-complexity --threshold 10
+
+      - name: Run unit tests
+        run: |
+          pixi run pip install -e .
+          pixi run pytest tests/unit --override-ini="addopts=" -v --strict-markers \
+            --cov=src/scylla --cov-report=term-missing --cov-report=xml --cov-fail-under=75 \
+            --junitxml=junit-unit.xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
+        with:
+          files: ./coverage.xml
+          flags: unit
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: test-results-unit
+          path: |
+            coverage.xml
+            junit-unit.xml
+          retention-days: 7
+
+  # ── 3. integration-tests ───────────────────────────────────────────────────
+  # Emits the required `integration-tests` context. Split out of the former
+  # test.yml matrix so the emitted name is `integration-tests`, not
+  # `test (integration, tests/integration)`.
+  integration-tests:
+    name: integration-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+
+      - name: Enforce no new deprecated BaseExecutionInfo usage
+        run: |
+          count=$(grep -rn "BaseExecutionInfo" . \
+            --include="*.py" \
+            --exclude-dir=".pixi" \
+            | grep -v "src/scylla/core/results.py" \
+            | grep -v "src/scylla/core/__init__.py" \
+            | grep -v "# deprecated" \
+            | grep -v "(deprecated)" \
+            | grep -v "test_results.py" \
+            | wc -l)
+          echo "BaseExecutionInfo usage count (excluding definition, re-export, and tests): $count"
+          if [ "$count" -gt "0" ]; then
+            echo "::error::Found $count usages of deprecated BaseExecutionInfo — remove before merging"
+            grep -rn "BaseExecutionInfo" . --include="*.py" --exclude-dir=".pixi" \
+              | grep -v "src/scylla/core/results.py" \
+              | grep -v "src/scylla/core/__init__.py" \
+              | grep -v "# deprecated" \
+              | grep -v "(deprecated)" \
+              | grep -v "test_results.py"
+            exit 1
+          fi
+
+      - name: Enforce no new deprecated BaseRunMetrics usage
+        run: |
+          count=$(grep -rn "BaseRunMetrics" . \
+            --include="*.py" \
+            --exclude-dir=".pixi" \
+            | grep -v "src/scylla/core/results.py" \
+            | grep -v "# deprecated" \
+            | grep -v "(deprecated)" \
+            | grep -v "test_results.py" \
+            | wc -l)
+          echo "BaseRunMetrics usage count (excluding definition and tests): $count"
+          if [ "$count" -gt "0" ]; then
+            echo "::error::Found $count usages of deprecated BaseRunMetrics — remove before merging"
+            grep -rn "BaseRunMetrics" . --include="*.py" --exclude-dir=".pixi" \
+              | grep -v "src/scylla/core/results.py" \
+              | grep -v "# deprecated" \
+              | grep -v "(deprecated)" \
+              | grep -v "test_results.py"
+            exit 1
+          fi
+
+      - name: Install nats-server
+        run: |
+          NATS_VERSION="v2.10.24"
+          NATS_SHA256="ee6500f364e3a741b496ae0296c04f2a9d53bbaabac457104ac74596b4a59d85"
+          curl -fsSL "https://github.com/nats-io/nats-server/releases/download/${NATS_VERSION}/nats-server-${NATS_VERSION}-linux-amd64.tar.gz" -o nats-server.tar.gz
+          echo "${NATS_SHA256}  nats-server.tar.gz" | sha256sum --check
+          tar xz -f nats-server.tar.gz
+          sudo mv nats-server-${NATS_VERSION}-linux-amd64/nats-server /usr/local/bin/
+          rm nats-server.tar.gz
+          nats-server --version
+
+      - name: Set up Pixi
+        uses: ./.github/actions/setup-pixi
+
+      - name: Check Python version consistency (pyproject.toml vs Dockerfile)
+        run: pixi run python scripts/check_python_version_consistency.py
+
+      - name: Check version consistency (pyproject.toml, pixi.toml, src/scylla/__init__.py)
+        run: pixi run python scripts/check_version_consistency.py
+
+      - name: Validate pixi.lock is up-to-date
+        run: |
+          if ! pixi install --locked 2>/dev/null; then
+            echo "::error::pixi.lock is stale — run 'pixi install' locally and commit pixi.lock"
+            exit 1
+          fi
+
+      - name: Run integration tests
+        run: |
+          # Integration tests: 5% floor prevents regression without blocking new work
+          # --reruns 2: retry flaky integration tests (network/API calls) up to 2 times
+          pixi run pytest tests/integration -v \
+            --cov=src/scylla --cov-report=term-missing --cov-report=xml --cov-fail-under=5 \
+            --reruns 2 --reruns-delay 5 \
+            --junitxml=junit-integration.xml
+
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: test-results-integration
+          path: |
+            coverage.xml
+            junit-integration.xml
+          retention-days: 7
+
+  # ── 4. security/dependency-scan ────────────────────────────────────────────
+  # Emits the required `security/dependency-scan` context. Body inlined from the
+  # former security.yml `pip-audit` job (renamed from "Dependency vulnerability
+  # scan"). The weekly scheduled scan stays in security.yml (schedule-only).
+  security-dependency-scan:
+    name: security/dependency-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+
+      - name: Set up Pixi
+        uses: ./.github/actions/setup-pixi
+        with:
+          environment: lint
+
+      - name: Run pip-audit
+        id: pip-audit
+        run: pixi run --environment lint pip-audit
+
+      - name: Post pip-audit summary
+        if: always()
+        env:
+          AUDIT_OUTCOME: ${{ steps.pip-audit.outcome }}
+        run: |
+          {
+            echo "## pip-audit Security Scan"
+            echo ""
+            if [ "$AUDIT_OUTCOME" = "success" ]; then
+              echo "No HIGH/CRITICAL vulnerabilities found."
+            else
+              echo "Vulnerabilities detected — see job logs for details."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ── 5. security/secrets-scan ───────────────────────────────────────────────
+  # Emits the required `security/secrets-scan` context. Body inlined from the
+  # former security.yml `secrets-scan` job (renamed from "Secrets scan
+  # (gitleaks)").
+  security-secrets-scan:
+    name: security/secrets-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Full history checkout so gitleaks can scan all commits, not just HEAD.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          GITLEAKS_VERSION="8.30.1"
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar xz -C /usr/local/bin gitleaks
+
+      - name: Run gitleaks
+        run: gitleaks detect --source . --config .gitleaks.toml --verbose
 
   # ── 6. build ───────────────────────────────────────────────────────────────
   build:

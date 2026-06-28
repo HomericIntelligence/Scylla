@@ -1,20 +1,19 @@
-name: Security
+name: Security (scheduled)
 
+# Scheduled-only security sweep. The PR-gating security contexts
+# (`security/dependency-scan`, `security/secrets-scan`) are produced by
+# _required.yml on every pull_request; this workflow runs the same scans on a
+# weekly cron (and on demand) to catch newly-disclosed advisories against
+# already-merged `main`. It deliberately has NO pull_request / push /
+# workflow_call trigger so it cannot emit competing PR check contexts or
+# collide with _required.yml's concurrency group.
 on:
-  # pip-audit: only on dependency/source changes (path-filtered per job via if: conditions)
-  # secrets-scan: on all PRs — credentials can be added to any file type
-  pull_request:
-  push:
-    branches: [main]
   schedule:
     - cron: "0 8 * * 1"
   workflow_dispatch:
-  # Reusable workflow: _required.yml invokes this via `uses:` to avoid duplicating
-  # the pip-audit and secrets-scan job bodies in two places.
-  workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
