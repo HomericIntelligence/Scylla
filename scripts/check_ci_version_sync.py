@@ -167,7 +167,7 @@ def validate_setup_pixi_sha_consistency(repo_root: Path, verbose: bool = False) 
         return 1
 
     if verbose:
-        sha = list(unique_shas)[0]
+        sha = next(iter(unique_shas))
         print(f"OK: setup-pixi SHA consistent ({sha})")
     return 0
 
@@ -245,7 +245,7 @@ def validate_gitleaks_consistency(repo_root: Path, verbose: bool = False) -> int
         return 1
 
     if verbose:
-        version = list(unique)[0]
+        version = next(iter(unique))
         print(f"OK: Gitleaks version consistent ({version})")
     return 0
 
