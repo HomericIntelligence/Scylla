@@ -10,6 +10,9 @@ in ``__all__``) is preserved for backward compatibility.
 
 from __future__ import annotations
 
+from scylla.core.token_stats import (
+    TokenStats as TokenStats,
+)
 from scylla.e2e.models_internals.configs import (
     ExperimentConfig as ExperimentConfig,
 )
@@ -63,9 +66,6 @@ from scylla.e2e.models_internals.state_enums import (
 )
 from scylla.e2e.models_internals.state_enums import (
     TierState as TierState,
-)
-from scylla.e2e.models_internals.token_stats import (
-    TokenStats as TokenStats,
 )
 
 __all__ = [

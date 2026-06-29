@@ -10,9 +10,9 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from scylla.core.results import RunResultBase
+from scylla.core.token_stats import TokenStats
 from scylla.e2e.models_internals.configs import ExperimentConfig
 from scylla.e2e.models_internals.state_enums import TierID
-from scylla.e2e.models_internals.token_stats import TokenStats
 from scylla.e2e.rate_limit import RateLimitInfo
 
 

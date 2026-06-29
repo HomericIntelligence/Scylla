@@ -201,3 +201,50 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+
+# ── import-linter contracts ───────────────────────────────────────────────────
+# Guards the three DIP violations identified in #1937.
+# Edge 1 (config ↔ metrics): not a live cycle; locked by the forbidden contract.
+# Edge 2 (cli ↔ e2e): live cycle; eliminated by moving progress types to core/.
+# Edge 3 (adapters ↔ e2e): live cycle; eliminated by moving TokenStats to core/.
+
+[tool.importlinter]
+root_package = "scylla"
+
+[[tool.importlinter.contracts]]
+name = "e2e must not import cli"
+type = "forbidden"
+source_modules = ["scylla.e2e"]
+forbidden_modules = ["scylla.cli"]
+
+[[tool.importlinter.contracts]]
+name = "adapters must not import e2e"
+type = "forbidden"
+source_modules = ["scylla.adapters"]
+forbidden_modules = ["scylla.e2e"]
+# adapters.claude_code → e2e.rate_limit: pre-existing dependency outside #1937's scope.
+# RateLimitError/detect_rate_limit depend on e2e.paths.get_agent_dir and are therefore
+# coupled to the e2e layer.  Tracked as a follow-up refactor; narrowing the contract
+# here rather than weakening the guard.
+ignore_imports = [
+    "scylla.adapters.claude_code -> scylla.e2e.rate_limit",
+]
+
+[[tool.importlinter.contracts]]
+name = "core has no scylla layer dependencies"
+type = "forbidden"
+source_modules = ["scylla.core"]
+forbidden_modules = [
+    "scylla.cli",
+    "scylla.e2e",
+    "scylla.adapters",
+    "scylla.executor",
+    "scylla.metrics",
+    "scylla.config",
+    "scylla.reporting",
+    "scylla.analysis",
+    "scylla.judge",
+    "scylla.discovery",
+    "scylla.nats",
+    "scylla.persistence",
+]

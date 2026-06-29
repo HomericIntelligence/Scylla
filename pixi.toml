@@ -10,6 +10,7 @@ test = "pytest"
 test-unit = "pytest tests/unit --override-ini='addopts=' -v --strict-markers --cov=src/scylla --cov-report=term-missing --cov-fail-under=75"
 test-shell = "bats tests/shell/ --recursive --timing"
 lint = "ruff check src/scylla scripts tests"
+lint-imports = "lint-imports --config pyproject.toml"
 format = "ruff format src/scylla scripts tests"
 plan-issues = "python scripts/plan_issues.py"
 lint-imports = "lint-imports"
@@ -71,9 +72,11 @@ pre-commit = ">=4.6.0,<5"
 [feature.lint.pypi-dependencies]
 pip-audit = ">=2.7,<3"
 bandit = { version = ">=1.7.5,<2", extras = ["toml"] }
+import-linter = ">=2.0,<3"
 
 [feature.lint.tasks]
 pip-audit = "pip-audit --format json | python scripts/filter_audit.py"
+lint-imports = "lint-imports --config pyproject.toml"
 
 [feature.docs.target.linux-64.dependencies]
 tectonic = ">=0.15,<1"

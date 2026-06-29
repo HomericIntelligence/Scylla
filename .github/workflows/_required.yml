@@ -138,6 +138,9 @@ jobs:
       - name: Run mypy
         run: pixi run --environment lint mypy scripts/ src/scylla/ tests/
 
+      - name: Check import layering contracts
+        run: pixi run --environment lint lint-imports
+
       - name: Upload pre-commit diff
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7

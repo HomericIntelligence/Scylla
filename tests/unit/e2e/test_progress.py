@@ -39,7 +39,7 @@ class TestRunProgress:
             status=RunStatus.EXECUTING,
             start_time=fixed_start,
         )
-        with patch("scylla.cli.progress.datetime") as mock_dt:
+        with patch("scylla.core.progress.datetime") as mock_dt:
             mock_dt.now.return_value = fixed_now
             assert run.elapsed == timedelta(seconds=10)
 
