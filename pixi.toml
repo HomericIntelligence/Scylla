@@ -59,6 +59,7 @@ bats-core = ">=1.11.0,<2"
 pip-audit = ">=2.7,<3"
 bump2version = ">=1.0.1,<2"
 import-linter = ">=2.0,<3"
+pytest-watch = ">=4.2,<5"
 
 [feature.lint.dependencies]
 # Minimal dependencies for CI pre-commit checks only

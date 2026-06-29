@@ -35,26 +35,12 @@ ProjectScylla is a comprehensive testing framework for AI agent workflows that:
 
 ## Quick Start Guide
 
-### 🚀 5-Minute Setup
-
 ```bash
-# 1. Install prerequisites
-curl -fsSL https://pixi.sh/install.sh | bash
-
-# 2. Clone and setup
-git clone https://github.com/HomericIntelligence/ProjectScylla.git
-cd ProjectScylla
-
-# 3. Run your first analysis
-pixi run python --version  # Verify installation
-pixi run python scripts/generate_all_results.py --data-dir ~/fullruns
-
-# 4. View results (34 figures + 11 tables generated)
-open results/analysis/figures/*.png  # macOS
-xdg-open results/analysis/figures/*.png  # Linux
+pixi install && pixi run pytest tests/ -v
 ```
 
-**That's it!** All outputs appear in `results/analysis/` directory.
+See [docs/dev/onboarding.md](docs/dev/onboarding.md) for full onboarding instructions,
+IDE setup (VS Code / Codespaces), and a first-contribution walkthrough.
 
 ### 💡 Usage Examples
 
