@@ -71,14 +71,14 @@ jobs:
         if: steps.compare.outputs.status == 'stale'
         run: |
           LATEST_DIGEST="${{ steps.latest.outputs.digest }}"
-          EXISTING_ISSUE=$(gh issue list --label "chore" --search "update python:3.12-slim digest" --json number -q '.[0].number' 2>/dev/null || echo "")
+          EXISTING_ISSUE=$(gh issue list --search "update python:3.12-slim digest in:title" --json number -q '.[0].number' 2>/dev/null || echo "")
 
           if [ -n "$EXISTING_ISSUE" ]; then
             echo "Updating existing issue #${EXISTING_ISSUE}"
             gh issue comment "${EXISTING_ISSUE}" --body "Digest check: Latest digest is ${LATEST_DIGEST}"
           else
             echo "Creating new issue for digest update"
-            gh issue create --title "chore: update python:3.12-slim digest pins" --body "The python:3.12-slim digest pins need to be updated. Latest: ${LATEST_DIGEST}. Check ci/Containerfile and docker/Dockerfile." --label "chore" --label "dependencies"
+            gh issue create --title "chore: update python:3.12-slim digest pins" --body "The python:3.12-slim digest pins need to be updated. Latest: ${LATEST_DIGEST}. Check ci/Containerfile and docker/Dockerfile."
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
