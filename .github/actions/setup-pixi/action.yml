@@ -10,14 +10,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Read canonical pixi version
+      id: read-version
+      shell: bash
+      run: echo "version=$(tr -d '[:space:]' < .github/pixi-version)" >> "$GITHUB_OUTPUT"
+
     - name: Install pixi
-      # IMPORTANT: pixi-version must be kept in sync with:
-      #   - .github/workflows/_required.yml (pixi-check job, pixi-version field)
-      #   - ci/Containerfile (PIXI_VERSION ARG)
-      # When bumping, update ALL THREE locations together.
-      uses: prefix-dev/setup-pixi@a0af7a228712d6121d37aba47adf55c1332c9c2e  # v0.9.4
+      uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11  # v0.9.6
       with:
-        pixi-version: v0.67.2
+        pixi-version: ${{ steps.read-version.outputs.version }}
         environments: ${{ inputs.environment }}
 
     - name: Cache pixi environments
