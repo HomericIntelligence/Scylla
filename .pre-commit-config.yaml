@@ -82,6 +82,13 @@ repos:
         language: system
         files: ^(pyproject\.toml|pixi\.toml)$
         pass_filenames: false
+      - id: check-ci-version-sync
+        name: Check CI Tooling Version Sync
+        description: Fails if pixi, setup-pixi action SHA, or gitleaks versions drift across config files
+        entry: pixi run python scripts/check_ci_version_sync.py
+        language: system
+        files: ^(\.github/pixi-version|\.github/workflows/.*\.ya?ml|\.github/actions/.*/action\.ya?ml|ci/Containerfile|\.pre-commit-config\.yaml)$
+        pass_filenames: false
 
   # Python formatting and linting
   - repo: local

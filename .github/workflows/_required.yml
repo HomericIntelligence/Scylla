@@ -473,6 +473,14 @@ jobs:
           pixi run python -m build --no-isolation
           ls -lh dist/
 
+      - name: Upload built distributions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: python-package
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
   # ── 7. schema-validation ───────────────────────────────────────────────────
   schema-validation:
     name: schema-validation
@@ -581,11 +589,17 @@ jobs:
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
+      - name: Read canonical pixi version
+        id: read-version
+        if: steps.detect.outputs.skip == 'false'
+        shell: bash
+        run: echo "version=$(tr -d '[:space:]' < .github/pixi-version)" >> "$GITHUB_OUTPUT"
+
       - name: Setup pixi
         if: steps.detect.outputs.skip == 'false'
         uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11  # v0.9.6
         with:
-          pixi-version: v0.67.2
+          pixi-version: ${{ steps.read-version.outputs.version }}
           cache: true
       - name: pixi install (locked)
         if: steps.detect.outputs.skip == 'false'
