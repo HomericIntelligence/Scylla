@@ -1,0 +1,15 @@
+[importlinter]
+root_packages =
+    scylla
+
+# Contracts tighten PR-by-PR as files move out of scylla.e2e (issue #1940).
+# Each contract is only activated after the files carrying the banned edge are
+# extracted — preventing false-positive CI failures on in-flight PRs.
+#
+# Current stage: PR-A baseline — infrastructure only, no active bans yet.
+# Edge ban schedule:
+#   PR-E: add scylla.executor ban (after rerun/ extracted)
+#   PR-F: add scylla.judge ban (after judging/ extracted)
+#   PR-G: add scylla.adapters, scylla.metrics, scylla.reporting bans
+#         (after orchestration/ + reporting/ extracted)
+#   PR-H: full contract — ban all 6 forbidden edges
