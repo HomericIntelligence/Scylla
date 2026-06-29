@@ -1,0 +1,26 @@
+{
+  "name": "ProjectScylla Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.10-bookworm",
+  "features": {
+    "ghcr.io/prulloac/devcontainer-features/pixi:1": {}
+  },
+  "postCreateCommand": "pixi install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "ms-python.mypy-type-checker",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "python.testing.pytestEnabled": true
+      }
+    }
+  }
+}
