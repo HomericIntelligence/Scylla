@@ -247,7 +247,7 @@ jobs:
         run: pixi run hephaestus-check-complexity --threshold 10
 
       - name: Enforce import-layer contracts (import-linter)
-        run: pixi run lint-imports
+        run: pixi run --environment lint lint-imports
 
       - name: Run unit tests
         run: |
