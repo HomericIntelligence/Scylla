@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from scylla.e2e.models import TokenStats
+from scylla.core.token_stats import TokenStats
 
 # Rubric conflict resolution policy.
 # 'error'  – raise RubricConflictError (default; safest for research pipelines)

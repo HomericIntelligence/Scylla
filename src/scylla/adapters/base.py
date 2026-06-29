@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 from scylla.config.pricing import (
     calculate_cost as pricing_calculate_cost,
 )
-from scylla.e2e.models import TokenStats
+from scylla.core.token_stats import TokenStats
 
 if TYPE_CHECKING:
     from scylla.executor.tier_config import TierConfig

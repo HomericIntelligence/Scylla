@@ -11,7 +11,7 @@ from typing import Any, cast
 import jsonschema
 import numpy as np
 
-from scylla.e2e.models import TokenStats
+from scylla.core.token_stats import TokenStats
 
 from .models import CriterionScore, ItemScore, JudgeEvaluation, ModelUsage, RunData
 from .validators import validate_bool, validate_int, validate_numeric
