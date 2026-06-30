@@ -2,8 +2,12 @@
 
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](#)
-[![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)](#)
+[![Tests](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/test.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/test.yml)
+[![CI Image](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/ci-image.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/ci-image.yml)
+[![Docker Test](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/docker-test.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/docker-test.yml)
+[![Security](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/security.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/security.yml)
+[![Pre-commit](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/pre-commit.yml)
+[![Release](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/release.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/release.yml)
 
 ## 📑 Table of Contents
 
