@@ -69,7 +69,9 @@ scylla = "scylla.cli.main:cli"
 sources = ["src"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/scylla"]
+# With sources = ["src"] above, Hatchling auto-discovers scylla/ inside src/
+# and places it at site-packages/scylla/. Do NOT add packages = ["src/scylla"]
+# — that installs to site-packages/src/scylla/ breaking `import scylla`.
 
 [tool.hatch.build.targets.sdist]
 include = [
