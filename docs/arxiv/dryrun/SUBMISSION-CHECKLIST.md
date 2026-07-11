@@ -105,7 +105,7 @@ varies 3.8× ($0.065 to $0.247), revealing a Token Efficiency Chasm where
 architectural complexity doubles token consumption without quality gains.
 
 Paper: [arXiv link]
-Code: https://github.com/HomericIntelligence/ProjectScylla
+Code: https://github.com/HomericIntelligence/Scylla
 ```
 
 ---

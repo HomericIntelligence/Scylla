@@ -1,4 +1,4 @@
-"""Pydantic models for ProjectScylla configuration.
+"""Pydantic models for Scylla configuration.
 
 This module defines the configuration schema for test cases, rubrics,
 tier configurations, and model configurations used by the evaluation framework.

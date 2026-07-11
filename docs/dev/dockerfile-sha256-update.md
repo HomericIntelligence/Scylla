@@ -1,7 +1,7 @@
 # Dockerfile SHA256 Digest Update Procedure
 
 **Scope**: `docker/Dockerfile` base image re-pinning
-**Audience**: ProjectScylla maintainers and contributors
+**Audience**: Scylla maintainers and contributors
 
 ---
 
@@ -16,7 +16,7 @@ FROM python:3.12-slim@sha256:f3fa41d74a768c2fce8016b98c191ae8c1bacd8f1152870a3f9
 
 Tag-only references (e.g., `FROM python:3.12-slim`) are mutable. The Docker registry can replace
 the bytes behind a tag at any time — even a minor-version tag like `python:3.12.9-slim` can be
-republished with security patches during a multi-day benchmark run. Because ProjectScylla uses
+republished with security patches during a multi-day benchmark run. Because Scylla uses
 `ANTHROPIC_API_KEY` and accumulates results over runs that may span days, bit-for-bit
 reproducibility is required for evaluation integrity. A floating tag could silently change the
 runtime environment between the first and last run of an experiment.
@@ -63,7 +63,7 @@ docker buildx imagetools inspect python:3.12-slim
 
 The output lists per-architecture digests and the overall manifest list digest. Use the
 manifest list digest (the first entry labelled `Name:`) when the image must be reproducible
-across multiple architectures (e.g., AMD64 and ARM64). For ProjectScylla's current single-arch
+across multiple architectures (e.g., AMD64 and ARM64). For Scylla's current single-arch
 CI use Method 1 is sufficient.
 
 ### Method 3: Docker Hub registry API

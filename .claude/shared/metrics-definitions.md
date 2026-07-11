@@ -1,6 +1,6 @@
 # Metrics Definitions
 
-Complete definitions of all metrics used in ProjectScylla evaluations.
+Complete definitions of all metrics used in Scylla evaluations.
 
 **See also:**
 

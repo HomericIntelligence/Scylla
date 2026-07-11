@@ -1,4 +1,4 @@
-"""Core types and base classes for ProjectScylla.
+"""Core types and base classes for Scylla.
 
 This module provides foundational types used across the codebase.
 """

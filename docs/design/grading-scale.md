@@ -3,11 +3,11 @@
 > Version 1.0 | Last Updated: 2026-01-02
 
 This document defines the **single source of truth** for grading scales used across
-all ProjectScylla rubrics. All `rubric.yaml` files reference this definition.
+all Scylla rubrics. All `rubric.yaml` files reference this definition.
 
 ## Industry-Aligned Grade Scale
 
-ProjectScylla uses an industry-aligned grading scale focused on **production readiness**
+Scylla uses an industry-aligned grading scale focused on **production readiness**
 rather than academic performance. This approach was chosen based on industry standards
 from SonarQube, LLM evaluation frameworks, and QA scorecard best practices.
 

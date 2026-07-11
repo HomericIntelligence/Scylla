@@ -1,15 +1,15 @@
 # Capacity Planning Methodology
 
-Closes [#1892](https://github.com/HomericIntelligence/ProjectScylla/issues/1892).
-Refs [#1867](https://github.com/HomericIntelligence/ProjectScylla/issues/1867) (audit
-epic), [#1880](https://github.com/HomericIntelligence/ProjectScylla/issues/1880)
-(`--fail-on-resource-check`), [#1891](https://github.com/HomericIntelligence/ProjectScylla/issues/1891)
+Closes [#1892](https://github.com/HomericIntelligence/Scylla/issues/1892).
+Refs [#1867](https://github.com/HomericIntelligence/Scylla/issues/1867) (audit
+epic), [#1880](https://github.com/HomericIntelligence/Scylla/issues/1880)
+(`--fail-on-resource-check`), [#1891](https://github.com/HomericIntelligence/Scylla/issues/1891)
 (failure recovery runbook).
 
 ## 1. Scope
 
 This document defines the **methodology** an operator should follow to size a host
-(or fleet of hosts) for a ProjectScylla experiment, and provides the **measurement
+(or fleet of hosts) for a Scylla experiment, and provides the **measurement
 templates** that future runs must populate. It deliberately does *not* contain
 empirical numbers for per-run RAM, disk, wall-clock, or token consumption: those
 quantities are workload- and model-dependent and have not yet been measured under
@@ -118,7 +118,7 @@ Every quantitative cell is `TBD` until measured per the procedure in
 | T6 | claude-opus-4-6 | TBD | TBD | TBD | TBD | TBD / TBD |
 
 <sup>a</sup> Measured from a real run — see [§7](#7-measurement-procedure) and the
-measurement campaign tracked under [#1892](https://github.com/HomericIntelligence/ProjectScylla/issues/1892).
+measurement campaign tracked under [#1892](https://github.com/HomericIntelligence/Scylla/issues/1892).
 
 <sup>b</sup> "Subprocesses" includes the `claude` CLI plus any tool subprocesses
 spawned during the run. Counted via `ps --ppid <runner-pid>` snapshots.
@@ -275,7 +275,7 @@ Thresholds (constants in [`health.py`](../../src/scylla/e2e/health.py)):
 | OK | above warning | above warning | Logs informational lines and proceeds. |
 
 The hard-abort behaviour for the critical class was added in PR #1917 in
-response to issue [#1880](https://github.com/HomericIntelligence/ProjectScylla/issues/1880);
+response to issue [#1880](https://github.com/HomericIntelligence/Scylla/issues/1880);
 the previous behaviour was warn-only and would let an under-provisioned host
 proceed into a workload that would inevitably crash.
 
@@ -332,7 +332,7 @@ Until the per-run constants in §3.1 are measured, operators should:
 ## 7. Measurement procedure
 
 Use this procedure to populate the `TBD` cells in §3 for a given (tier, model)
-pair. All commands assume a checked-out ProjectScylla worktree and a configured
+pair. All commands assume a checked-out Scylla worktree and a configured
 `pixi` environment.
 
 ### 7.1 Single-run instrumentation
@@ -455,7 +455,7 @@ drops *during* an experiment (e.g. a runaway tool produces a multi-GB log),
 the framework currently does *not* re-check, and individual runs may fail
 with `OSError: No space left on device`. Recovery is documented in the
 operational-readiness runbook tracked under
-[#1891](https://github.com/HomericIntelligence/ProjectScylla/issues/1891).
+[#1891](https://github.com/HomericIntelligence/Scylla/issues/1891).
 
 Mitigations:
 
@@ -492,7 +492,7 @@ succeeded.
 This document is methodology only. The empirical follow-up — running the
 measurement procedure of §7 against each (tier, model) pair on a reference
 host class and populating the `TBD` cells in §3 — is tracked under
-[#1892](https://github.com/HomericIntelligence/ProjectScylla/issues/1892) as
+[#1892](https://github.com/HomericIntelligence/Scylla/issues/1892) as
 the *capacity-planning measurement campaign*. Until that campaign lands,
 operators should treat §6 as advisory and fall back to the conservative path
 in §6 step 1 (single-sub-test probe before a full sweep).

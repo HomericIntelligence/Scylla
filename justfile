@@ -1,4 +1,4 @@
-# ProjectScylla task runner — delegates to pixi run
+# Scylla task runner — delegates to pixi run
 # Ecosystem convention: justfile + pixi (invokable from Odysseus via just scylla-*)
 
 # List all available recipes

@@ -283,7 +283,7 @@ The script updates the experiment checkpoint after each successful re-run, allow
 
 **Cause**: Script couldn't find the test fixture directory.
 
-**Solution**: Run the script from within the ProjectScylla repository, or ensure the experiment was created with a valid fixture directory.
+**Solution**: Run the script from within the Scylla repository, or ensure the experiment was created with a valid fixture directory.
 
 ### Re-runs still failing
 

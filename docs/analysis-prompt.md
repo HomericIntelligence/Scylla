@@ -1,9 +1,9 @@
 
 ## Overview
 
-Analyze ProjectScylla for completeness, quality, and maturity across six dimensions. Provide letter grades with specific evidence drawn from the actual codebase.
+Analyze Scylla for completeness, quality, and maturity across six dimensions. Provide letter grades with specific evidence drawn from the actual codebase.
 
-**Context**: ProjectScylla is a Python 3.10+ AI agent benchmarking framework that evaluates agent architectures across 7 tiers (T0-T6, 120 sub-tests). It runs agents against task fixtures, scores outputs with an LLM judge, and produces statistical reports (34 figures, 11 tables). The framework is actively operational — experiment runs exist in `results/` from today.
+**Context**: Scylla is a Python 3.10+ AI agent benchmarking framework that evaluates agent architectures across 7 tiers (T0-T6, 120 sub-tests). It runs agents against task fixtures, scores outputs with an LLM judge, and produces statistical reports (34 figures, 11 tables). The framework is actively operational — experiment runs exist in `results/` from today.
 
 ---
 
@@ -235,7 +235,7 @@ For each section: assign a score with 2-3 specific evidence points (file paths w
 4. [Fourth priority]
 5. [Fifth priority]
 
-### ProjectScylla-Specific Checklist
+### Scylla-Specific Checklist
 
 - [ ] `agents/` directory created with `hierarchy.md` and `delegation-rules.md` (referenced in CLAUDE.md but missing)
 - [ ] CLAUDE.md "Current Status" updated from "Research and planning phase" to reflect actual implemented state
@@ -263,4 +263,4 @@ For each section: assign a score with 2-3 specific evidence points (file paths w
 
 ---
 
-Analyze this project, ProjectScylla
+Analyze this project, Scylla

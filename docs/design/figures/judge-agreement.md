@@ -124,7 +124,7 @@ where:
 
 ### Inter-Rater Reliability (IRR)
 
-Inter-rater reliability measures the degree of agreement among independent raters evaluating the same phenomena. In ProjectScylla, this applies to:
+Inter-rater reliability measures the degree of agreement among independent raters evaluating the same phenomena. In Scylla, this applies to:
 
 - **Raters**: 3 independent judge runs (same model, different executions)
 - **Subjects**: AI agent evaluation runs (tier + subtest + run_number)
@@ -148,7 +148,7 @@ Systematic disagreement can arise from:
 
 ### Consensus Mechanisms
 
-ProjectScylla uses **confidence-weighted averaging** to resolve disagreements:
+Scylla uses **confidence-weighted averaging** to resolve disagreements:
 
 ```
 consensus_score = Σ(score_i × confidence_i) / Σ(confidence_i)
@@ -344,7 +344,7 @@ Together, these figures provide complete picture of judge reliability.
 
 ## Code Reference
 
-**Source**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/judge_analysis.py:64-170`
+**Source**: `/home/mvillmow/Scylla/scylla/analysis/figures/judge_analysis.py:64-170`
 
 **Function**: `fig14_judge_agreement(judges_df, output_dir, render=True)`
 
@@ -387,4 +387,4 @@ for tier in tier_order:
     save_figure(scatter, f"fig14_{tier_suffix}_judge_agreement", output_dir, render)
 ```
 
-**Testing**: See `/home/mvillmow/ProjectScylla/tests/analysis/figures/test_judge_analysis.py` for unit tests.
+**Testing**: See `/home/mvillmow/Scylla/tests/analysis/figures/test_judge_analysis.py` for unit tests.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-ProjectScylla uses Docker containers to provide isolated, reproducible execution environments for E2E experiments. The architecture has been refactored to be simpler and more maintainable.
+Scylla uses Docker containers to provide isolated, reproducible execution environments for E2E experiments. The architecture has been refactored to be simpler and more maintainable.
 
 ## Architecture
 

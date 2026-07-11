@@ -1,4 +1,4 @@
-r"""Scripts package for ProjectScylla automation and tooling.
+r"""Scripts package for Scylla automation and tooling.
 
 This directory contains standalone automation scripts and pre-commit hook helpers.
 It is intentionally added to pytest's ``pythonpath`` in ``pyproject.toml`` so that

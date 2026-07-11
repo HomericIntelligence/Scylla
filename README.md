@@ -1,17 +1,17 @@
-# ProjectScylla
+# Scylla
 
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
-[![Tests](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/test.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/test.yml)
-[![CI Image](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/ci-image.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/ci-image.yml)
-[![Docker Test](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/docker-test.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/docker-test.yml)
-[![Security](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/security.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/security.yml)
-[![Pre-commit](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/pre-commit.yml)
-[![Release](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/release.yml/badge.svg)](https://github.com/HomericIntelligence/ProjectScylla/actions/workflows/release.yml)
+[![Tests](https://github.com/HomericIntelligence/Scylla/actions/workflows/test.yml/badge.svg)](https://github.com/HomericIntelligence/Scylla/actions/workflows/test.yml)
+[![CI Image](https://github.com/HomericIntelligence/Scylla/actions/workflows/ci-image.yml/badge.svg)](https://github.com/HomericIntelligence/Scylla/actions/workflows/ci-image.yml)
+[![Docker Test](https://github.com/HomericIntelligence/Scylla/actions/workflows/docker-test.yml/badge.svg)](https://github.com/HomericIntelligence/Scylla/actions/workflows/docker-test.yml)
+[![Security](https://github.com/HomericIntelligence/Scylla/actions/workflows/security.yml/badge.svg)](https://github.com/HomericIntelligence/Scylla/actions/workflows/security.yml)
+[![Pre-commit](https://github.com/HomericIntelligence/Scylla/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/HomericIntelligence/Scylla/actions/workflows/pre-commit.yml)
+[![Release](https://github.com/HomericIntelligence/Scylla/actions/workflows/release.yml/badge.svg)](https://github.com/HomericIntelligence/Scylla/actions/workflows/release.yml)
 
 ## 📑 Table of Contents
 
-- [🎯 What is ProjectScylla?](#-what-is-projectscylla)
+- [🎯 What is Scylla?](#-what-is-scylla)
 - [Core Concepts](#core-concepts)
 - [🚀 Quick Start](#-quick-start)
 - [CLI Reference](#cli-reference)
@@ -24,9 +24,9 @@
 - [Publication Readiness](#publication-readiness)
 - [🤝 Contributing](#-contributing)
 
-## 🎯 What is ProjectScylla?
+## 🎯 What is Scylla?
 
-ProjectScylla is a comprehensive testing framework for AI agent workflows that:
+Scylla is a comprehensive testing framework for AI agent workflows that:
 
 - **🔬 Measures** agent performance under constrained conditions
 - **📈 Analyzes** results with rigorous statistical methods
@@ -35,7 +35,7 @@ ProjectScylla is a comprehensive testing framework for AI agent workflows that:
 
 **Key Output**: Publication-quality statistical reports with **34 figures** and **11 tables** from a single command.
 
-> "In Homer's Odyssey, Scylla represents one of the greatest challenges on the journey home — a monster that forced sailors to navigate perilous straits where every choice carried risk. ProjectScylla provides the same proving ground for AI agents."
+> "In Homer's Odyssey, Scylla represents one of the greatest challenges on the journey home — a monster that forced sailors to navigate perilous straits where every choice carried risk. Scylla provides the same proving ground for AI agents."
 
 ## Quick Start Guide
 
@@ -72,7 +72,7 @@ See [CLI Reference](#cli-reference) for the full command set.
 
 ## CLI Reference
 
-ProjectScylla ships a `scylla` command-line tool (declared in `pyproject.toml` as
+Scylla ships a `scylla` command-line tool (declared in `pyproject.toml` as
 `scylla = "scylla.cli.main:cli"`). After `pixi install` the binary is available in the
 environment:
 
@@ -83,7 +83,7 @@ scylla --help
 ```
 Usage: scylla [OPTIONS] COMMAND [ARGS]...
 
-  ProjectScylla - AI Agent Testing Framework.
+  Scylla - AI Agent Testing Framework.
   Evaluate and benchmark AI agent architectures across multiple tiers.
 
 Options:
@@ -202,7 +202,7 @@ Part of a 12-repository ecosystem:
 | **ProjectMnemosyne** | Skills marketplace — team knowledge sharing |
 | **ProjectOdyssey** | Training and capability development for agents |
 | **ProjectProteus** | CI/CD pipeline infrastructure |
-| **ProjectScylla** | Testing, measurement, and optimization under constraints (this project) |
+| **Scylla** | Testing, measurement, and optimization under constraints (this project) |
 | **ProjectTelemachy** | Workflow engine |
 
 ---
@@ -441,7 +441,7 @@ Schema: `src/scylla/analysis/schemas/run_result.schema.json`
 
 ### 🧪 Testing
 
-ProjectScylla has a comprehensive test suite covering all functionality. To see the current test count:
+Scylla has a comprehensive test suite covering all functionality. To see the current test count:
 
 ```bash
 pixi run pytest tests/ --collect-only -q | tail -1
@@ -574,7 +574,7 @@ TypeError: unsupported operand type(s) for +: 'float' and 'str'
 
 - **Documentation**: `docs/research.md` for methodology
 - **Examples**: `tests/unit/analysis/` for usage patterns
-- **Issues**: [GitHub Issues](https://github.com/HomericIntelligence/ProjectScylla/issues)
+- **Issues**: [GitHub Issues](https://github.com/HomericIntelligence/Scylla/issues)
 - **Support**: Create an issue with error message and steps to reproduce
 
 ---
@@ -647,7 +647,7 @@ We welcome contributions! Please see **[CONTRIBUTING.md](CONTRIBUTING.md)** for 
 - Documentation improvements
 - Bug fixes and feature requests
 
-Visit our [GitHub Repository](https://github.com/HomericIntelligence/ProjectScylla) to get started.
+Visit our [GitHub Repository](https://github.com/HomericIntelligence/Scylla) to get started.
 
 ---
 
@@ -658,10 +658,10 @@ Visit our [GitHub Repository](https://github.com/HomericIntelligence/ProjectScyl
 ## Citation
 
 ```bibtex
-@software{projectscylla2026,
-  title = {ProjectScylla: A Testing and Optimization Framework for Agentic Workflows},
+@software{scylla2026,
+  title = {Scylla: A Testing and Optimization Framework for Agentic Workflows},
   author = {Micah Villmow},
   year = {2026},
-  url = {https://github.com/HomericIntelligence/ProjectScylla}
+  url = {https://github.com/HomericIntelligence/Scylla}
 }
 ```

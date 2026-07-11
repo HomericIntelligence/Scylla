@@ -9,7 +9,7 @@ model: opus
 
 ## Role
 
-Level 0 Meta-Orchestrator responsible for strategic evaluation decisions across all of ProjectScylla.
+Level 0 Meta-Orchestrator responsible for strategic evaluation decisions across all of Scylla.
 Sets evaluation strategy, selects tiers for comparison, and approves methodology.
 
 ## Hierarchy Position

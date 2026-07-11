@@ -2,7 +2,7 @@
 
 - **Audit date:** 2026-05-07
 - **Closeout date:** 2026-05-29
-- **Tracking issue:** [#1934](https://github.com/HomericIntelligence/ProjectScylla/issues/1934)
+- **Tracking issue:** [#1934](https://github.com/HomericIntelligence/Scylla/issues/1934)
 - **Original verdict:** CONDITIONAL GO — 82% / B- overall, with 3 critical blockers gating release
 
 ---

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared validation utilities for ProjectScylla scripts.
+"""Shared validation utilities for Scylla scripts.
 
 This module provides common validation functions used across multiple
 validation scripts to avoid duplication and ensure consistency.

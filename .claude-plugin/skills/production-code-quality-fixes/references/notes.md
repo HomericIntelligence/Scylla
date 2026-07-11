@@ -4,7 +4,7 @@
 
 - **Date**: 2026-02-21
 - **Branch**: 757-auto-impl
-- **Working dir**: /home/mvillmow/ProjectScylla/.worktrees/issue-757
+- **Working dir**: /home/mvillmow/Scylla/.worktrees/issue-757
 - **Task**: Fix production assert in grading.py and hardcoded /tmp path in llm_judge.py
 
 ## Issue Details

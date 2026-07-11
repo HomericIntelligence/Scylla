@@ -293,7 +293,7 @@ Publication-quality theme (see `scylla/analysis/figures/spec_builder.py`):
 
 ### Implementation
 
-**File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/variance.py`
+**File**: `/home/mvillmow/Scylla/scylla/analysis/figures/variance.py`
 
 **Function**: `fig01_score_variance_by_tier(runs_df: pd.DataFrame, output_dir: Path, render: bool = True)`
 

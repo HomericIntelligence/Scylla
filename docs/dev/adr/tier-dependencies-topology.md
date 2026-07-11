@@ -2,7 +2,7 @@
 
 **Date**: 2026-05-06
 **Status**: Accepted
-**Issue**: [#1882](https://github.com/HomericIntelligence/ProjectScylla/issues/1882)
+**Issue**: [#1882](https://github.com/HomericIntelligence/Scylla/issues/1882)
 
 ## Context
 

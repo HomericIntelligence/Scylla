@@ -324,7 +324,7 @@ pre-commit run --all-files
 
 ## References
 
-- Issue: <https://github.com/HomericIntelligence/ProjectScylla/issues/729>
-- PR: <https://github.com/HomericIntelligence/ProjectScylla/pull/788>
+- Issue: <https://github.com/HomericIntelligence/Scylla/issues/729>
+- PR: <https://github.com/HomericIntelligence/Scylla/pull/788>
 - Prior application: ExecutionInfo consolidation (#658, PR #726)
 - Foundational skill: `pydantic-type-consolidation`

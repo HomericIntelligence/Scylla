@@ -73,7 +73,7 @@ def load_rerun_context(experiment_dir: Path) -> RerunContext:
             break
 
     if not tiers_dir:
-        # Fallback: try ProjectScylla root
+        # Fallback: try Scylla root
         project_root = Path(__file__).parent.parent.parent.parent
         candidate = project_root / "tests" / "fixtures" / "tests"
         if candidate.exists():

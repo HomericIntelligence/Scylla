@@ -1,6 +1,6 @@
 # Analysis Pipeline
 
-This document describes the analysis pipeline for ProjectScylla experiment results.
+This document describes the analysis pipeline for Scylla experiment results.
 
 ## Overview
 

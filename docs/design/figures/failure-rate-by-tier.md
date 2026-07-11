@@ -489,4 +489,4 @@ See test coverage in `tests/analysis/figures/test_variance.py` (if exists) for:
 
 **Version**: 1.0
 **Last Updated**: 2026-02-12
-**Maintained by**: ProjectScylla Analysis Team
+**Maintained by**: Scylla Analysis Team

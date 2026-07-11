@@ -1,6 +1,6 @@
 # Docker Image Specification: scylla-runner
 
-This directory contains the Docker configuration for `scylla-runner:latest`, the base image used for isolated AI agent test execution in ProjectScylla.
+This directory contains the Docker configuration for `scylla-runner:latest`, the base image used for isolated AI agent test execution in Scylla.
 
 ## Overview
 

@@ -27,7 +27,7 @@ This figure visualizes the correlation between Implementation Rate (Impl-Rate) a
 - `impl_rate` (float): Implementation rate [0.0, 1.0] - fraction of implementation criteria completed
 - `passed` (bool/int): Final pass/fail status (converted to mean for pass-rate)
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/impl_rate_analysis.py:156-235`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/impl_rate_analysis.py:156-235`
 
 **Data Requirements**:
 

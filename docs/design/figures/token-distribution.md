@@ -15,7 +15,7 @@ This breakdown enables identification of cache efficiency patterns and understan
 
 ## Purpose
 
-The token distribution figure serves multiple critical purposes in ProjectScylla's evaluation framework:
+The token distribution figure serves multiple critical purposes in Scylla's evaluation framework:
 
 1. **Cost Driver Identification**: Token usage directly determines API costs. Understanding the breakdown reveals which components (fresh input, cached input, output generation, cache creation) drive costs in each tier.
 
@@ -334,7 +334,7 @@ When fresh input tokens are invisible in T4/T6 visualizations:
 
 ### Source Location
 
-- **File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/token_analysis.py`
+- **File**: `/home/mvillmow/Scylla/scylla/analysis/figures/token_analysis.py`
 - **Function**: `fig07_token_distribution(runs_df: pd.DataFrame, output_dir: Path, render: bool = True) -> None`
 - **Lines**: 17-102
 

@@ -1,6 +1,6 @@
 # CI Container
 
-The `ci/` directory contains the container image definition for running ProjectScylla's CI
+The `ci/` directory contains the container image definition for running Scylla's CI
 pipeline — tests, linting, security scans — in an isolated, reproducible environment.
 
 This is **separate** from the experiment container (`docker/Dockerfile`), which runs AI agent

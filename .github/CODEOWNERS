@@ -1,4 +1,4 @@
-# ProjectScylla Code Owners
+# Scylla Code Owners
 #
 # This file defines code ownership for automatic review assignment.
 # Each line is a file pattern followed by one or more owners.
@@ -7,72 +7,72 @@
 
 # Default owners for everything in the repo
 # This is a fallback and will be overridden by more specific rules below
-* @HomericIntelligence/projectscylla-maintainers
+* @HomericIntelligence/scylla-maintainers
 
 # Core configuration and documentation
-/CLAUDE.md @HomericIntelligence/projectscylla-maintainers
-/CONTRIBUTING.md @HomericIntelligence/projectscylla-maintainers
-/README.md @HomericIntelligence/projectscylla-maintainers
-/LICENSE @HomericIntelligence/projectscylla-maintainers
-/.gitignore @HomericIntelligence/projectscylla-maintainers
+/CLAUDE.md @HomericIntelligence/scylla-maintainers
+/CONTRIBUTING.md @HomericIntelligence/scylla-maintainers
+/README.md @HomericIntelligence/scylla-maintainers
+/LICENSE @HomericIntelligence/scylla-maintainers
+/.gitignore @HomericIntelligence/scylla-maintainers
 
 # Project configuration files
-/pyproject.toml @HomericIntelligence/projectscylla-maintainers
-/pixi.toml @HomericIntelligence/projectscylla-maintainers
-/.pre-commit-config.yaml @HomericIntelligence/projectscylla-maintainers
+/pyproject.toml @HomericIntelligence/scylla-maintainers
+/pixi.toml @HomericIntelligence/scylla-maintainers
+/.pre-commit-config.yaml @HomericIntelligence/scylla-maintainers
 
 # GitHub workflows and templates
-/.github/ @HomericIntelligence/projectscylla-maintainers
+/.github/ @HomericIntelligence/scylla-maintainers
 
 # Docker configuration
-/docker/ @HomericIntelligence/projectscylla-maintainers
+/docker/ @HomericIntelligence/scylla-maintainers
 
 # Agent configurations and hierarchy
-/.claude/ @HomericIntelligence/projectscylla-maintainers
+/.claude/ @HomericIntelligence/scylla-maintainers
 
 # Model configurations
-/config/models/ @HomericIntelligence/projectscylla-maintainers
+/config/models/ @HomericIntelligence/scylla-maintainers
 
 # JSON schemas
-/schemas/ @HomericIntelligence/projectscylla-maintainers
+/schemas/ @HomericIntelligence/scylla-maintainers
 
 # Documentation
-/docs/ @HomericIntelligence/projectscylla-maintainers
+/docs/ @HomericIntelligence/scylla-maintainers
 
 # Core Python modules - require maintainer review
-/src/scylla/core/ @HomericIntelligence/projectscylla-maintainers
-/src/scylla/config/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/core/ @HomericIntelligence/scylla-maintainers
+/src/scylla/config/ @HomericIntelligence/scylla-maintainers
 
 # Adapters - LLM integration layer
-/src/scylla/adapters/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/adapters/ @HomericIntelligence/scylla-maintainers
 
 # Execution engine
-/src/scylla/executor/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/executor/ @HomericIntelligence/scylla-maintainers
 
 # E2E evaluation framework
-/src/scylla/e2e/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/e2e/ @HomericIntelligence/scylla-maintainers
 
 # LLM Judge system
-/src/scylla/judge/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/judge/ @HomericIntelligence/scylla-maintainers
 
 # Metrics calculation
-/src/scylla/metrics/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/metrics/ @HomericIntelligence/scylla-maintainers
 
 # Statistical analysis and reporting
-/src/scylla/analysis/ @HomericIntelligence/projectscylla-maintainers
-/src/scylla/reporting/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/analysis/ @HomericIntelligence/scylla-maintainers
+/src/scylla/reporting/ @HomericIntelligence/scylla-maintainers
 
 # CLI interface
-/src/scylla/cli/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/cli/ @HomericIntelligence/scylla-maintainers
 
 # Discovery (automation/ package removed in PR #1914)
-/src/scylla/discovery/ @HomericIntelligence/projectscylla-maintainers
+/src/scylla/discovery/ @HomericIntelligence/scylla-maintainers
 
 # Tests - require review from code owner + test coverage verification
-/tests/ @HomericIntelligence/projectscylla-maintainers
+/tests/ @HomericIntelligence/scylla-maintainers
 
 # Scripts and utilities
-/scripts/ @HomericIntelligence/projectscylla-maintainers
+/scripts/ @HomericIntelligence/scylla-maintainers
 
 # Environment configuration (review required for security)
-/.env.example @HomericIntelligence/projectscylla-maintainers
+/.env.example @HomericIntelligence/scylla-maintainers
