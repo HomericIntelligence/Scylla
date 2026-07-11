@@ -1,7 +1,7 @@
 # Observability Setup Runbook
 
 This runbook explains how to enable structured JSON logs, OpenTelemetry
-tracing, and Prometheus metrics for a ProjectScylla experiment run.
+tracing, and Prometheus metrics for a Scylla experiment run.
 
 All three signals are **opt-in**. The defaults produce plain text logs,
 no spans, and no metric output. Default behaviour is unchanged if no
@@ -68,7 +68,7 @@ SCYLLA_OTEL_EXPORTER=otlp \
   pixi run scylla run <test-id>
 ```
 
-The OTel SDK is **not** a hard dependency of ProjectScylla; install it
+The OTel SDK is **not** a hard dependency of Scylla; install it
 only on hosts where tracing is required. If the packages are absent when
 `SCYLLA_OTEL_EXPORTER` is set, a `UserWarning` is emitted and the run
 continues with NoOp tracing (`src/scylla/utils/tracing.py:116-123`).

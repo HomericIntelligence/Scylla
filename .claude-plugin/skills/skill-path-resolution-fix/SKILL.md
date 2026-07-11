@@ -19,7 +19,7 @@ Trigger this skill when:
 - A shell script inside a skill's `scripts/` subdirectory uses relative paths internally
 - A skill was added to `tests/claude-code/shared/skills/` but the docs only work from inside that directory
 - You get errors like `bash: scripts/preflight_check.sh: No such file or directory` when running from a different CWD
-- Syncing a skill between ProjectScylla and ProjectMnemosyne where invocation patterns differ
+- Syncing a skill between Scylla and ProjectMnemosyne where invocation patterns differ
 
 ## Verified Workflow
 
@@ -86,7 +86,7 @@ Add a Note callout immediately before the code block:
 > **Note:** `<skill-dir>` is the absolute path to this skill's directory.
 > Resolve it with: `SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"`
 > or use the skill's installed path directly, e.g.:
-> `tests/claude-code/shared/skills/github/gh-implement-issue` (ProjectScylla)
+> `tests/claude-code/shared/skills/github/gh-implement-issue` (Scylla)
 ```
 
 Apply the same fix to every occurrence in the file (Quick Reference AND Workflow section).
@@ -119,7 +119,7 @@ cat build/ProjectMnemosyne/plugins/tooling/gh-implement-issue/skills/gh-implemen
 
 Update `references/notes.md` with:
 
-- Canonical source location of the script in ProjectScylla
+- Canonical source location of the script in Scylla
 - How to resolve `<skill-dir>` at runtime
 - Sync history entry with date, changes, and issue number
 
@@ -133,7 +133,7 @@ git -C build/ProjectMnemosyne push -u origin skill/tooling/gh-implement-issue-pr
 cd build/ProjectMnemosyne && gh pr create --title "..." --body "..."
 ```
 
-### 6. Commit and PR (ProjectScylla)
+### 6. Commit and PR (Scylla)
 
 ```bash
 git add tests/claude-code/shared/skills/github/gh-implement-issue/SKILL.md \
@@ -149,8 +149,8 @@ gh pr merge --auto --rebase <pr-number>
 | Attempt | Why Failed | Lesson |
 |---------|------------|--------|
 | Add `SCRIPT_DIR` without `# shellcheck disable=SC2034` | ShellCheck hook failed with `SC2034: SCRIPT_DIR appears unused` | Always add the disable comment when `SCRIPT_DIR` is documenting the idiom but not used internally — it's a false positive that will block commits |
-| Reading Mnemosyne files via worktree `Read` tool | Worktree (`/home/mvillmow/ProjectScylla/.worktrees/issue-801/`) doesn't include `build/` directory — `File does not exist` | Use absolute paths pointing to the main repo's `build/ProjectMnemosyne/`, not the worktree path |
-| Looking for `build/` inside the worktree | Worktrees only contain the checked-out branch files; `build/` is gitignored/excluded | Always check `ls /home/mvillmow/ProjectScylla/build/` directly, not the worktree path |
+| Reading Mnemosyne files via worktree `Read` tool | Worktree (`/home/mvillmow/Scylla/.worktrees/issue-801/`) doesn't include `build/` directory — `File does not exist` | Use absolute paths pointing to the main repo's `build/ProjectMnemosyne/`, not the worktree path |
+| Looking for `build/` inside the worktree | Worktrees only contain the checked-out branch files; `build/` is gitignored/excluded | Always check `ls /home/mvillmow/Scylla/build/` directly, not the worktree path |
 
 ## Results & Parameters
 
@@ -186,7 +186,7 @@ In the bash block, replace `bash scripts/NAME.sh` with:
 
 Add these sections, replacing CAPS placeholders with actual values:
 
-- **Canonical Source**: Document the ProjectScylla path to the script
+- **Canonical Source**: Document the Scylla path to the script
 - **Skill Directory Resolution**: Show the `BASH_SOURCE[0]` runtime resolution pattern
 - **Sync History**: Add a dated entry: `DATE: SUMMARY (issue #NUMBER)`
 

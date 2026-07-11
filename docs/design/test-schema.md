@@ -2,7 +2,7 @@
 
 > Version 1.0 | Last Updated: 2025-12-30
 
-This document defines the YAML schema for `test.yaml` files used in ProjectScylla's
+This document defines the YAML schema for `test.yaml` files used in Scylla's
 evaluation framework. These files configure individual test cases that benchmark AI
 agent performance across different architectural tiers.
 

@@ -1,4 +1,4 @@
-# Developer Onboarding — ProjectScylla
+# Developer Onboarding — Scylla
 
 This is the canonical quickstart reference. Both `README.md` and `CONTRIBUTING.md` link here.
 
@@ -25,8 +25,8 @@ Install `just` and `gh` via your system package manager, or let `mise`/`asdf` pi
 
 ```bash
 # Clone the repo (or your fork)
-git clone https://github.com/HomericIntelligence/ProjectScylla.git
-cd ProjectScylla
+git clone https://github.com/HomericIntelligence/Scylla.git
+cd Scylla
 
 # Install all dependencies (creates .pixi/ env)
 pixi install

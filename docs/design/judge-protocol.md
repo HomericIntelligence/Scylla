@@ -1,6 +1,6 @@
 # Judge Protocol Documentation
 
-This document describes the judge system for evaluating AI agent work in ProjectScylla.
+This document describes the judge system for evaluating AI agent work in Scylla.
 
 ## Overview
 

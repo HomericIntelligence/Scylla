@@ -1,6 +1,6 @@
 # Milestone Strategy
 
-ProjectScylla uses GitHub milestones to track progress toward planned releases.
+Scylla uses GitHub milestones to track progress toward planned releases.
 
 ## Active Milestones
 

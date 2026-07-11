@@ -58,7 +58,7 @@ setup() {
 @test "worktree conflict triggers exit 1" {
     export GH_MOCK_ISSUE_STATE='{"state":"OPEN","title":"My Issue","closedAt":null}'
     export GH_MOCK_PR_JSON='[]'
-    export GIT_MOCK_WORKTREE="/home/user/ProjectScylla/.worktrees/issue-800  abc1234 [800-auto-impl]"
+    export GIT_MOCK_WORKTREE="/home/user/Scylla/.worktrees/issue-800  abc1234 [800-auto-impl]"
 
     run bash "$SCRIPT" 800
 

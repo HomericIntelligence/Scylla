@@ -1,4 +1,4 @@
-"""NATS connection configuration for ProjectScylla.
+"""NATS connection configuration for Scylla.
 
 Provides the NATSConfig Pydantic model and a loader function that reads
 from a YAML dict with optional environment variable overrides.

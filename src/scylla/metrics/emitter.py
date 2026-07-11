@@ -1,7 +1,7 @@
 """Metric emitter abstraction for time-series database integration.
 
 Provides a pluggable :class:`MetricEmitter` interface so operators can wire
-ProjectScylla metrics (pass rates, CoP, latency) to a TSDB without touching
+Scylla metrics (pass rates, CoP, latency) to a TSDB without touching
 the metric-computation call sites.
 
 The default :func:`get_default_emitter` returns a :class:`NoOpEmitter` unless

@@ -2,11 +2,11 @@
 
 **Date**: 2026-05-06
 **Status**: Accepted
-**Issue**: [#1882](https://github.com/HomericIntelligence/ProjectScylla/issues/1882)
+**Issue**: [#1882](https://github.com/HomericIntelligence/Scylla/issues/1882)
 
 ## Context
 
-ProjectScylla persists almost every long-lived data object as JSON: experiment
+Scylla persists almost every long-lived data object as JSON: experiment
 configs, checkpoints, per-run results, judge outputs, and the rolled-up
 experiment results. The data classes themselves are Pydantic `BaseModel`s,
 which already provide `model_dump()` and `model_dump_json()`. Despite that,

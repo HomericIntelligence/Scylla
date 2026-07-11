@@ -4,7 +4,7 @@
 
 - **Date**: 2026-02-19
 - **Branch**: 752-auto-impl
-- **Working dir**: /home/mvillmow/ProjectScylla/.worktrees/issue-752
+- **Working dir**: /home/mvillmow/Scylla/.worktrees/issue-752
 - **Task**: Remove broken `agents/` directory references from CLAUDE.md
 
 ## What was broken
@@ -37,7 +37,7 @@ gh pr merge --auto --rebase 811
 ## PR Details
 
 - PR: #811
-- URL: <https://github.com/HomericIntelligence/ProjectScylla/pull/811>
+- URL: <https://github.com/HomericIntelligence/Scylla/pull/811>
 - Auto-merge: enabled (rebase strategy)
 - CI: pre-commit hooks passed on first attempt
 

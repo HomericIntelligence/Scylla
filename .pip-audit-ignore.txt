@@ -1,4 +1,4 @@
-# pip-audit ignore list for ProjectScylla
+# pip-audit ignore list for Scylla
 #
 # Format: one GHSA/CVE ID per line, with a comment explaining why it is ignored.
 # Only add entries here when:

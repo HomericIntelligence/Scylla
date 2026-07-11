@@ -1,4 +1,4 @@
-"""Cross-cutting numeric thresholds for ProjectScylla.
+"""Cross-cutting numeric thresholds for Scylla.
 
 This module hosts threshold constants that are referenced by multiple
 top-level packages (e.g. ``config`` and ``metrics``). Placing them in

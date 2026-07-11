@@ -87,7 +87,7 @@ When launching an interactive shell, you'll see:
 
 ```
 ==========================================
-ProjectScylla Container Shell
+Scylla Container Shell
 ==========================================
 Working Directory: /workspace
 Python Version: Python 3.14.2

@@ -1,1 +1,1 @@
-"""Unit tests for ProjectScylla."""
+"""Unit tests for Scylla."""

@@ -2,11 +2,11 @@
 
 **Date**: 2026-05-06
 **Status**: Accepted
-**Issue**: [#1882](https://github.com/HomericIntelligence/ProjectScylla/issues/1882)
+**Issue**: [#1882](https://github.com/HomericIntelligence/Scylla/issues/1882)
 
 ## Context
 
-ProjectScylla executes long-running ablation experiments that can take hours
+Scylla executes long-running ablation experiments that can take hours
 or days to complete. Each experiment runs many tiers; each tier runs many
 subtests; each subtest runs many individual agent invocations. Any of these
 can be interrupted by rate limits, kill signals, or transient failures, and

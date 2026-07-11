@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run the ProjectScylla CI suite locally inside a container.
+# Run the Scylla CI suite locally inside a container.
 #
 # Mirrors what GitHub Actions runs, using the same CI container image.
 # Supports both Podman (rootless, no SU — preferred) and Docker.

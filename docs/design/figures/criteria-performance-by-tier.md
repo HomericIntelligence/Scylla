@@ -270,7 +270,7 @@ Only criteria with at least one data point after aggregation are included, preve
 
 ## Code Reference
 
-**Source**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/criteria_analysis.py:17-117`
+**Source**: `/home/mvillmow/Scylla/scylla/analysis/figures/criteria_analysis.py:17-117`
 
 **Function**: `fig09_criteria_by_tier(criteria_df, output_dir, render=True)`
 

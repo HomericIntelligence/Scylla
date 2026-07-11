@@ -1827,7 +1827,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the top-level argument parser with subcommands."""
     parser = argparse.ArgumentParser(
         prog="manage_experiment.py",
-        description="Unified experiment management CLI for ProjectScylla E2E testing",
+        description="Unified experiment management CLI for Scylla E2E testing",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Subcommands:

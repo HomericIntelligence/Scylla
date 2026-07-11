@@ -173,11 +173,11 @@ class TestHtmlReportGenerator:
         assert "<style>" in result
 
     def test_generate_report_footer(self) -> None:
-        """Report contains the ProjectScylla footer."""
+        """Report contains the Scylla footer."""
         gen = HtmlReportGenerator(Path("/tmp"))
         data = _make_report_data()
         result = gen.generate_report(data)
-        assert "ProjectScylla Agent Testing Framework" in result
+        assert "Scylla Agent Testing Framework" in result
 
     def test_write_report_creates_file(self) -> None:
         """write_report creates report.html in the correct directory."""

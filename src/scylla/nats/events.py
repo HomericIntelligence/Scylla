@@ -1,4 +1,4 @@
-"""NATS event models for ProjectScylla.
+"""NATS event models for Scylla.
 
 Defines the data structures for incoming NATS JetStream messages
 and subject parsing utilities for the ``hi.tasks.*`` hierarchy.

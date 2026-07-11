@@ -260,7 +260,7 @@ Wide confidence intervals suggest need for more runs before drawing conclusions.
 
 ## Code Reference
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/variance.py`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/variance.py`
 
 **Function**: `fig18a_failure_rate_per_subtest(runs_df, output_dir, render=True)`
 

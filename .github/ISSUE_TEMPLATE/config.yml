@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: Documentation
-    url: https://github.com/HomericIntelligence/ProjectScylla/blob/main/README.md
+    url: https://github.com/HomericIntelligence/Scylla/blob/main/README.md
     about: Check the project documentation
   - name: Discussions
-    url: https://github.com/HomericIntelligence/ProjectScylla/discussions
+    url: https://github.com/HomericIntelligence/Scylla/discussions
     about: Ask questions and discuss ideas

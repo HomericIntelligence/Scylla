@@ -1,6 +1,6 @@
 # Scripts Directory
 
-This directory contains utility scripts for running ProjectScylla experiments.
+This directory contains utility scripts for running Scylla experiments.
 
 ## Git Hooks
 

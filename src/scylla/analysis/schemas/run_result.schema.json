@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://projectscylla.ai/schemas/run_result.schema.json",
+  "$id": "https://scylla.ai/schemas/run_result.schema.json",
   "title": "RunResult",
   "description": "Schema for run_result.json files containing experiment run data",
   "type": "object",

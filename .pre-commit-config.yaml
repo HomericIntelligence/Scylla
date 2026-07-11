@@ -1,4 +1,4 @@
-# Pre-commit hooks for ProjectScylla
+# Pre-commit hooks for Scylla
 # See https://pre-commit.com for more information
 
 # Install both pre-commit and commit-msg hook types when contributors run

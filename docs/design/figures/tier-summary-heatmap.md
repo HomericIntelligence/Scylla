@@ -27,7 +27,7 @@ Figure 15c visualizes tier-level performance through an aggregated heatmap showi
 - `run_number` (int): Run identifier
 - `score` (float): Consensus score [0.0, 1.0]
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/subtest_detail.py:231-290`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/subtest_detail.py:231-290`
 
 **Data Requirements**:
 

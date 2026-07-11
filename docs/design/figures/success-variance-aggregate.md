@@ -245,7 +245,7 @@ This allows direct comparison of the same model's behavior across both metrics.
 
 ## Code Reference
 
-**Source**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/variance.py:220-321`
+**Source**: `/home/mvillmow/Scylla/scylla/analysis/figures/variance.py:220-321`
 
 **Function**: `fig16b_success_variance_aggregate(runs_df, output_dir, render=True)`
 

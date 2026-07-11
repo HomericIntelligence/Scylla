@@ -1,4 +1,4 @@
-"""Command-line interface for ProjectScylla."""
+"""Command-line interface for Scylla."""
 
 import json
 import os
@@ -44,7 +44,7 @@ FORMAT_GENERATORS: dict[str, type[ReportWriter]] = {
 @click.group()
 @click.version_option(version=__version__, prog_name="scylla")
 def cli() -> None:
-    """ProjectScylla - AI Agent Testing Framework.
+    """Scylla - AI Agent Testing Framework.
 
     Evaluate and benchmark AI agent architectures across multiple tiers.
     """

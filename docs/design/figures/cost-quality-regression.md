@@ -15,7 +15,7 @@ This figure answers critical economic questions:
 
 ## Source Code
 
-**Location**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/correlation.py:136-271`
+**Location**: `/home/mvillmow/Scylla/scylla/analysis/figures/correlation.py:136-271`
 
 **Function**: `fig21_cost_quality_regression(runs_df: pd.DataFrame, output_dir: Path, render: bool = True)`
 

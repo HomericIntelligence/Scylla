@@ -16,7 +16,7 @@
       ],
       "cwd": "/home/mvillmow/fullruns/test001-dryrun/2026-01-20T06-13-07-test-001/T6/01/run_01/workspace",
       "env_vars": {
-        "PATH": "/home/mvillmow/ProjectScylla/.pixi/envs/default/bin:/home/mvillmow/.pixi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Windows/system32:/mnt/c/Program Files/Microsoft VS Code/bin:/mnt/c/Program Files/dotnet/:/mnt/c/Users/villm/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/villm/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/villm/AppData/Local/Programs/Ollama:/snap/bin:/home/mvillmow/.local/bin",
+        "PATH": "/home/mvillmow/Scylla/.pixi/envs/default/bin:/home/mvillmow/.pixi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/lib/wsl/lib:/mnt/c/Windows/system32:/mnt/c/Windows:/mnt/c/Windows/System32/Wbem:/mnt/c/Windows/System32/WindowsPowerShell/v1.0/:/mnt/c/Windows/System32/OpenSSH/:/mnt/c/Windows/system32:/mnt/c/Program Files/Microsoft VS Code/bin:/mnt/c/Program Files/dotnet/:/mnt/c/Users/villm/AppData/Local/Microsoft/WindowsApps:/mnt/c/Users/villm/AppData/Local/Programs/Microsoft VS Code/bin:/mnt/c/Users/villm/AppData/Local/Programs/Ollama:/snap/bin:/home/mvillmow/.local/bin",
         "HOME": "/home/mvillmow",
         "USER": "mvillmow",
         "SHELL": "/bin/bash",

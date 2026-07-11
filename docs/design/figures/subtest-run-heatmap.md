@@ -25,7 +25,7 @@ The all-runs view is essential for understanding the reliability and reproducibi
 
 ## Data Source
 
-**Input**: `runs_df` DataFrame from `/home/mvillmow/ProjectScylla/scylla/e2e/aggregate_runs.py`
+**Input**: `runs_df` DataFrame from `/home/mvillmow/Scylla/scylla/e2e/aggregate_runs.py`
 
 **Required Columns**:
 
@@ -267,7 +267,7 @@ This progression supports top-down analysis (start with Fig15c overview, drill i
 
 ## Code Reference
 
-**Implementation**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/subtest_detail.py:87-150`
+**Implementation**: `/home/mvillmow/Scylla/scylla/analysis/figures/subtest_detail.py:87-150`
 
 **Function Signature**:
 
@@ -292,4 +292,4 @@ def fig15a_subtest_run_heatmap(
 - `fig15a_subtest_run_heatmap.pdf`: Vector PDF
 - `fig15a_subtest_run_heatmap.json`: Vega-Lite JSON specification
 
-**Integration**: Called from analysis pipeline in `/home/mvillmow/ProjectScylla/scylla/e2e/run_report.py` as part of comprehensive report generation.
+**Integration**: Called from analysis pipeline in `/home/mvillmow/Scylla/scylla/e2e/run_report.py` as part of comprehensive report generation.

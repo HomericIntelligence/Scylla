@@ -2,11 +2,11 @@
 
 **Date**: 2026-05-06
 **Status**: Accepted
-**Issue**: [#1882](https://github.com/HomericIntelligence/ProjectScylla/issues/1882)
+**Issue**: [#1882](https://github.com/HomericIntelligence/Scylla/issues/1882)
 
 ## Context
 
-Ablation results in ProjectScylla are reported with confidence intervals on
+Ablation results in Scylla are reported with confidence intervals on
 both summary statistics (e.g., mean pass-rate per tier) and effect sizes
 (e.g., Cliff's delta between tiers). Two properties of the experimental
 data make naive interval methods unsafe:
@@ -35,7 +35,7 @@ trivially callable.
 
 ## Decision
 
-All bootstrap confidence intervals reported by ProjectScylla use the BCa
+All bootstrap confidence intervals reported by Scylla use the BCa
 method. There are exactly two call sites, both in
 [`src/scylla/analysis/stats.py`](../../../src/scylla/analysis/stats.py):
 

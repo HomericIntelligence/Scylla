@@ -8,7 +8,7 @@
 | Category | ci-cd |
 | Objective | Systematically rebase 30 stale/conflicting PRs against main, fix CI, and merge |
 | Outcome | Success — all branches rebased, MERGEABLE PRs enabled for auto-merge |
-| Session | ProjectScylla branch cleanup sprint |
+| Session | Scylla branch cleanup sprint |
 
 ## When to Use
 
