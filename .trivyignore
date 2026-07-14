@@ -7,3 +7,43 @@
 # Not runtime code; not reachable from untrusted input in CI. Unfixable without bumping
 # the markdownlint-cli2 pre-commit hook version (which is pinned for reproducibility).
 CVE-2026-33671
+
+# CVE-2026-12151: undici WebSocket client DoS (unbounded memory growth from malicious
+# continuation frames) — undici is bundled inside the Node.js runtime that pre-commit's
+# nodeenv installs for the markdownlint-cli2 hook (language: node, no explicit dependency
+# on undici in markdownlint-cli2's own package.json). Fixed in undici >=6.27.0 / >=7.28.0 /
+# >=8.5.0, but the version baked in is pinned to whatever nodeenv resolves at image build
+# time, not to a value we control via the pre-commit hook rev. The hook only lints trusted
+# repo Markdown/CommonMark content in CI; it never opens outbound WebSocket connections or
+# processes untrusted network input, so the vulnerable code path is not reachable.
+CVE-2026-12151
+
+# golang.org/x/crypto ssh/agent/knownhosts CVEs below: all are compiled into the
+# gitleaks binary that pre-commit's golang hook environment builds for the
+# gitleaks v8.30.1 hook (vendors x/crypto v0.35.0; fixes land in x/crypto
+# >=0.43.0 / >=0.52.0). v8.30.1 is the latest gitleaks release as of this
+# writing and still vendors v0.35.0 — there is no released gitleaks version to
+# bump to that clears these. gitleaks is used for secret-scanning of trusted
+# repo content only; it never speaks the SSH protocol, never connects to an SSH
+# agent, and never parses SSH certificates/known_hosts from untrusted input in
+# CI, so none of the vulnerable code paths are reachable from our usage.
+# CVE-2025-47913 (GO-2025-4116): ssh/agent panic on unexpected SSH_AGENT_SUCCESS
+CVE-2025-47913
+# CVE-2026-39828: ssh security issue (server-side handling)
+CVE-2026-39828
+# CVE-2026-39829: ssh Denial of Service
+CVE-2026-39829
+# CVE-2026-39830: ssh Denial of Service
+CVE-2026-39830
+# CVE-2026-39831: ssh security key bypass due to missing user presence check
+CVE-2026-39831
+# CVE-2026-39832: ssh/agent security bypass via improper key restriction handling
+CVE-2026-39832
+# CVE-2026-39835: ssh Denial of Service via crafted SSH certificate
+CVE-2026-39835
+# CVE-2026-42508: ssh/knownhosts revocation bypass via unchecked SignatureKey
+CVE-2026-42508
+# CVE-2026-46595: ssh authorization bypass due to skipped source-address validation
+CVE-2026-46595
+# CVE-2026-46597: ssh Denial of Service via crafted AES-GCM packet decoder inputs
+CVE-2026-46597
