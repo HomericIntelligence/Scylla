@@ -3,7 +3,7 @@
 #
 # This image provides:
 # - Python 3.12 environment (same base as docker/Dockerfile)
-# - pixi v0.67.2 with default + lint environments pre-installed
+# - pixi v0.70.2 with default + lint environments pre-installed
 # - pre-commit hook environments baked in (largest speedup)
 # - BATS for shell testing
 # - Non-root user 'ci' for rootless Podman compatibility
@@ -48,7 +48,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
 #   - .github/workflows/_required.yml (pixi-check job, pixi-version field)
 # When bumping, update ALL THREE locations together.
 # Using official installer — no root required after this point
-ARG PIXI_VERSION=v0.67.2
+ARG PIXI_VERSION=v0.70.2
 RUN curl -fsSL https://pixi.sh/install.sh \
     | PIXI_VERSION="${PIXI_VERSION}" PIXI_HOME=/opt/pixi bash
 

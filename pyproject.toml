@@ -28,6 +28,9 @@ dependencies = [
     "click>=8.0,<9",
     "homericintelligence-hephaestus>=0.7.0,<1",
     "httpx>=0.28.1,<1",
+    # jsonschema is a runtime dependency: scylla.config.loader (imported by the
+    # scylla CLI entry point at startup) does `import jsonschema` unconditionally.
+    "jsonschema>=4.26.0,<5",
     "pydantic>=2.13.4,<3",
     "pyyaml>=6.0.3,<7",
 ]
@@ -54,7 +57,6 @@ analysis = [
     "vl-convert-python>=1.9.0.post1,<2",
     "krippendorff>=0.8.2,<1",
     "statsmodels>=0.14,<1",
-    "jsonschema>=4.26.0,<5",
 ]
 
 [project.urls]
@@ -69,9 +71,15 @@ scylla = "scylla.cli.main:cli"
 sources = ["src"]
 
 [tool.hatch.build.targets.wheel]
-# With sources = ["src"] above, Hatchling auto-discovers scylla/ inside src/
-# and places it at site-packages/scylla/. Do NOT add packages = ["src/scylla"]
-# — that installs to site-packages/src/scylla/ breaking `import scylla`.
+# packages = ["src/scylla"] is required so the CI Containerfile's editable-install
+# layer (ci/Containerfile) — which COPYs only src/scylla/analysis/schemas/ and
+# src/scylla/py.typed before `pixi install` — gives Hatchling enough info to ship
+# the wheel; auto-discovery fails there since the rest of src/scylla/ isn't
+# present yet. This does NOT double-nest under site-packages/src/scylla/ because
+# `sources = ["src"]` above strips the src/ prefix regardless of whether
+# `packages` is explicit or auto-discovered (verified: wheel ships scylla/... at
+# top level in both the partial-copy CI layer and a normal full-tree build).
+packages = ["src/scylla"]
 
 [tool.hatch.build.targets.sdist]
 include = [

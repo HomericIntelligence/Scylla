@@ -4270,6 +4270,7 @@ packages:
   - click>=8.0,<9
   - homericintelligence-hephaestus>=0.7.0,<1
   - httpx>=0.28.1,<1
+  - jsonschema>=4.26.0,<5
   - pydantic>=2.13.4,<3
   - pyyaml>=6.0.3,<7
   - pytest>=9.0.3,<10 ; extra == 'dev'
@@ -4288,7 +4289,6 @@ packages:
   - vl-convert-python>=1.9.0.post1,<2 ; extra == 'analysis'
   - krippendorff>=0.8.2,<1 ; extra == 'analysis'
   - statsmodels>=0.14,<1 ; extra == 'analysis'
-  - jsonschema>=4.26.0,<5 ; extra == 'analysis'
   requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/01/4f/597b65bc88a031ee68b459fec05f8b40a60c3c3f6d5cde5b1403d965d199/krippendorff-0.8.2-py3-none-any.whl
   name: krippendorff
