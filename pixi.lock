@@ -4303,7 +4303,7 @@ packages:
   - pre-commit>=4.6.0,<5 ; extra == 'dev'
   - ruff>=0.1.0,<1 ; extra == 'dev'
   - defusedxml>=0.7.1,<1 ; extra == 'dev'
-  - nats-py>=2.14.0,<3 ; extra == 'nats'
+  - nats-py>=2.15.0,<3 ; extra == 'nats'
   - matplotlib>=3.10.9,<4 ; extra == 'analysis'
   - numpy>=2.2.6,<3 ; extra == 'analysis'
   - pandas>=2.3.3,<3 ; extra == 'analysis'
