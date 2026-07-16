@@ -20,13 +20,4 @@ runs:
       with:
         pixi-version: ${{ steps.read-version.outputs.version }}
         environments: ${{ inputs.environment }}
-
-    - name: Cache pixi environments
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5
-      with:
-        path: |
-          .pixi
-          ~/.cache/rattler/cache
-        key: pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
-        restore-keys: |
-          pixi-${{ runner.os }}-
+        cache: true
