@@ -4301,7 +4301,7 @@ packages:
   - pytest-asyncio>=1.3.0,<2 ; extra == 'dev'
   - pytest-cov>=7.1.0,<8 ; extra == 'dev'
   - pre-commit>=4.6.0,<5 ; extra == 'dev'
-  - ruff>=0.1.0,<1 ; extra == 'dev'
+  - ruff>=0.15.20,<1 ; extra == 'dev'
   - defusedxml>=0.7.1,<1 ; extra == 'dev'
   - nats-py>=2.14.0,<3 ; extra == 'nats'
   - matplotlib>=3.10.9,<4 ; extra == 'analysis'
