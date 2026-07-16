@@ -49,13 +49,11 @@ def test_direct_wheel_ships_package(tmp_path: Path) -> None:
     names = _wheel_names(_build_wheel(REPO_ROOT, tmp_path))
     assert any(n == "scylla/__init__.py" for n in names), names[:20]
     assert any(n == "scylla/py.typed" for n in names), names[:20]
-    assert not any(n.startswith("src/") for n in names), (
-        "src/ prefix leaked into the wheel"
-    )
+    assert not any(n.startswith("src/") for n in names), "src/ prefix leaked into the wheel"
 
 
 def test_sdist_roundtrip_wheel_ships_package(tmp_path: Path) -> None:
-    """sdist -> extract -> wheel path (what `python -m build` does).
+    """Sdist -> extract -> wheel path (what `python -m build` does).
 
     This is the exact path that shipped an empty wheel when a global
     ``sources = ["src"]`` remapped the sdist layout (PR #2046 / #2030).
@@ -68,8 +66,7 @@ def test_sdist_roundtrip_wheel_ships_package(tmp_path: Path) -> None:
 
     # The sdist must preserve the src/ layout the wheel config expects.
     assert (sdist_root / "src" / "scylla" / "__init__.py").is_file(), (
-        "sdist no longer contains src/scylla/ — a global sources remap "
-        "has likely been reintroduced"
+        "sdist no longer contains src/scylla/ — a global sources remap has likely been reintroduced"
     )
 
     names = _wheel_names(_build_wheel(sdist_root, tmp_path / "wheel_out"))
