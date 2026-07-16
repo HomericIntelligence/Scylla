@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ProjectScylla is an AI agent testing and optimization framework designed to measure, evaluate, and improve
+Scylla is an AI agent testing and optimization framework designed to measure, evaluate, and improve
 the performance and cost-efficiency of agentic AI workflows. Named after the mythic trial from Homer's Odyssey,
 Scylla represents the challenge of navigating trade-offs between capability gains and operational costs.
 
@@ -26,7 +26,7 @@ studies across 120 YAML subtests with published results and 75%+ test coverage e
 | **ProjectMnemosyne** | Skills marketplace — team knowledge sharing |
 | **ProjectOdyssey** | Training and capability development for agents |
 | **ProjectProteus** | CI/CD pipeline infrastructure |
-| **ProjectScylla** | Testing, measurement, and optimization under constraints (this project) |
+| **Scylla** | Testing, measurement, and optimization under constraints (this project) |
 | **ProjectTelemachy** | Workflow engine |
 
 ## Critical Rules - Read First
@@ -157,7 +157,7 @@ Relevant links:
 
 ## Testing Tiers (Ablation Study Framework)
 
-ProjectScylla benchmarks AI agent architectures across 7 testing tiers with 120 sub-tests:
+Scylla benchmarks AI agent architectures across 7 testing tiers with 120 sub-tests:
 
 | Tier | Name | Sub-tests | Description |
 |------|------|-----------|-------------|
@@ -189,7 +189,7 @@ tier states.
 
 ## Core Metrics
 
-ProjectScylla evaluates agent performance across three metric categories:
+Scylla evaluates agent performance across three metric categories:
 
 1. **Quality Metrics**: Pass-Rate, Implementation Rate, Fine-Grained Progress
 2. **Economic Metrics**: Cost-of-Pass (CoP), Token Distribution, Change Fail Percentage
@@ -204,7 +204,7 @@ ProjectScylla evaluates agent performance across three metric categories:
 
 ### Python - Implementation Language
 
-**Python 3.10+** is the implementation language for all ProjectScylla code:
+**Python 3.10+** is the implementation language for all Scylla code:
 
 - Evaluation harnesses and benchmark runners
 - Metrics calculation and collection
@@ -285,7 +285,7 @@ Is the task well-defined with predictable steps?
 **DO**: Use absolute file paths with line numbers when referencing code:
 
 ```markdown
-GOOD: Updated /home/user/ProjectScylla/src/scylla/metrics/grading.py:45-52
+GOOD: Updated /home/user/Scylla/src/scylla/metrics/grading.py:45-52
 
 BAD: Updated grading.py (ambiguous - which file?)
 ```
@@ -313,13 +313,13 @@ BAD: Updated grading.py (ambiguous - which file?)
 
 Skills live in two places. Pick the right location based on **scope**, not convenience.
 
-**Local skills** (in this repo) — for ProjectScylla-specific knowledge:
+**Local skills** (in this repo) — for Scylla-specific knowledge:
 
 - Location: `.claude-plugin/skills/<name>/SKILL.md` (39 skills) and `skills/<name>/SKILL.md` (1 skill)
-- Use when the skill is tightly coupled to ProjectScylla's domain:
+- Use when the skill is tightly coupled to Scylla's domain:
   - Evaluation tier semantics (T0–T6 ablation patterns)
   - Repo-specific config schemas (pixi, model configs, judge prompts)
-  - ProjectScylla automation (e2e runner internals, batch result analysis)
+  - Scylla automation (e2e runner internals, batch result analysis)
   - Fixes to this repo's CI, pre-commit hooks, or doc policies
 - Examples: `doc-contradiction-resolution`, `config-default-model-drift`, `wired-runner-fixture`
 
@@ -352,7 +352,7 @@ git push -u origin skill/{category}/{name}
 gh pr create --title "feat(skills): Add {name}"
 ```
 
-If the lesson is ProjectScylla-specific, add it locally under `.claude-plugin/skills/<name>/SKILL.md`.
+If the lesson is Scylla-specific, add it locally under `.claude-plugin/skills/<name>/SKILL.md`.
 
 **When in doubt**, prefer Mnemosyne — broader reach, easier discovery via `/mnemosyne:advise`.
 
@@ -453,7 +453,7 @@ Skipping this step is the primary cause of CI failures on auto-impl branches.
 ### Project Structure
 
 ```text
-ProjectScylla/
+Scylla/
 +-- config/                      # Configuration files
 |   +-- models/                  # Model configurations (YAML)
 +-- docker/                      # Docker configurations

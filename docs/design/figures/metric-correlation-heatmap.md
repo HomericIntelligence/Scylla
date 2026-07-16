@@ -29,7 +29,7 @@ The Metric Correlation Heatmap visualizes pairwise Spearman rank correlations be
 - `total_tokens` (int): Total tokens consumed (input + output + cached)
 - `duration_seconds` (float): Total execution time in seconds
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/correlation.py:19-134`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/correlation.py:19-134`
 
 **Data Requirements**:
 

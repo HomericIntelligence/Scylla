@@ -28,7 +28,7 @@ Figure 25 visualizes Implementation Rate (Impl-Rate) across testing tiers throug
 - `impl_rate` (float): Implementation Rate [0.0, 1.0]
 - `subtest` (str, optional): Subtest identifier for counting n per tier
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/impl_rate_analysis.py:25-153`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/impl_rate_analysis.py:25-153`
 
 **Data Requirements**:
 

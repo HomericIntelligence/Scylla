@@ -288,7 +288,7 @@ Hover interactions display:
 
 ## Code Reference
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/cost_analysis.py`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/cost_analysis.py`
 
 **Function**: `fig22_cumulative_cost(runs_df: pd.DataFrame, output_dir: Path, render: bool = True) -> None`
 

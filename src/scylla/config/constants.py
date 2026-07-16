@@ -1,4 +1,4 @@
-"""Shared constants for ProjectScylla configuration.
+"""Shared constants for Scylla configuration.
 
 This module is the single source of truth for default model IDs.
 Import from here rather than hardcoding model strings at call sites.

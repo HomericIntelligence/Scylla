@@ -1,4 +1,4 @@
-"""NATS event routing and handler registration for ProjectScylla.
+"""NATS event routing and handler registration for Scylla.
 
 Provides the EventRouter that dispatches NATSEvent messages to verb-specific
 handler callbacks. Default stub handlers log task lifecycle events.

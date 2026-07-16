@@ -1,1 +1,1 @@
-"""CLI module for ProjectScylla."""
+"""CLI module for Scylla."""

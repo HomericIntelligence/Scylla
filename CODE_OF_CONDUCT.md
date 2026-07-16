@@ -49,7 +49,7 @@ online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported privately to the
 community leaders responsible for enforcement by emailing [research@villmow.us](mailto:research@villmow.us)
-with subject line `[CONDUCT] ProjectScylla - Brief description`. Do **not** use public GitHub Issues for
+with subject line `[CONDUCT] Scylla - Brief description`. Do **not** use public GitHub Issues for
 conduct reports — they are world-readable and contradict the privacy obligation below. All complaints
 will be reviewed and investigated promptly and fairly.
 

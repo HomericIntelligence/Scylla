@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Configuration linting tool for ProjectScylla.
+"""Configuration linting tool for Scylla.
 
 This script validates YAML configuration files for:
 - Proper formatting (2-space indent)

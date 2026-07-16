@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-27
 **Status**: Accepted
-**Issue**: [#1114](https://github.com/HomericIntelligence/ProjectScylla/issues/1114)
+**Issue**: [#1114](https://github.com/HomericIntelligence/Scylla/issues/1114)
 
 ## Context
 
@@ -76,7 +76,7 @@ to local development environments.
   run: |
     docker run --rm \
       -e ANTHROPIC_API_KEY \
-      projectscylla:test \
+      scylla:test \
       pytest tests/docker/ -v
 ```
 

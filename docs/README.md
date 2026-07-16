@@ -1,10 +1,10 @@
-# ProjectScylla Documentation
+# Scylla Documentation
 
-This directory contains the research methodology, design documentation, and supporting materials for ProjectScylla.
+This directory contains the research methodology, design documentation, and supporting materials for Scylla.
 
 ## Canonical Research Documentation
 
-**[research.md](research.md)** is the authoritative research methodology document for ProjectScylla. It defines:
+**[research.md](research.md)** is the authoritative research methodology document for Scylla. It defines:
 
 - Testing tiers and ablation framework
 - Core metrics (Quality, Economic, Process)

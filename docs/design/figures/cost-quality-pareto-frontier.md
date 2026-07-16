@@ -276,7 +276,7 @@ The Pareto frontier reveals several key insights:
 
 **Primary Function**: `fig08_cost_quality_pareto`
 
-**Location**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/cost_analysis.py:60-207`
+**Location**: `/home/mvillmow/Scylla/scylla/analysis/figures/cost_analysis.py:60-207`
 
 **Function Signature**:
 

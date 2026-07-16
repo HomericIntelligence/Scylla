@@ -278,7 +278,7 @@ where `{tier}` is the lowercase, hyphenated tier name (e.g., "t0", "t1").
 
 ## Code Reference
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/judge_analysis.py`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/judge_analysis.py`
 
 **Function**: `fig17_judge_variance_overall()` (lines 173-268)
 

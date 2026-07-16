@@ -123,7 +123,7 @@ Subtests with high variance (bright colors) indicate:
 ### Source Code
 
 - **Function**: `fig16a_success_variance_per_subtest()`
-- **Location**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/variance.py:122-217`
+- **Location**: `/home/mvillmow/Scylla/scylla/analysis/figures/variance.py:122-217`
 - **Output**: `fig16a_success_variance_per_subtest.{png,pdf,json}`
 
 ### Key Parameters

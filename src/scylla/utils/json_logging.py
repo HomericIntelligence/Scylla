@@ -1,4 +1,4 @@
-"""Opt-in structured JSON logging for ProjectScylla.
+"""Opt-in structured JSON logging for Scylla.
 
 This module provides a stdlib-only :class:`JsonFormatter` and a
 :func:`configure_json_logging` helper that installs it on the root logger.

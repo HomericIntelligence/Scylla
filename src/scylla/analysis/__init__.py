@@ -1,4 +1,4 @@
-"""Statistical analysis package for ProjectScylla experiment results.
+"""Statistical analysis package for Scylla experiment results.
 
 This module provides data loading, statistical analysis, figure generation,
 and table generation for evaluating agent performance across ablation study

@@ -4,7 +4,7 @@ This runbook covers how to ship a new release tag and how to revert to
 a prior tag if a release causes regressions.
 
 All procedures assume you are at the repo root with a clean working tree
-and `git remote origin` pointing at `HomericIntelligence/ProjectScylla`.
+and `git remote origin` pointing at `HomericIntelligence/Scylla`.
 
 > **Conventions used below**
 >
@@ -45,7 +45,7 @@ CI validates the tag build automatically. Monitor the
 
 ```bash
 # Confirm the tag is visible and the wheel builds cleanly
-gh release list --repo HomericIntelligence/ProjectScylla | head -5
+gh release list --repo HomericIntelligence/Scylla | head -5
 pixi run python -m build --wheel --no-isolation 2>&1 | tail -5
 ```
 
@@ -74,10 +74,10 @@ pixi run ci-build   # builds scylla-ci:local from ci/Containerfile
 
 # Push the rollback branch and open an expedited PR
 git push -u origin 2001-rollback-to-v0.1.0
-gh pr create --repo HomericIntelligence/ProjectScylla \
+gh pr create --repo HomericIntelligence/Scylla \
   --title "hotfix: rollback to $PREV_TAG" \
   --body "Emergency rollback. Closes #2001"
-gh pr merge --auto --rebase --repo HomericIntelligence/ProjectScylla
+gh pr merge --auto --rebase --repo HomericIntelligence/Scylla
 ```
 
 ### What we do NOT do

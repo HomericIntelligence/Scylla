@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/mvillmow/ProjectScylla/schemas/test.schema.json",
-  "title": "ProjectScylla Test Case Schema",
+  "$id": "https://github.com/mvillmow/Scylla/schemas/test.schema.json",
+  "title": "Scylla Test Case Schema",
   "description": "Schema for test.yaml files that define test cases for AI agent evaluation",
   "type": "object",
   "required": ["id", "name", "language", "source", "task", "validation"],

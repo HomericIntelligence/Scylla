@@ -1,6 +1,6 @@
 # Release Process
 
-This document describes how to cut a ProjectScylla release and the one-time
+This document describes how to cut a Scylla release and the one-time
 setup required to enable PyPI publishing via Trusted Publishing (OIDC).
 
 ## Release workflow overview
@@ -59,7 +59,7 @@ Trusted Publishing before the first upload.
    |-------|-------|
    | PyPI project name | `scylla` |
    | Owner | `HomericIntelligence` |
-   | Repository name | `ProjectScylla` |
+   | Repository name | `Scylla` |
    | Workflow name | `release.yml` |
    | Environment name | `pypi` |
 

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/mvillmow/ProjectScylla/schemas/tier.schema.json",
-  "title": "ProjectScylla Tier Configuration Schema",
+  "$id": "https://github.com/mvillmow/Scylla/schemas/tier.schema.json",
+  "title": "Scylla Tier Configuration Schema",
   "description": "Schema for config/tiers/*.yaml files that define testing tier configurations",
   "type": "object",
   "required": ["tier", "name"],

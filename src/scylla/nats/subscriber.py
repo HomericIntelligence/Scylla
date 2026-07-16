@@ -1,4 +1,4 @@
-"""NATS JetStream subscriber thread for ProjectScylla.
+"""NATS JetStream subscriber thread for Scylla.
 
 Provides NATSSubscriberThread, a daemon thread that connects to NATS,
 subscribes to JetStream subjects via a durable consumer, and dispatches

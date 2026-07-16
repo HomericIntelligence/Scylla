@@ -1,4 +1,4 @@
-"""Drift-detection tests for ProjectScylla's ecosystem role description.
+"""Drift-detection tests for Scylla's ecosystem role description.
 
 Ensures that documentation does not reintroduce stale claims about chaos
 engineering, failure injection, or NATS/ProjectHermes integration that do
@@ -17,7 +17,7 @@ import pytest
 
 PROJECT_ROOT = Path(__file__).parents[3]
 
-# Documentation files that describe ProjectScylla's role
+# Documentation files that describe Scylla's role
 DOC_FILES = [
     PROJECT_ROOT / "README.md",
     PROJECT_ROOT / "CLAUDE.md",

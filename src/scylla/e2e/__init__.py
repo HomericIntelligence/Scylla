@@ -1,4 +1,4 @@
-"""E2E testing framework for ProjectScylla.
+"""E2E testing framework for Scylla.
 
 This module provides a progressive optimization framework for evaluating
 AI agent capabilities across tiers T0-T6. Each tier can have multiple

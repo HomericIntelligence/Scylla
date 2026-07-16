@@ -55,7 +55,7 @@ body:
       placeholder: |
         - OS: [e.g., Ubuntu 22.04]
         - Python version: [e.g., 3.10.12]
-        - ProjectScylla version/commit: [e.g., v0.1.0 or commit abc123]
+        - Scylla version/commit: [e.g., v0.1.0 or commit abc123]
       render: markdown
     validations:
       required: false

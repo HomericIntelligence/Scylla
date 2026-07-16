@@ -1,6 +1,6 @@
 # Tracing (OpenTelemetry scaffold)
 
-ProjectScylla ships an **opt-in** OpenTelemetry tracing scaffold alongside the
+Scylla ships an **opt-in** OpenTelemetry tracing scaffold alongside the
 opt-in JSON logging foundation (PR #1921). This document describes the
 scaffold, what is — and is not — wired up, and how operators activate it.
 
@@ -32,7 +32,7 @@ SCYLLA_OTEL_EXPORTER=console pixi run scylla run 001-justfile-to-makefile --tier
 
 ## Required packages (operators install these)
 
-OpenTelemetry is **not** a hard dependency of ProjectScylla. Operators who
+OpenTelemetry is **not** a hard dependency of Scylla. Operators who
 opt in must install the packages themselves:
 
 ```bash
@@ -169,7 +169,7 @@ single-host shared environments.
 
 ### `docker-compose.observability.yml`
 
-Save this on the host running ProjectScylla (do **not** check it into the
+Save this on the host running Scylla (do **not** check it into the
 repo — it is operator-side configuration):
 
 ```yaml

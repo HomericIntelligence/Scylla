@@ -27,7 +27,7 @@ Figure 12 visualizes consistency scores across testing tiers through a line char
 - `subtest` (str): Specific test within tier
 - `score` (float): Individual run score [0.0, 1.0]
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/model_comparison.py:177-301`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/model_comparison.py:177-301`
 
 **Data Requirements**:
 
@@ -319,11 +319,11 @@ CI = Bootstrap_BCa(consistency_per_subtest, confidence=0.95, n=10000)
 
 ### Source Files
 
-**Primary Implementation**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/model_comparison.py:177-301`
+**Primary Implementation**: `/home/mvillmow/Scylla/scylla/analysis/figures/model_comparison.py:177-301`
 
-**Consistency Calculation**: `/home/mvillmow/ProjectScylla/scylla/analysis/stats.py:377-394`
+**Consistency Calculation**: `/home/mvillmow/Scylla/scylla/analysis/stats.py:377-394`
 
-**Bootstrap CI**: `/home/mvillmow/ProjectScylla/scylla/analysis/stats.py:47-120`
+**Bootstrap CI**: `/home/mvillmow/Scylla/scylla/analysis/stats.py:47-120`
 
 ### Function Signature
 

@@ -1,4 +1,4 @@
-"""Configuration loader for ProjectScylla.
+"""Configuration loader for Scylla.
 
 This module provides the ConfigLoader class for loading and merging YAML
 configuration files with a three-level priority hierarchy:
@@ -97,7 +97,7 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
 
 
 class ConfigLoader:
-    """Load and merge configuration files for ProjectScylla.
+    """Load and merge configuration files for Scylla.
 
     Supports a three-level priority hierarchy:
         1. config/defaults.yaml (REQUIRED - base configuration)

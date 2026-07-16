@@ -26,7 +26,7 @@ Q-Q (Quantile-Quantile) plots visualize the normality of score distributions per
 - `tier` (str): Testing tier (T0-T6)
 - `score` (float): Consensus score [0.0, 1.0]
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/diagnostics.py:20-159`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/diagnostics.py:20-159`
 
 **Data Requirements**:
 

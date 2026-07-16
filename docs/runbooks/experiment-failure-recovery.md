@@ -1,7 +1,7 @@
 # Experiment Failure Recovery Runbook
 
 This runbook covers recovery procedures for the four most common ways a
-ProjectScylla E2E experiment can fail or get stuck mid-run:
+Scylla E2E experiment can fail or get stuck mid-run:
 
 1. [Checkpoint corruption](#1-checkpoint-corruption)
 2. [Tier / run state needs reset](#2-tier--run-state-reset)

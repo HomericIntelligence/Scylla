@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/mvillmow/ProjectScylla/schemas/defaults.schema.json",
-  "title": "ProjectScylla Defaults Schema",
+  "$id": "https://github.com/mvillmow/Scylla/schemas/defaults.schema.json",
+  "title": "Scylla Defaults Schema",
   "description": "Schema for config/defaults.yaml — global evaluation framework defaults",
   "type": "object",
   "additionalProperties": false,

@@ -2,12 +2,12 @@
 
 **Date**: 2026-05-06
 **Status**: Accepted
-**Issues**: [#1870](https://github.com/HomericIntelligence/ProjectScylla/issues/1870),
-[#1882](https://github.com/HomericIntelligence/ProjectScylla/issues/1882)
+**Issues**: [#1870](https://github.com/HomericIntelligence/Scylla/issues/1870),
+[#1882](https://github.com/HomericIntelligence/Scylla/issues/1882)
 
 ## Context
 
-ProjectScylla calls external APIs (Anthropic for agents, Anthropic again for
+Scylla calls external APIs (Anthropic for agents, Anthropic again for
 LLM judges, occasionally GitHub for issue and PR operations). Each of these
 endpoints can fail transiently, rate-limit aggressively, or stall for minutes.
 Long ablation runs amplify the cost of unprotected retries: a single broken
@@ -27,7 +27,7 @@ Both pointed at the same upstream symbols in
 `hephaestus.resilience.circuit_breaker`. The duplicate import surface was
 flagged in audit issue #1870 ("automation/ package contains only a re-export
 shim") under the strict-audit epic #1867. PR
-[#1914](https://github.com/HomericIntelligence/ProjectScylla/pull/1914)
+[#1914](https://github.com/HomericIntelligence/Scylla/pull/1914)
 removed the `scylla.automation` shim, leaving exactly one in-repo import
 path plus the canonical upstream module.
 
@@ -80,7 +80,7 @@ The `scylla.automation` package no longer exists. Any future import of
   larger than the cost of keeping it (touches every call site), so it
   stays. New code should prefer `from hephaestus.resilience.circuit_breaker
   import …`.
-- ProjectScylla now has a hard runtime dependency on a specific
+- Scylla now has a hard runtime dependency on a specific
   hephaestus version range (`homericintelligence-hephaestus>=0.7.0,<1`,
   pinned in `pyproject.toml` per issue #1885). Bumping this range
   requires testing the consumer here.
@@ -91,8 +91,8 @@ The `scylla.automation` package no longer exists. Any future import of
   — current public re-export, lines 6–12.
 - [`src/scylla/core/circuit_breaker.py`](../../../src/scylla/core/circuit_breaker.py)
   — module-level re-export.
-- PR [#1914](https://github.com/HomericIntelligence/ProjectScylla/pull/1914)
+- PR [#1914](https://github.com/HomericIntelligence/Scylla/pull/1914)
   — removed the duplicate `scylla.automation` shim.
-- Audit issues: [#1870](https://github.com/HomericIntelligence/ProjectScylla/issues/1870),
-  [#1867](https://github.com/HomericIntelligence/ProjectScylla/issues/1867).
+- Audit issues: [#1870](https://github.com/HomericIntelligence/Scylla/issues/1870),
+  [#1867](https://github.com/HomericIntelligence/Scylla/issues/1867).
 - Upstream: `hephaestus.resilience.circuit_breaker` in ProjectHephaestus.

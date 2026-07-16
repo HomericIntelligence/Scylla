@@ -2,7 +2,7 @@
 
 > Version 1.1 | Last Updated: 2026-01-02
 
-This document defines the YAML schema for `rubric.yaml` files used in ProjectScylla's
+This document defines the YAML schema for `rubric.yaml` files used in Scylla's
 LLM-as-Judge evaluation system. These files specify the requirements and scoring
 methodology for grading AI agent outputs.
 
@@ -274,7 +274,7 @@ grading:
 Letter grade thresholds. If omitted, only pass/fail is reported.
 
 > **Centralized Definition**: See [grading-scale.md](/docs/design/grading-scale.md) for the
-> standard industry-aligned grade scale used across all ProjectScylla rubrics.
+> standard industry-aligned grade scale used across all Scylla rubrics.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|

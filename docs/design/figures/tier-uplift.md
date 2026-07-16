@@ -199,7 +199,7 @@ uplift_pct = (uplift / pass_rate_T0_Subtest0) × 100
 
 ## Source Reference
 
-**Implementation:** `/home/mvillmow/ProjectScylla/scylla/analysis/figures/model_comparison.py:27-175`
+**Implementation:** `/home/mvillmow/Scylla/scylla/analysis/figures/model_comparison.py:27-175`
 
 **Function:** `fig11_tier_uplift(runs_df: pd.DataFrame, output_dir: Path, render: bool = True)`
 

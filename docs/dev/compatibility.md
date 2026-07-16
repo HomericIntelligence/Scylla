@@ -1,11 +1,11 @@
 # Backwards-Compatibility and Migration Policy
 
-This document defines ProjectScylla's SemVer interpretation, deprecation window, and curated public-API
+This document defines Scylla's SemVer interpretation, deprecation window, and curated public-API
 surface. All contributors and consumers of the `scylla` package must follow these rules.
 
 ## Semantic Versioning
 
-ProjectScylla follows [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH`.
+Scylla follows [Semantic Versioning 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH`.
 
 ### What triggers each version component
 
@@ -69,7 +69,7 @@ changes, deprecations, and removals are recorded exclusively in:
 - GitHub release notes, auto-generated from conventional commits via
   `gh release create vX.Y.Z --generate-notes`
 
-Consumers are encouraged to watch [GitHub Releases](https://github.com/HomericIntelligence/ProjectScylla/releases)
+Consumers are encouraged to watch [GitHub Releases](https://github.com/HomericIntelligence/Scylla/releases)
 for migration guidance.
 
 ## Public API Surface
@@ -121,5 +121,5 @@ To receive migration alerts automatically, enable **GitHub Release notifications
 repository or subscribe to the release RSS feed:
 
 ```
-https://github.com/HomericIntelligence/ProjectScylla/releases.atom
+https://github.com/HomericIntelligence/Scylla/releases.atom
 ```
