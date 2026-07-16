@@ -1,7 +1,6 @@
 {
   "enabledPlugins": {
-    "plan-export@cc-marketplace": true,
-    "hephaestus@ProjectHephaestus": true
+    "plan-export@cc-marketplace": true
   },
   "alwaysThinkingEnabled": false
 }
