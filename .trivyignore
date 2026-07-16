@@ -6,6 +6,7 @@
 # baked into the pre-commit cache (/root/.cache/pre-commit/ and /home/ci/.cache/).
 # Not runtime code; not reachable from untrusted input in CI. Unfixable without bumping
 # the markdownlint-cli2 pre-commit hook version (which is pinned for reproducibility).
+# Expires: 2026-10-14 | Reviewer: mvillmow | Category: ci-image-tooling (markdownlint picomatch)
 CVE-2026-33671
 
 # CVE-2026-12151: undici WebSocket client DoS (unbounded memory growth from malicious
@@ -16,6 +17,7 @@ CVE-2026-33671
 # time, not to a value we control via the pre-commit hook rev. The hook only lints trusted
 # repo Markdown/CommonMark content in CI; it never opens outbound WebSocket connections or
 # processes untrusted network input, so the vulnerable code path is not reachable.
+# Expires: 2026-10-14 | Reviewer: mvillmow | Category: ci-image-tooling (nodeenv undici)
 CVE-2026-12151
 
 # golang.org/x/crypto ssh/agent/knownhosts CVEs below: all are compiled into the
@@ -27,6 +29,9 @@ CVE-2026-12151
 # repo content only; it never speaks the SSH protocol, never connects to an SSH
 # agent, and never parses SSH certificates/known_hosts from untrusted input in
 # CI, so none of the vulnerable code paths are reachable from our usage.
+# Expires: 2026-10-14 | Reviewer: mvillmow | Category: ci-image-tooling (gitleaks x/crypto,
+# applies to every CVE line in this block; re-check for a gitleaks release vendoring
+# x/crypto >=0.43.0 at expiry)
 # CVE-2025-47913 (GO-2025-4116): ssh/agent panic on unexpected SSH_AGENT_SUCCESS
 CVE-2025-47913
 # CVE-2026-39828: ssh security issue (server-side handling)

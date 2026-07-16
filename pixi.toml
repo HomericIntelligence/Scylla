@@ -32,6 +32,9 @@ types-jsonschema = ">=4.26.0.20260202,<5"
 
 [pypi-dependencies]
 scylla = { path = ".", editable = true }
+# Build backend importable in-env so tests/unit/config/test_wheel_contents.py
+# (empty-wheel regression guard) can build real artifacts.
+hatchling = ">=1.21,<2"
 homericintelligence-hephaestus = ">=0.7.0,<1"
 matplotlib = ">=3.10.9,<4"
 numpy = ">=1.24,<3"
