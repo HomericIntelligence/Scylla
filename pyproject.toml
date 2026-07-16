@@ -67,18 +67,20 @@ Issues = "https://github.com/HomericIntelligence/ProjectScylla/issues"
 [project.scripts]
 scylla = "scylla.cli.main:cli"
 
-[tool.hatch.build]
-sources = ["src"]
-
 [tool.hatch.build.targets.wheel]
 # packages = ["src/scylla"] is required so the CI Containerfile's editable-install
 # layer (ci/Containerfile) — which COPYs only src/scylla/analysis/schemas/ and
 # src/scylla/py.typed before `pixi install` — gives Hatchling enough info to ship
 # the wheel; auto-discovery fails there since the rest of src/scylla/ isn't
-# present yet. This does NOT double-nest under site-packages/src/scylla/ because
-# `sources = ["src"]` above strips the src/ prefix regardless of whether
-# `packages` is explicit or auto-discovered (verified: wheel ships scylla/... at
-# top level in both the partial-copy CI layer and a normal full-tree build).
+# present yet. `packages` implies the src/ prefix strip for the wheel, so the
+# module lands at site-packages/scylla/.
+#
+# IMPORTANT: do NOT add a global `[tool.hatch.build] sources = ["src"]` — that
+# also remaps the *sdist* contents to scylla/ (dropping the src/ prefix), and
+# `python -m build` builds the wheel FROM the sdist, where `packages =
+# ["src/scylla"]` then matches nothing and ships an empty wheel (only
+# dist-info). Verified: with this config, both `pip wheel .` (tree build) and
+# `python -m build` (sdist -> wheel) ship scylla/... at the wheel top level.
 packages = ["src/scylla"]
 
 [tool.hatch.build.targets.sdist]
