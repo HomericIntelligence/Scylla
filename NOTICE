@@ -1,5 +1,5 @@
-ProjectScylla
-Copyright (c) HomericIntelligence and ProjectScylla contributors
+Scylla
+Copyright (c) HomericIntelligence and Scylla contributors
 
 This product is licensed under the BSD 3-Clause License (see LICENSE).
 
@@ -89,7 +89,7 @@ Python runtime dependencies (sdist/wheel and Docker image)
 ================================================================================
 
 The following Python packages are installed as runtime dependencies when the
-ProjectScylla package is installed (via pip/pixi) or inside the Docker image.
+Scylla package is installed (via pip/pixi) or inside the Docker image.
 They are not modified or redistributed in source form, but are listed here
 for license-compliance transparency.
 
@@ -130,7 +130,7 @@ Copyright (c) 2006-2016 Kirill Simonov
 Notes
 ================================================================================
 
-This NOTICE file is provided for transparency. ProjectScylla itself is BSD
+This NOTICE file is provided for transparency. Scylla itself is BSD
 3-Clause licensed (see LICENSE). The npm packages listed above are bundled only
 within the published Docker image, not in the Python distribution, and are
 listed here to document attribution requirements for image distribution.

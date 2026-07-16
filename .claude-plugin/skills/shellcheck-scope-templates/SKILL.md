@@ -51,7 +51,7 @@ Remove the suppression directives and replace with a comment explaining the scop
 
 ```bash
 cat > .shellcheckrc << 'EOF'
-# ShellCheck configuration for ProjectScylla
+# ShellCheck configuration for Scylla
 #
 # Template-specific suppressions (SC2034, SC2154, SC1036, SC1088) are scoped to:
 #   scylla/e2e/templates/.shellcheckrc

@@ -60,9 +60,9 @@ analysis = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/HomericIntelligence/ProjectScylla"
-Repository = "https://github.com/HomericIntelligence/ProjectScylla"
-Issues = "https://github.com/HomericIntelligence/ProjectScylla/issues"
+Homepage = "https://github.com/HomericIntelligence/Scylla"
+Repository = "https://github.com/HomericIntelligence/Scylla"
+Issues = "https://github.com/HomericIntelligence/Scylla/issues"
 
 [project.scripts]
 scylla = "scylla.cli.main:cli"

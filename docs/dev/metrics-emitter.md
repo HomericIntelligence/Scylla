@@ -1,7 +1,7 @@
 # Metric Emitter Scaffold
 
 This document describes the `scylla.metrics.emitter` module, a thin
-abstraction that lets an operator forward ProjectScylla experiment metrics
+abstraction that lets an operator forward Scylla experiment metrics
 (pass rates, Cost-of-Pass, latency, etc.) into a queryable time-series
 database (TSDB) such as Prometheus or VictoriaMetrics.
 
@@ -60,7 +60,7 @@ the [Prometheus exposition format](https://prometheus.io/docs/instrumenting/expo
 
 ## Why textfile, not push-gateway or in-process `/metrics`?
 
-ProjectScylla experiments are short-lived batch jobs, not long-running
+Scylla experiments are short-lived batch jobs, not long-running
 servers, so the typical "expose `/metrics` and let Prometheus scrape it"
 pattern does not fit:
 

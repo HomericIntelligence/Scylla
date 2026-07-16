@@ -73,10 +73,10 @@ Trigger this skill when:
 - **Tests required**: None — documentation-only change; pre-commit markdown lint covers it
 - **CI checks**: Markdown Lint, Trim Trailing Whitespace, Fix End of Files — all passed
 - **Time to complete**: < 5 minutes
-- **PR**: <https://github.com/HomericIntelligence/ProjectScylla/pull/810>
+- **PR**: <https://github.com/HomericIntelligence/Scylla/pull/810>
 
 ## Notes
 
-- The worktree's CLAUDE.md and the root ProjectScylla CLAUDE.md are separate files. The root may also need updating — check both when fixing project status.
+- The worktree's CLAUDE.md and the root Scylla CLAUDE.md are separate files. The root may also need updating — check both when fixing project status.
 - CLAUDE.md in the worktree already had the correct status after a prior commit (`ff52f07`) — the worktree CLAUDE.md was ahead of the root one. This is normal in worktrees that branch from a different base.
 - Always read the file before editing — the `Edit` tool will reject changes on unread files.

@@ -1,11 +1,11 @@
-"""Opt-in OpenTelemetry tracing scaffold for ProjectScylla.
+"""Opt-in OpenTelemetry tracing scaffold for Scylla.
 
 This module mirrors the shape of :mod:`scylla.utils.json_logging` (PR #1921):
 a small, dependency-free shim that turns into a working tracer only when the
 operator explicitly opts in via the ``SCYLLA_OTEL_EXPORTER`` environment
 variable. Default behaviour of the application is unchanged.
 
-The OpenTelemetry SDK is **not** a hard dependency of ProjectScylla. Operators
+The OpenTelemetry SDK is **not** a hard dependency of Scylla. Operators
 who want real spans must install the packages themselves::
 
     pip install opentelemetry-api opentelemetry-sdk

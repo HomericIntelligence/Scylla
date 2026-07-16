@@ -2,7 +2,7 @@
 
 ## Default Configuration
 
-ProjectScylla has thinking mode **DISABLED BY DEFAULT** to optimize for efficiency and cost control.
+Scylla has thinking mode **DISABLED BY DEFAULT** to optimize for efficiency and cost control.
 
 This is configured in `.claude/settings.json`:
 
@@ -22,7 +22,7 @@ Per the CLAUDE.md guidelines, thinking mode should only be used for:
 - Debugging complex evaluation failures
 - Statistical analysis and interpretation
 
-Most tasks in ProjectScylla (metric calculations, test generation, data collection, configuration updates) do NOT require extended thinking and are more efficient without it.
+Most tasks in Scylla (metric calculations, test generation, data collection, configuration updates) do NOT require extended thinking and are more efficient without it.
 
 ## How to Enable Thinking Mode
 

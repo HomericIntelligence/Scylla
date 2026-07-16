@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared utilities and constants for ProjectScylla scripts.
+"""Shared utilities and constants for Scylla scripts.
 
 This module provides common functionality used across multiple scripts to avoid duplication.
 

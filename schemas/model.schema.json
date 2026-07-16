@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/mvillmow/ProjectScylla/schemas/model.schema.json",
-  "title": "ProjectScylla Model Configuration Schema",
+  "$id": "https://github.com/mvillmow/Scylla/schemas/model.schema.json",
+  "title": "Scylla Model Configuration Schema",
   "description": "Schema for config/models/*.yaml files that define model-level settings",
   "type": "object",
   "required": ["model_id"],

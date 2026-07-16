@@ -1,12 +1,12 @@
-# ProjectScylla Architecture
+# Scylla Architecture
 
-This document provides comprehensive architecture documentation for the ProjectScylla evaluation framework. It describes the three-phase execution model, component relationships, data flow, and key design decisions.
+This document provides comprehensive architecture documentation for the Scylla evaluation framework. It describes the three-phase execution model, component relationships, data flow, and key design decisions.
 
 ---
 
 ## 1. Overview
 
-ProjectScylla is an AI agent testing and optimization framework designed to measure, evaluate, and improve the performance and cost-efficiency of agentic AI workflows. Named after the mythic trial from Homer's Odyssey, Scylla represents the challenge of navigating trade-offs between capability gains and operational costs.
+Scylla is an AI agent testing and optimization framework designed to measure, evaluate, and improve the performance and cost-efficiency of agentic AI workflows. Named after the mythic trial from Homer's Odyssey, Scylla represents the challenge of navigating trade-offs between capability gains and operational costs.
 
 ### Core Purpose
 
@@ -16,7 +16,7 @@ ProjectScylla is an AI agent testing and optimization framework designed to meas
 
 ### Ecosystem Context
 
-ProjectScylla is part of a 12-repository ecosystem:
+Scylla is part of a 12-repository ecosystem:
 
 | Repository | Role |
 |------------|------|
@@ -30,7 +30,7 @@ ProjectScylla is part of a 12-repository ecosystem:
 | **ProjectMnemosyne** | Skills marketplace — team knowledge sharing |
 | **ProjectOdyssey** | Training and capability development for agents |
 | **ProjectProteus** | CI/CD pipeline infrastructure |
-| **ProjectScylla** | Testing, measurement, and optimization under constraints (this project) |
+| **Scylla** | Testing, measurement, and optimization under constraints (this project) |
 | **ProjectTelemachy** | Workflow engine |
 
 ### Framework Characteristics
@@ -100,7 +100,7 @@ Each tier runs 9 times per test case for statistical validity:
 
 ```
 +------------------------------------------------------------------------------+
-|                          PROJECTSCYLLA ARCHITECTURE                           |
+|                          SCYLLA ARCHITECTURE                           |
 +------------------------------------------------------------------------------+
 
     +---------------+                                      +------------------+
@@ -573,7 +573,7 @@ All Judgments (across runs/tiers)
 ## 6. Directory Structure
 
 ```
-ProjectScylla/
+Scylla/
     tests/                              # TEST CASES (Pure Data)
         <test-id>/
             test.yaml                   # Test definition

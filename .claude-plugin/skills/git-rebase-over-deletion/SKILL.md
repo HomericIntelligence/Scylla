@@ -223,7 +223,7 @@ Pre-commit hooks: all passed (ruff-format, ruff-check, mypy, etc.)
 
 ## References
 
-- PR: <https://github.com/HomericIntelligence/ProjectScylla/pull/882>
+- PR: <https://github.com/HomericIntelligence/Scylla/pull/882>
 - Breaking commit: `adbd49d` ("Remove deprecated BaseRunMetrics dataclass")
 - Fix commit (previously reverted): `2784fae`
 - Related skill: `pydantic-type-consolidation-metrics-judgment`

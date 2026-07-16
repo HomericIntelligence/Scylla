@@ -26,7 +26,7 @@ Effect Size Forest Plot visualizes Cliff's delta effect sizes with 95% confidenc
 - `agent_model` (str): Agent model identifier
 - `passed` (bool): Binary pass/fail outcome
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/effect_size.py:18-150`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/effect_size.py:18-150`
 
 **Data Requirements**:
 

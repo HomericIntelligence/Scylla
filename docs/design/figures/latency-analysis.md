@@ -224,7 +224,7 @@ Based on observed patterns:
 
 ## Code Reference
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/subtest_detail.py`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/subtest_detail.py`
 
 **Function**: `fig13_latency(runs_df: pd.DataFrame, output_dir: Path, render: bool = True)`
 

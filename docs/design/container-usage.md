@@ -1,10 +1,10 @@
 # Container Usage Guide
 
-This guide explains how to run ProjectScylla experiments using Docker containers.
+This guide explains how to run Scylla experiments using Docker containers.
 
 ## Overview
 
-ProjectScylla provides two scripts for running experiments in containers:
+Scylla provides two scripts for running experiments in containers:
 
 1. **`run_experiment_in_container.sh`** - Run a single experiment (container auto-exits)
 2. **`launch_container_shell.sh`** - Start an interactive shell (run multiple experiments)
@@ -78,7 +78,7 @@ exit
 
 Both scripts mount:
 
-1. **Project Directory**: `/home/mvillmow/ProjectScylla` → `/workspace` (read-write)
+1. **Project Directory**: `/home/mvillmow/Scylla` → `/workspace` (read-write)
 2. **Credentials**: `~/.claude/.credentials.json` → `/tmp/host-creds/.credentials.json` (read-only)
 
 Results are written to the mounted `results/` directory and persist on the host.

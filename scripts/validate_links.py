@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Documentation link validation script for ProjectScylla.
+"""Documentation link validation script for Scylla.
 
 Validates that all markdown links point to existing files or valid URLs.
 

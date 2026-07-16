@@ -8,14 +8,14 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in ProjectScylla, please report it responsibly.
+If you discover a security vulnerability in Scylla, please report it responsibly.
 
 **Do NOT open a public GitHub issue for security vulnerabilities.**
 
 ### How to Report
 
 1. **Email**: Send details to [research@villmow.us](mailto:research@villmow.us)
-2. **Subject line**: `[SECURITY] ProjectScylla - Brief description`
+2. **Subject line**: `[SECURITY] Scylla - Brief description`
 3. **Include**:
    - Description of the vulnerability
    - Steps to reproduce
@@ -46,7 +46,7 @@ The following are in scope for security reports:
 
 ## Data Sent to Third Parties
 
-When ProjectScylla runs evaluations it sends data to the **Anthropic API**:
+When Scylla runs evaluations it sends data to the **Anthropic API**:
 
 - **Prompts**: system prompts, task descriptions, and any CLAUDE.md content included in the run
 - **Repository content**: file snippets and code passed to the agent as context during test execution
@@ -66,7 +66,7 @@ For guidance on what experiment outputs are stored locally and how long to retai
 
 ## Security Practices
 
-ProjectScylla follows these security practices:
+Scylla follows these security practices:
 
 - **No hardcoded secrets**: API keys read from environment variables
 - **No shell=True**: All subprocess calls use list-based arguments

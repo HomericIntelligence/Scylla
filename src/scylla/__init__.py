@@ -1,4 +1,4 @@
-"""ProjectScylla - AI agent testing and optimization framework.
+"""Scylla - AI agent testing and optimization framework.
 
 This package provides tools for measuring, evaluating, and improving
 the performance and cost-efficiency of agentic AI workflows.

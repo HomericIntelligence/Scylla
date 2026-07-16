@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Migrate skills from ProjectScylla flat format to ProjectMnemosyne plugin format.
+"""Migrate skills from Scylla flat format to ProjectMnemosyne plugin format.
 
 This script handles:
 - Format conversion from .claude-plugin/skills/<name>/ to plugins/<category>/<name>/

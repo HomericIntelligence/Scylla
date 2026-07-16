@@ -1,6 +1,6 @@
 # Architectural Decision Records
 
-This directory holds the ProjectScylla ADRs — short, dated records
+This directory holds the Scylla ADRs — short, dated records
 documenting non-trivial architecture and design decisions. Each ADR
 follows the standard `Status / Context / Decision / Consequences /
 References` shape and cites real file paths and line numbers as
@@ -11,7 +11,7 @@ evidence.
 | ADR | Status | Date | Topic |
 |-----|--------|------|-------|
 | [Docker Integration Testing Deferred](docker-testing-deferred.md) | Accepted | 2026-02-27 | Why `tests/docker/` does not exist and the CI workflow validates only Dockerfile/compose syntax. |
-| [Ecosystem Role Reconciliation](ecosystem-role-reconciliation.md) | Accepted | 2026-03-25 | ProjectScylla's role is ablation benchmarking, not chaos testing. |
+| [Ecosystem Role Reconciliation](ecosystem-role-reconciliation.md) | Accepted | 2026-03-25 | Scylla's role is ablation benchmarking, not chaos testing. |
 | [Four-Level State Machine Hierarchy](state-machine-hierarchy.md) | Accepted | 2026-05-06 | Experiment / Tier / Subtest / Run state machines with checkpoint persistence. |
 | [`to_dict()` Serialization Pattern](to-dict-serialization-pattern.md) | Accepted | 2026-05-06 | Persistence boundary for Pydantic models — JSON-mode dump, ephemeral exclusion, legacy injection. |
 | [Circuit-Breaker Consolidation](circuit-breaker-consolidation.md) | Accepted | 2026-05-06 | Single circuit-breaker implementation owned by `hephaestus.resilience` (resolved by PR #1914). |

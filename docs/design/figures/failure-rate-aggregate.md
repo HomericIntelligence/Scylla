@@ -265,7 +265,7 @@ Aggregate failure rates reveal which capability levels pose the most systematic 
 
 ## Code Reference
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/variance.py`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/variance.py`
 
 **Function**: `fig18b_failure_rate_aggregate()`
 

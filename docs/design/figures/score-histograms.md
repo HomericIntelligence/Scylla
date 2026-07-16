@@ -27,7 +27,7 @@ This figure visualizes the distribution of agent scores across testing tiers usi
 - `agent_model` (str): Agent model identifier (e.g., "opus-4.6", "sonnet-3.7")
 - `score` (float): Agent score [0.0, 1.0]
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/diagnostics.py:161-284`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/diagnostics.py:161-284`
 
 **Data Requirements**:
 
@@ -320,7 +320,7 @@ This ensures the KDE curve's peak height matches the histogram's maximum frequen
 
 ## Code Reference
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/diagnostics.py:161-284`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/diagnostics.py:161-284`
 
 **Function Signature**:
 

@@ -27,7 +27,7 @@ This figure visualizes the distribution of Implementation Rate (Impl-Rate) acros
 - `agent_model` (str): Model identifier (e.g., "opus", "sonnet", "haiku")
 - `impl_rate` (float): Implementation Rate [0.0, 1.0]
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/impl_rate_analysis.py:237-340`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/impl_rate_analysis.py:237-340`
 
 **Data Requirements**:
 

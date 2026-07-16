@@ -86,7 +86,7 @@ $$
 
 ### Grading Scale
 
-ProjectScylla uses an industry-aligned grading scale focused on production readiness (see `docs/design/grading-scale.md`):
+Scylla uses an industry-aligned grading scale focused on production readiness (see `docs/design/grading-scale.md`):
 
 | Grade | Threshold | Label | Description |
 |-------|-----------|-------|-------------|
@@ -297,7 +297,7 @@ T6    ███ ██ ·  ·  ·  ·   (very high grades)
 
 ### Function Location
 
-**File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/tier_performance.py`
+**File**: `/home/mvillmow/Scylla/scylla/analysis/figures/tier_performance.py`
 **Function**: `fig05_grade_heatmap(runs_df, output_dir, render=True)`
 **Lines**: 74-150
 

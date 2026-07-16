@@ -1,4 +1,4 @@
-"""Configuration loading system for ProjectScylla.
+"""Configuration loading system for Scylla.
 
 This module provides Pydantic models and a ConfigLoader for parsing YAML
 test configurations, tier definitions, and model settings.

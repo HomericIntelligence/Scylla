@@ -1,5 +1,5 @@
 ============================= test session starts ==============================
-platform linux -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- /home/mvillmow/ProjectScylla/.pixi/envs/default/bin/python3.14
+platform linux -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- /home/mvillmow/Scylla/.pixi/envs/default/bin/python3.14
 cachedir: .pytest_cache
 rootdir: /home/mvillmow/fullruns/test001-dryrun/2026-01-20T06-13-07-test-001/T6/01/run_01/workspace
 plugins: cov-7.0.0

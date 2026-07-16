@@ -187,7 +187,7 @@ High-variance distributions suggest:
 
 ## Code Reference
 
-**Source**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/cost_analysis.py:18-57`
+**Source**: `/home/mvillmow/Scylla/scylla/analysis/figures/cost_analysis.py:18-57`
 
 **Function**: `fig06_cop_by_tier(runs_df: pd.DataFrame, output_dir: Path, render: bool = True)`
 

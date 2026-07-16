@@ -1,4 +1,4 @@
-"""NATS JetStream event subscription for ProjectScylla.
+"""NATS JetStream event subscription for Scylla.
 
 Provides NATS subscriber infrastructure for receiving task events
 from ProjectHermes over the ``hi.tasks.*`` subject hierarchy.

@@ -13,7 +13,7 @@ class TestCliGroup:
         runner = CliRunner()
         result = runner.invoke(cli, ["--help"])
         assert result.exit_code == 0
-        assert "ProjectScylla" in result.output
+        assert "Scylla" in result.output
 
     def test_version(self) -> None:
         """--version prints version and exits 0."""

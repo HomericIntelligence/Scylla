@@ -237,7 +237,7 @@ This figure should be analyzed in conjunction with:
 
 ### Source Location
 
-File: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/tier_performance.py`
+File: `/home/mvillmow/Scylla/scylla/analysis/figures/tier_performance.py`
 
 Function: `fig04_pass_rate_by_tier()` (lines 18-71)
 
@@ -284,7 +284,7 @@ def fig04_pass_rate_by_tier(
 
 ### Configuration Dependencies
 
-File: `/home/mvillmow/ProjectScylla/scylla/analysis/config.yaml`
+File: `/home/mvillmow/Scylla/scylla/analysis/config.yaml`
 
 ```yaml
 figures:
@@ -320,7 +320,7 @@ fig04_pass_rate_by_tier(
 
 Tests for this figure are located in:
 
-- `/home/mvillmow/ProjectScylla/tests/analysis/test_figures.py`
+- `/home/mvillmow/Scylla/tests/analysis/test_figures.py`
 
 Verify figure generation with:
 

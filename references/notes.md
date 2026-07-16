@@ -69,4 +69,4 @@ Fix Mixed Line Endings...................................................Passed
 
 ### PR
 
-<https://github.com/HomericIntelligence/ProjectScylla/pull/810>
+<https://github.com/HomericIntelligence/Scylla/pull/810>

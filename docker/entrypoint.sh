@@ -421,7 +421,7 @@ main() {
             if [[ -t 0 ]]; then
                 echo ""
                 echo "=========================================="
-                echo "ProjectScylla Container Shell"
+                echo "Scylla Container Shell"
                 echo "=========================================="
                 echo "Working Directory: $(pwd)"
                 echo "Python Version: $(python --version 2>&1)"

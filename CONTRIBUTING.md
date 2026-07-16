@@ -1,6 +1,6 @@
-# Contributing to ProjectScylla
+# Contributing to Scylla
 
-Thank you for your interest in contributing to ProjectScylla! This guide will help you get started.
+Thank you for your interest in contributing to Scylla! This guide will help you get started.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ Thank you for your interest in contributing to ProjectScylla! This guide will he
 
 ## Quick Start
 
-**New to ProjectScylla?** See [docs/dev/onboarding.md](docs/dev/onboarding.md) for the
+**New to Scylla?** See [docs/dev/onboarding.md](docs/dev/onboarding.md) for the
 canonical setup guide: prerequisites, `pixi install`, running tests, IDE setup (VS Code /
 Codespaces), and a first-contribution walkthrough.
 
@@ -40,7 +40,7 @@ pixi install && pixi run pytest tests/ -v
 
 ### Installing Dependencies
 
-ProjectScylla uses Pixi for dependency management:
+Scylla uses Pixi for dependency management:
 
 ```bash
 # Pixi automatically manages dependencies from pixi.toml
@@ -172,7 +172,7 @@ How you tested the changes
 
 ## Versioning and Releases
 
-ProjectScylla follows [Semantic Versioning](https://semver.org/) (SemVer).
+Scylla follows [Semantic Versioning](https://semver.org/) (SemVer).
 
 ### Version Declaration Sites
 
@@ -208,7 +208,7 @@ with auto-generated release notes from conventional commits.
 
 ### Versioning & Compatibility
 
-ProjectScylla's backwards-compatibility policy, deprecation window, and curated public-API surface
+Scylla's backwards-compatibility policy, deprecation window, and curated public-API surface
 are documented in [`docs/dev/compatibility.md`](docs/dev/compatibility.md). Key points:
 
 - **MAJOR** bump required for any breaking change to the public API.
@@ -308,7 +308,7 @@ pre-commit run --all-files
 
 ### Coverage Thresholds
 
-ProjectScylla uses a dual-threshold coverage strategy:
+Scylla uses a dual-threshold coverage strategy:
 
 | Threshold | Scope | Where Enforced | Value |
 |-----------|-------|----------------|-------|
@@ -433,7 +433,7 @@ What actually happens
 ## Environment
 - OS: [e.g., Ubuntu 22.04]
 - Python: [e.g., 3.10]
-- ProjectScylla version: [e.g., commit SHA]
+- Scylla version: [e.g., commit SHA]
 
 ## Additional Context
 Any other relevant information
@@ -550,7 +550,7 @@ pixi run pytest tests/ -v --pdb  # Drop into debugger on failure
 ## Project Structure
 
 ```
-ProjectScylla/
+Scylla/
 ├── src/scylla/          # Python source code
 │   ├── analysis/        # Statistical analysis
 │   ├── adapters/        # CLI adapters
@@ -586,4 +586,4 @@ By contributing, you agree that your contributions will be licensed under the BS
 
 ---
 
-**Thank you for contributing to ProjectScylla!** 🚀
+**Thank you for contributing to Scylla!** 🚀

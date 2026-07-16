@@ -94,7 +94,7 @@ Use a loop to remove all worktrees with no pending work:
 for dir in issue-687 issue-722 issue-729 issue-735 issue-744 \
            issue-752 issue-753 issue-754 issue-755 issue-756 \
            issue-757 issue-758 issue-759 issue-775 issue-776; do
-  git worktree remove /home/mvillmow/ProjectScylla/.worktrees/$dir && \
+  git worktree remove /home/mvillmow/Scylla/.worktrees/$dir && \
   echo "✓ Removed $dir"
 done
 ```
@@ -237,7 +237,7 @@ This is **not a failure** — it's normal behavior. Plan for 2 commit attempts.
 ### Execution Details
 
 **Date Executed:** 2026-02-20
-**Environment:** ProjectScylla (main branch, git worktrees enabled)
+**Environment:** Scylla (main branch, git worktrees enabled)
 **Total Operations:** 23 (3 EOF fixes + 15 clean removals + 5 worktree PRs)
 
 ### EOF Fix Results
@@ -275,8 +275,8 @@ issue-757, issue-758, issue-759, issue-775, issue-776
 
 ```bash
 git worktree list
-# /home/mvillmow/ProjectScylla                     [main]
-# /home/mvillmow/ProjectScylla/.worktrees/issue-713  [713-auto-impl]
+# /home/mvillmow/Scylla                     [main]
+# /home/mvillmow/Scylla/.worktrees/issue-713  [713-auto-impl]
 ```
 
 ### Key Parameters
@@ -284,7 +284,7 @@ git worktree list
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
 | Newline bytes | `b'\n'` (0x0a) | Standard POSIX line ending; `end-of-file-fixer` requires this |
-| Worktree path prefix | `.worktrees/` | ProjectScylla convention for auto-generated worktrees |
+| Worktree path prefix | `.worktrees/` | Scylla convention for auto-generated worktrees |
 | Commit mode | No `--no-verify` | Always let pre-commit hooks run; they validate fixes |
 | Merge strategy | `--auto --rebase` | Auto-merge once CI passes; rebase to keep history clean |
 | Python file I/O | `'ab'` mode | Append binary; atomic write; no shell interpretation |
@@ -332,14 +332,14 @@ done
 
 ```bash
 for dir in issue-687 issue-722 issue-729 issue-735 issue-744; do
-  git worktree remove /home/mvillmow/ProjectScylla/.worktrees/$dir && \
+  git worktree remove /home/mvillmow/Scylla/.worktrees/$dir && \
   echo "✓ Removed $dir" || echo "✗ Failed to remove $dir"
 done
 ```
 
 ## References
 
-- **Pre-commit hooks:** ProjectScylla `.pre-commit-config.yaml`
+- **Pre-commit hooks:** Scylla `.pre-commit-config.yaml`
 - **Worktree management:** `git worktree --help`
 - **Markdown linting:** `markdownlint-cli2` (runs in pre-commit)
 - **Related issues:** #783, #764, #826 (EOF fixes), #732, #736, #784, #791 (worktree consolidation)

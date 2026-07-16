@@ -25,7 +25,7 @@ Figure 02 visualizes per-judge scoring variance through histograms showing the d
 - `tier` (str): Testing tier (T0-T6)
 - `judge_score` (float): Individual judge score [0.0, 1.0]
 
-**Source File**: `/home/mvillmow/ProjectScylla/scylla/analysis/figures/judge_analysis.py:18-61`
+**Source File**: `/home/mvillmow/Scylla/scylla/analysis/figures/judge_analysis.py:18-61`
 
 **Data Requirements**:
 
