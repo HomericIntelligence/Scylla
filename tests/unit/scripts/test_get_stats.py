@@ -85,37 +85,38 @@ class TestGetPrsStats:
         assert result["closed"] == 2
 
     def test_returns_zeros_on_gh_failure(self) -> None:
-        """Returns all-zero dict when gh CLI fails."""
+        """Returns all-zero dict when the gh call fails.
+
+        hephaestus 0.9.9 routes get_prs_stats through gh_call (a single batched
+        GraphQL call), so mock that — patching the stale get_stats.subprocess.run
+        would be a no-op and let the real gh_call run.
+        """
         mock_result = MagicMock()
         mock_result.returncode = 1
 
-        with patch("get_stats.subprocess.run", return_value=mock_result):
+        with patch("hephaestus.github.stats.gh_call", return_value=mock_result):
             result = get_prs_stats("2026-01-01", "2026-01-31", None, "owner/repo")
 
         assert result == {"total": 0, "merged": 0, "open": 0, "closed": 0}
 
     def test_no_author_filter_by_default(self) -> None:
-        """Does not add author filter when author is None."""
-        mock_total = MagicMock()
-        mock_total.returncode = 0
-        mock_total.stdout = "0\n"
+        """Does not add author filter when author is None.
 
-        mock_merged = MagicMock()
-        mock_merged.returncode = 0
-        mock_merged.stdout = "0\n"
-
-        mock_open = MagicMock()
-        mock_open.returncode = 0
-        mock_open.stdout = "0\n"
+        0.9.9 issues ONE gh_call whose query params (qTotal/qMerged/qOpen) carry
+        the search query; assert none of those args contains an author filter.
+        """
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "[0, 0, 0]\n"
 
         with patch(
-            "get_stats.subprocess.run",
-            side_effect=[mock_total, mock_merged, mock_open],
-        ) as mock_run:
+            "hephaestus.github.stats.gh_call",
+            return_value=mock_result,
+        ) as mock_call:
             get_prs_stats("2026-01-01", "2026-01-31", None, "owner/repo")
 
-        first_call_args = mock_run.call_args_list[0][0][0]
-        assert not any("author:" in str(a) for a in first_call_args)
+        call_args = mock_call.call_args_list[0][0][0]
+        assert not any("author:" in str(a) for a in call_args)
 
 
 class TestGetCommitsStats:
