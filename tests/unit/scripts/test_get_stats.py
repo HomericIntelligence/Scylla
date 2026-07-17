@@ -60,22 +60,22 @@ class TestGetPrsStats:
     """Tests for get_prs_stats()."""
 
     def test_returns_counts_on_success(self) -> None:
-        """Returns dict with total/merged/open/closed when gh CLI succeeds."""
-        mock_total = MagicMock()
-        mock_total.returncode = 0
-        mock_total.stdout = "20\n"
+        """Returns dict with total/merged/open/closed when gh CLI succeeds.
 
-        mock_merged = MagicMock()
-        mock_merged.returncode = 0
-        mock_merged.stdout = "15\n"
-
-        mock_open = MagicMock()
-        mock_open.returncode = 0
-        mock_open.stdout = "3\n"
+        hephaestus 0.9.9 (#811) batches total/merged/open into a SINGLE
+        ``gh api graphql`` call routed through ``gh_call`` (not three serial
+        ``subprocess.run`` calls), and the ``--jq`` returns a JSON array
+        ``[total, merged, open]`` that the function json-decodes. Mock that
+        single ``gh_call`` (patched where it is looked up, in
+        ``hephaestus.github.stats``) with an array-shaped stdout.
+        """
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "[20, 15, 3]\n"
 
         with patch(
-            "get_stats.subprocess.run",
-            side_effect=[mock_total, mock_merged, mock_open],
+            "hephaestus.github.stats.gh_call",
+            return_value=mock_result,
         ):
             result = get_prs_stats("2026-01-01", "2026-01-31", None, "owner/repo")
 
