@@ -100,6 +100,27 @@ class TestScanFileDetectsViolations:
         findings = scan_file(md, tmp_path)
         assert any(f.rule == "wrong-merge-strategy" for f in findings)
 
+    def test_detects_rebase_merge_strategy(self, tmp_path: Path) -> None:
+        """Should flag gh pr merge that uses --auto --rebase.
+
+        This repo is squash-only (rebase merges disabled per CLAUDE.md), so
+        ``--auto --rebase`` is a wrong-merge-strategy violation, not a clean
+        example. Locks in the corrected scanner behavior.
+        """
+        md = make_md(
+            tmp_path,
+            "bad.md",
+            """\
+            # Doc
+
+            ```bash
+            gh pr merge --auto --rebase
+            ```
+            """,
+        )
+        findings = scan_file(md, tmp_path)
+        assert any(f.rule == "wrong-merge-strategy" for f in findings)
+
     def test_detects_push_to_main(self, tmp_path: Path) -> None:
         """Should flag git push directly to origin main."""
         md = make_md(
@@ -156,8 +177,15 @@ class TestScanFilePassesCleanExamples:
         )
         assert scan_file(md, tmp_path) == []
 
-    def test_passes_rebase_merge_strategy(self, tmp_path: Path) -> None:
-        """Gh pr merge --auto --rebase should produce no findings."""
+    def test_passes_squash_merge_strategy(self, tmp_path: Path) -> None:
+        """Gh pr merge --auto --squash (the mandated idiom) should produce no findings.
+
+        This repo is squash-only (rebase merges disabled per CLAUDE.md); the
+        doc-policy scanner treats ``--auto --squash`` as the compliant
+        auto-merge form. (Was previously an ``--auto --rebase`` "clean" case,
+        which the scanner now correctly flags — see
+        ``test_detects_rebase_merge_strategy``.)
+        """
         md = make_md(
             tmp_path,
             "good.md",
@@ -165,14 +193,14 @@ class TestScanFilePassesCleanExamples:
             # Doc
 
             ```bash
-            gh pr merge --auto --rebase
+            gh pr merge --auto --squash
             ```
             """,
         )
         assert scan_file(md, tmp_path) == []
 
-    def test_passes_rebase_merge_strategy_with_pr_number(self, tmp_path: Path) -> None:
-        """Gh pr merge with PR number and --auto --rebase should produce no findings."""
+    def test_passes_squash_merge_strategy_with_pr_number(self, tmp_path: Path) -> None:
+        """Gh pr merge with PR number and --auto --squash should produce no findings."""
         md = make_md(
             tmp_path,
             "good.md",
@@ -180,7 +208,7 @@ class TestScanFilePassesCleanExamples:
             # Doc
 
             ```bash
-            gh pr merge 42 --auto --rebase
+            gh pr merge 42 --auto --squash
             ```
             """,
         )
