@@ -25,40 +25,45 @@ class TestFindViolations:
         assert find_violations(content) == []
 
     @pytest.mark.parametrize(
-        "bad_line, expected_pattern",
+        "bad_line",
         [
             # Original set
-            ("T3 Tooling tier", r"T3.*Tool"),
-            ("T4 Delegation tier", r"T4.*Deleg"),
-            ("T5 Hierarchy tier", r"T5.*Hier"),
-            ("T2 Skills tier", r"T2.*Skill"),
+            "T3 Tooling tier",
+            "T4 Delegation tier",
+            "T5 Hierarchy tier",
+            "T2 Skills tier",
             # Reverse/symmetric set
-            ("T2 Delegation tier", r"T2.{0,10}Deleg"),
-            ("T3 Hierarchy tier", r"T3.{0,10}Hier"),
-            ("T4 Hybrid tier", r"T4.{0,10}Hybrid"),
-            ("T1 Tooling tier", r"T1.{0,10}Tool"),
-            ("T0 Skills tier", r"T0.{0,10}Skill"),
-            ("T1 Prompts tier", r"T1.{0,10}Prompt"),
-            ("T2 Prompts tier", r"T2.{0,10}Prompt"),
-            ("T3 Skills tier", r"T3.{0,10}Skill"),
-            ("T4 Tooling tier", r"T4.{0,10}Tool"),
-            ("T5 Delegation tier", r"T5.{0,10}Deleg"),
-            ("T6 Hierarchy tier", r"T6.{0,10}Hier"),
-            ("T6 Hybrid tier", r"T6.{0,10}Hybrid"),
-            ("T0 Tooling tier", r"T0.{0,10}Tool"),
-            ("T0 Delegation tier", r"T0.{0,10}Deleg"),
-            ("T5 Skills tier", r"T5.{0,10}Skill"),
-            ("T6 Delegation tier", r"T6.{0,10}Deleg"),
+            "T2 Delegation tier",
+            "T3 Hierarchy tier",
+            "T4 Hybrid tier",
+            "T1 Tooling tier",
+            "T0 Skills tier",
+            "T1 Prompts tier",
+            "T2 Prompts tier",
+            "T3 Skills tier",
+            "T4 Tooling tier",
+            "T5 Delegation tier",
+            "T6 Hierarchy tier",
+            "T6 Hybrid tier",
+            "T0 Tooling tier",
+            "T0 Delegation tier",
+            "T5 Skills tier",
+            "T6 Delegation tier",
         ],
     )
-    def test_detects_each_bad_pattern(self, bad_line: str, expected_pattern: str) -> None:
-        """Each known-bad pattern is detected."""
+    def test_detects_each_bad_pattern(self, bad_line: str) -> None:
+        """Each known-bad pattern is detected.
+
+        Asserts detection *behavior* (exactly one violation on the right line
+        with a non-empty reason) rather than the exact internal regex string,
+        which is a hephaestus implementation detail that changed in 0.9.9
+        (the bad-pattern regexes became stricter/word-bounded).
+        """
         violations = find_violations(bad_line)
         assert len(violations) == 1
-        lineno, line, pattern, reason = violations[0]
+        lineno, line, _pattern, reason = violations[0]
         assert lineno == 1
         assert line == bad_line
-        assert pattern == expected_pattern
         assert reason  # non-empty reason string
 
     def test_returns_line_number(self) -> None:
