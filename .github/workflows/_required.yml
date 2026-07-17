@@ -23,6 +23,10 @@
 name: Required Checks
 
 on:
+  # Merge queues dispatch this event for the synthetic queue commit. Keep the
+  # activity explicit so future merge_group activity types do not run gates.
+  merge_group:
+    types: [checks_requested]
   pull_request:
   push:
     branches: [main]
