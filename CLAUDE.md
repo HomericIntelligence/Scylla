@@ -72,7 +72,7 @@ gh pr create \
   --body "Closes #<issue-number>"
 
 # 5. Enable auto-merge
-gh pr merge --auto --rebase
+gh pr merge --auto --squash
 ```
 
 **Emergency Situations:**
@@ -573,7 +573,7 @@ Additional context
 1. **Enable auto-merge:**
 
    ```bash
-   gh pr merge --auto --rebase
+   gh pr merge --auto --squash
    ```
 
    **Always enable auto-merge** so PRs merge automatically once CI passes.

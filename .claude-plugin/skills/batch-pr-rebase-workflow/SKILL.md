@@ -53,7 +53,7 @@ gh pr list --state open --json number,mergeable,statusCheckRollup \
 
 # Enable auto-merge on all
 for pr in <list>; do
-  gh pr merge $pr --auto --rebase
+  gh pr merge $pr --auto --squash
   sleep 1
 done
 ```
@@ -69,7 +69,7 @@ gh run view <run-id> --log-failed 2>&1 | grep -A5 "Error\|FAILED\|failed\|error"
 pixi install  # regenerates pixi.lock
 git add pixi.lock && git commit -m "fix: update pixi.lock"
 git push --force-with-lease origin <branch>
-gh pr merge <N> --auto --rebase
+gh pr merge <N> --auto --squash
 ```
 
 ### Phase 4: Parallel Rebase with Haiku Sub-Agents
@@ -144,7 +144,7 @@ git push --force-with-lease origin <branch>
 # After all rebases pushed, enable auto-merge on everything MERGEABLE
 gh pr list --state open --json number,mergeable \
   --jq '.[] | select(.mergeable == "MERGEABLE") | .number' | \
-  xargs -I{} sh -c 'gh pr merge {} --auto --rebase; sleep 1'
+  xargs -I{} sh -c 'gh pr merge {} --auto --squash; sleep 1'
 ```
 
 ## Conflict Hotspots
@@ -212,7 +212,7 @@ Process in this order (same agent):
 | Phase | PRs Processed | Method |
 |-------|--------------|--------|
 | Close duplicates | 2 | Direct `gh pr close` |
-| Quick win auto-merge | 6 | `gh pr merge --auto --rebase` |
+| Quick win auto-merge | 6 | `gh pr merge --auto --squash` |
 | CI fix + merge | 1 (PR #804) | Fix invalid TOML, push, auto-merge |
 | Skill branches (Wave 1) | 11 | 1 Sonnet agent |
 | Skill branches (Wave 2) | 11 | 3 parallel Haiku agents |

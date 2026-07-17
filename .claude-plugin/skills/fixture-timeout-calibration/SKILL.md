@@ -135,7 +135,7 @@ git push -u origin <branch>
 ```bash
 gh pr create --title "test(fixtures): calibrate timeout_seconds to observed durations" \
   --body "Closes #<issue>"
-gh pr merge --auto --rebase
+gh pr merge --auto --squash
 ```
 
 ## Failed Attempts

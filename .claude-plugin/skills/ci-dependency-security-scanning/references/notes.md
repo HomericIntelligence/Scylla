@@ -55,5 +55,5 @@ git commit -m "feat(ci): add dependency security scanning via pip-audit and Depe
 # Push and create PR
 git push -u origin 755-auto-impl
 gh pr create --title "..." --body "Closes #755"
-gh pr merge --auto --rebase
+gh pr merge --auto --squash
 ```

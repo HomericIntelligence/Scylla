@@ -141,7 +141,7 @@ git add tests/claude-code/shared/skills/github/gh-implement-issue/SKILL.md \
 git commit -m "fix(skills): Fix preflight_check.sh path resolution in gh-implement-issue skill"
 git push -u origin <branch>
 gh pr create --title "..." --body "Closes #<issue>"
-gh pr merge --auto --rebase <pr-number>
+gh pr merge --auto --squash <pr-number>
 ```
 
 ## Failed Attempts

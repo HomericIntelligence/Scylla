@@ -213,7 +213,7 @@ git add pixi.toml .github/workflows/shell-test.yml tests/shell/
 git commit -m "feat(tests): Add BATS test suite for <script>.sh\n\nCloses #<issue>"
 git push -u origin <branch>
 gh pr create --title "feat(tests): ..." --body "Closes #<issue>"
-gh pr merge --auto --rebase
+gh pr merge --auto --squash
 ```
 
 ## Failed Attempts

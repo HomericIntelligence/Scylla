@@ -94,7 +94,7 @@ git commit -m "feat(scripts): Add doc audit script for policy violation detectio
 Closes #<issue>"
 git push -u origin <branch>
 gh pr create --title "feat(scripts): ..." --body "Closes #<issue>"
-gh pr merge --auto --rebase
+gh pr merge --auto --squash
 ```
 
 ## False Positives

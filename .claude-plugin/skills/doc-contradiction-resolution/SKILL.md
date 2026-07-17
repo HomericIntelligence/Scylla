@@ -83,7 +83,7 @@ git push -u origin <branch>
 gh pr create \
   --title "fix(docs): Resolve PR label contradiction between CLAUDE.md and CONTRIBUTING.md" \
   --body "Closes #<issue>"
-gh pr merge --auto --rebase <pr-number>
+gh pr merge --auto --squash <pr-number>
 ```
 
 ## Failed Attempts
