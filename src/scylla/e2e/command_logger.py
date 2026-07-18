@@ -17,6 +17,23 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+def _is_existing_file(candidate: str) -> bool:
+    """Return True iff ``candidate`` names an existing regular file.
+
+    Unlike a bare ``Path(candidate).is_file()`` this never raises when the
+    string is not a usable path. Command arguments can be arbitrary content
+    (e.g. a long inline prompt) that exceeds the OS filename limit or contains
+    embedded NUL bytes; ``os.stat`` then raises ``OSError`` (ENAMETOOLONG,
+    errno 36) or ``ValueError``. Python 3.14's ``Path.is_file()`` swallows
+    these and returns False, but Python <= 3.13 lets them propagate, so we
+    normalise the behaviour here.
+    """
+    try:
+        return Path(candidate).is_file()
+    except (OSError, ValueError):
+        return False
+
+
 class CommandLog(BaseModel):
     """A single logged command with full context.
 
@@ -247,8 +264,15 @@ class CommandLogger(BaseModel):
             # Check if this is a claude command with a prompt argument
             if len(log.command) > 0 and "claude" in log.command[0].lower() and len(log.command) > 1:
                 prompt = log.command[-1]
-                # If last arg is already a file path, use it directly
-                if Path(prompt).is_file():
+                # If last arg is already a file path, use it directly.
+                # `prompt` is arbitrary command content, not necessarily a
+                # valid path: an inline prompt can exceed the OS filename
+                # limit (NAME_MAX, typically 255 bytes) or contain embedded
+                # NUL bytes. On Python <= 3.13 `Path(...).is_file()` lets the
+                # resulting OSError/ValueError propagate (e.g. ENAMETOOLONG,
+                # errno 36); Python 3.14 swallows it. Guard explicitly so the
+                # check means "an existing file" on every interpreter.
+                if _is_existing_file(prompt):
                     cmd_without_prompt = log.command[:-1]
                     cmd_str = " ".join(shlex.quote(arg) for arg in cmd_without_prompt)
                     lines.append(f"{cmd_str} {shlex.quote(prompt)}")
