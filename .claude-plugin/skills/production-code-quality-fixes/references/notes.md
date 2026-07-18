@@ -73,7 +73,7 @@ git add scylla/metrics/grading.py scylla/e2e/llm_judge.py \
 git commit -m "fix(metrics): replace production assert..."
 git push -u origin 757-auto-impl
 gh pr create --title "..." --body "..."
-gh pr merge --auto --rebase 891
+gh pr merge --auto --squash 891
 ```
 
 `AskUserQuestion` tool was also denied (don't ask mode) — proceeded with reasonable defaults

@@ -77,7 +77,7 @@ Closes #<issue>"
 git push -u origin <branch>
 gh pr create --title "fix(docs): Remove broken <dir>/ references" \
   --body "Closes #<issue>"
-gh pr merge --auto --rebase <pr-number>
+gh pr merge --auto --squash <pr-number>
 ```
 
 ## Failed Attempts

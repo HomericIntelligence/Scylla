@@ -26,7 +26,7 @@ classifiers = [
 keywords = ["ai", "agents", "benchmarking", "evaluation", "testing"]
 dependencies = [
     "click>=8.0,<9",
-    "homericintelligence-hephaestus>=0.7.0,<1",
+    "homericintelligence-hephaestus>=0.9.9,<1",
     "httpx>=0.28.1,<1",
     # jsonschema is a runtime dependency: scylla.config.loader (imported by the
     # scylla CLI entry point at startup) does `import jsonschema` unconditionally.

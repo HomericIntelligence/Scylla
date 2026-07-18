@@ -102,7 +102,7 @@ Closes #<issue>
 EOF
 )"
 
-gh pr merge --auto --rebase
+gh pr merge --auto --squash
 ```
 
 ## Failed Attempts

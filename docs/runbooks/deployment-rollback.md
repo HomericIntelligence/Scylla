@@ -77,7 +77,7 @@ git push -u origin 2001-rollback-to-v0.1.0
 gh pr create --repo HomericIntelligence/Scylla \
   --title "hotfix: rollback to $PREV_TAG" \
   --body "Emergency rollback. Closes #2001"
-gh pr merge --auto --rebase --repo HomericIntelligence/Scylla
+gh pr merge --auto --squash --repo HomericIntelligence/Scylla
 ```
 
 ### What we do NOT do

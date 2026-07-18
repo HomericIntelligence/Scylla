@@ -31,7 +31,7 @@ git add CLAUDE.md
 git commit -m "..."
 git push -u origin 752-auto-impl
 gh pr create ...
-gh pr merge --auto --rebase 811
+gh pr merge --auto --squash 811
 ```
 
 ## PR Details

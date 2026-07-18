@@ -47,7 +47,7 @@ git push -u origin 753-auto-impl
 
 # PR
 gh pr create --title "fix(docs): ..." --body "Closes #753"
-gh pr merge --auto --rebase 810
+gh pr merge --auto --squash 810
 ```
 
 ### Permission issue encountered

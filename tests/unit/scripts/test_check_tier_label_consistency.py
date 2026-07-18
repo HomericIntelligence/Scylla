@@ -9,7 +9,6 @@ import pytest
 from hephaestus.validation.tier_labels import (
     BAD_PATTERNS,
     TierLabelFinding,
-    _collect_mismatches,
     find_violations,
     format_json,
     format_report,
@@ -26,40 +25,45 @@ class TestFindViolations:
         assert find_violations(content) == []
 
     @pytest.mark.parametrize(
-        "bad_line, expected_pattern",
+        "bad_line",
         [
             # Original set
-            ("T3 Tooling tier", r"T3.*Tool"),
-            ("T4 Delegation tier", r"T4.*Deleg"),
-            ("T5 Hierarchy tier", r"T5.*Hier"),
-            ("T2 Skills tier", r"T2.*Skill"),
+            "T3 Tooling tier",
+            "T4 Delegation tier",
+            "T5 Hierarchy tier",
+            "T2 Skills tier",
             # Reverse/symmetric set
-            ("T2 Delegation tier", r"T2.{0,10}Deleg"),
-            ("T3 Hierarchy tier", r"T3.{0,10}Hier"),
-            ("T4 Hybrid tier", r"T4.{0,10}Hybrid"),
-            ("T1 Tooling tier", r"T1.{0,10}Tool"),
-            ("T0 Skills tier", r"T0.{0,10}Skill"),
-            ("T1 Prompts tier", r"T1.{0,10}Prompt"),
-            ("T2 Prompts tier", r"T2.{0,10}Prompt"),
-            ("T3 Skills tier", r"T3.{0,10}Skill"),
-            ("T4 Tooling tier", r"T4.{0,10}Tool"),
-            ("T5 Delegation tier", r"T5.{0,10}Deleg"),
-            ("T6 Hierarchy tier", r"T6.{0,10}Hier"),
-            ("T6 Hybrid tier", r"T6.{0,10}Hybrid"),
-            ("T0 Tooling tier", r"T0.{0,10}Tool"),
-            ("T0 Delegation tier", r"T0.{0,10}Deleg"),
-            ("T5 Skills tier", r"T5.{0,10}Skill"),
-            ("T6 Delegation tier", r"T6.{0,10}Deleg"),
+            "T2 Delegation tier",
+            "T3 Hierarchy tier",
+            "T4 Hybrid tier",
+            "T1 Tooling tier",
+            "T0 Skills tier",
+            "T1 Prompts tier",
+            "T2 Prompts tier",
+            "T3 Skills tier",
+            "T4 Tooling tier",
+            "T5 Delegation tier",
+            "T6 Hierarchy tier",
+            "T6 Hybrid tier",
+            "T0 Tooling tier",
+            "T0 Delegation tier",
+            "T5 Skills tier",
+            "T6 Delegation tier",
         ],
     )
-    def test_detects_each_bad_pattern(self, bad_line: str, expected_pattern: str) -> None:
-        """Each known-bad pattern is detected."""
+    def test_detects_each_bad_pattern(self, bad_line: str) -> None:
+        """Each known-bad pattern is detected.
+
+        Asserts detection *behavior* (exactly one violation on the right line
+        with a non-empty reason) rather than the exact internal regex string,
+        which is a hephaestus implementation detail that changed in 0.9.9
+        (the bad-pattern regexes became stricter/word-bounded).
+        """
         violations = find_violations(bad_line)
         assert len(violations) == 1
-        lineno, line, pattern, reason = violations[0]
+        lineno, line, _pattern, reason = violations[0]
         assert lineno == 1
         assert line == bad_line
-        assert pattern == expected_pattern
         assert reason  # non-empty reason string
 
     def test_returns_line_number(self) -> None:
@@ -113,99 +117,6 @@ class TestBadPatterns:
             assert isinstance(reason, str)
             assert pattern
             assert reason
-
-
-class TestCollectMismatches:
-    """Tests for _collect_mismatches() — new per-file scan API."""
-
-    @pytest.mark.parametrize(
-        "bad_line, expected_tier, expected_found",
-        [
-            ("T3/Tooling is multi-agent", "T3", "Tooling"),
-            ("T4/Delegation results", "T4", "Delegation"),
-            ("T5/Hierarchy is nested", "T5", "Hierarchy"),
-            ("T2/Skills is domain", "T2", "Skills"),
-        ],
-    )
-    def test_detects_mismatch(
-        self,
-        tmp_path: Path,
-        bad_line: str,
-        expected_tier: str,
-        expected_found: str,
-    ) -> None:
-        """Each mismatch pattern is detected with correct tier and found name."""
-        f = tmp_path / "test.md"
-        f.write_text(bad_line + "\n", encoding="utf-8")
-        findings = _collect_mismatches(f)
-        assert len(findings) == 1
-        assert findings[0].tier == expected_tier
-        assert findings[0].found_name.lower() == expected_found.lower()
-
-    @pytest.mark.parametrize(
-        "clean_line",
-        [
-            "T3/Delegation is multi-agent",
-            "T2/Tooling has 15 sub-tests",
-            "T4/Hierarchy uses nested orchestration",
-            "T5/Hybrid combines best approaches",
-            "T0/Prompts ablation",
-            "T1/Skills domain expertise",
-            "T6/Super everything enabled",
-        ],
-    )
-    def test_clean_line_not_flagged(self, tmp_path: Path, clean_line: str) -> None:
-        """Correct tier name pairings produce no findings."""
-        f = tmp_path / "test.md"
-        f.write_text(clean_line + "\n", encoding="utf-8")
-        findings = _collect_mismatches(f)
-        assert findings == []
-
-    def test_returns_correct_line_number(self, tmp_path: Path) -> None:
-        """Finding records the correct 1-based line number."""
-        f = tmp_path / "test.md"
-        f.write_text("clean\nclean\nT3/Tooling bad\n", encoding="utf-8")
-        findings = _collect_mismatches(f)
-        assert len(findings) == 1
-        assert findings[0].line == 3
-
-    def test_finding_has_expected_name(self, tmp_path: Path) -> None:
-        """Finding records the canonical (expected) name for the tier."""
-        f = tmp_path / "test.md"
-        f.write_text("T3/Tooling\n", encoding="utf-8")
-        findings = _collect_mismatches(f)
-        assert findings[0].expected_name == "Delegation"
-
-    def test_finding_dataclass_fields(self, tmp_path: Path) -> None:
-        """TierLabelFinding has all required fields."""
-        f = tmp_path / "test.md"
-        f.write_text("T4/Delegation wrong\n", encoding="utf-8")
-        findings = _collect_mismatches(f)
-        assert len(findings) == 1
-        finding = findings[0]
-        assert isinstance(finding, TierLabelFinding)
-        assert finding.tier == "T4"
-        assert finding.expected_name == "Hierarchy"
-        assert finding.line == 1
-        assert finding.raw_text
-
-    def test_missing_file_returns_empty(self, tmp_path: Path) -> None:
-        """Non-existent file returns empty list without raising."""
-        missing = tmp_path / "nonexistent.md"
-        assert _collect_mismatches(missing) == []
-
-    def test_empty_file_returns_empty(self, tmp_path: Path) -> None:
-        """Empty file returns empty list."""
-        f = tmp_path / "empty.md"
-        f.write_text("", encoding="utf-8")
-        assert _collect_mismatches(f) == []
-
-    def test_multiple_mismatches_in_one_file(self, tmp_path: Path) -> None:
-        """Multiple mismatch lines in one file all produce findings."""
-        f = tmp_path / "multi.md"
-        f.write_text("T3/Tooling\nT4/Delegation\nT5/Hierarchy\n", encoding="utf-8")
-        findings = _collect_mismatches(f)
-        assert len(findings) == 3
 
 
 class TestScanRepository:

@@ -168,7 +168,7 @@ Updates python:3.12-slim digest to <new-digest>.
 Verified locally with smoke tests per docs/dev/dockerfile-sha256-update.md."
 
 # 6. Enable auto-merge
-gh pr merge --auto --rebase
+gh pr merge --auto --squash
 ```
 
 Never push the digest change directly to `main`. A PR is required even for one-line changes.

@@ -129,7 +129,7 @@ git commit -m "fix(preflight): use closingIssuesReferences for precise PR-issue 
 Closes #802"
 git push -u origin <branch>
 gh pr create --title "..." --body "Closes #802"
-gh pr merge --auto --rebase <pr-number>
+gh pr merge --auto --squash <pr-number>
 ```
 
 ## Failed Attempts

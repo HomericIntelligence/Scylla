@@ -10,7 +10,6 @@ import pytest
 from hephaestus.validation.doc_policy import (
     Finding,
     Severity,
-    _extract_code_blocks,
     format_json_report,
     format_text_report,
     scan_file,
@@ -27,63 +26,6 @@ def make_md(tmp_path: Path, name: str, content: str) -> Path:
     path = tmp_path / name
     path.write_text(textwrap.dedent(content))
     return path
-
-
-# ---------------------------------------------------------------------------
-# _extract_code_blocks
-# ---------------------------------------------------------------------------
-
-
-class TestExtractCodeBlocks:
-    """Tests for _extract_code_blocks."""
-
-    def test_extracts_bash_block(self) -> None:
-        """Should extract body from a bash fenced code block."""
-        content = "before\n```bash\necho hello\n```\nafter\n"
-        blocks = _extract_code_blocks(content)
-        assert len(blocks) == 1
-        _, body = blocks[0]
-        assert "echo hello" in body
-
-    def test_extracts_no_lang_block(self) -> None:
-        """Should extract body from a fenced block with no language tag."""
-        content = "before\n```\necho hello\n```\nafter\n"
-        blocks = _extract_code_blocks(content)
-        assert len(blocks) == 1
-
-    def test_ignores_python_block(self) -> None:
-        """Should not extract python blocks (not shell)."""
-        content = "```python\nprint('hi')\n```\n"
-        blocks = _extract_code_blocks(content)
-        assert blocks == []
-
-    def test_ignores_yaml_block(self) -> None:
-        """Should not extract yaml blocks (not shell)."""
-        content = "```yaml\nkey: value\n```\n"
-        blocks = _extract_code_blocks(content)
-        assert blocks == []
-
-    def test_extracts_shell_block(self) -> None:
-        """Should extract body from a shell fenced code block."""
-        content = "```shell\ncmd\n```\n"
-        blocks = _extract_code_blocks(content)
-        assert len(blocks) == 1
-
-    def test_multiple_blocks_returned(self) -> None:
-        """Should return all shell blocks when multiple are present."""
-        content = "```bash\ncmd1\n```\ntext\n```bash\ncmd2\n```\n"
-        blocks = _extract_code_blocks(content)
-        assert len(blocks) == 2
-
-    def test_start_line_computed_correctly(self) -> None:
-        """Block start_line should be the line number of the opening fence."""
-        # The opening ``` is on line 3 (1-indexed), block body starts on line 4.
-        content = "line1\nline2\n```bash\ncmd\n```\n"
-        blocks = _extract_code_blocks(content)
-        assert len(blocks) == 1
-        start_line, _ = blocks[0]
-        # start_line is the line of the ``` opener; first body line is start_line+1
-        assert start_line == 3
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +100,27 @@ class TestScanFileDetectsViolations:
         findings = scan_file(md, tmp_path)
         assert any(f.rule == "wrong-merge-strategy" for f in findings)
 
+    def test_detects_rebase_merge_strategy(self, tmp_path: Path) -> None:
+        """Should flag gh pr merge that uses --auto --rebase.
+
+        This repo is squash-only (rebase merges disabled per CLAUDE.md), so
+        ``--auto --rebase`` is a wrong-merge-strategy violation, not a clean
+        example. Locks in the corrected scanner behavior.
+        """
+        md = make_md(
+            tmp_path,
+            "bad.md",
+            """\
+            # Doc
+
+            ```bash
+            gh pr merge --auto --rebase
+            ```
+            """,
+        )
+        findings = scan_file(md, tmp_path)
+        assert any(f.rule == "wrong-merge-strategy" for f in findings)
+
     def test_detects_push_to_main(self, tmp_path: Path) -> None:
         """Should flag git push directly to origin main."""
         md = make_md(
@@ -214,8 +177,15 @@ class TestScanFilePassesCleanExamples:
         )
         assert scan_file(md, tmp_path) == []
 
-    def test_passes_rebase_merge_strategy(self, tmp_path: Path) -> None:
-        """Gh pr merge --auto --rebase should produce no findings."""
+    def test_passes_squash_merge_strategy(self, tmp_path: Path) -> None:
+        """Gh pr merge --auto --squash (the mandated idiom) should produce no findings.
+
+        This repo is squash-only (rebase merges disabled per CLAUDE.md); the
+        doc-policy scanner treats ``--auto --squash`` as the compliant
+        auto-merge form. (Was previously an ``--auto --rebase`` "clean" case,
+        which the scanner now correctly flags — see
+        ``test_detects_rebase_merge_strategy``.)
+        """
         md = make_md(
             tmp_path,
             "good.md",
@@ -223,14 +193,14 @@ class TestScanFilePassesCleanExamples:
             # Doc
 
             ```bash
-            gh pr merge --auto --rebase
+            gh pr merge --auto --squash
             ```
             """,
         )
         assert scan_file(md, tmp_path) == []
 
-    def test_passes_rebase_merge_strategy_with_pr_number(self, tmp_path: Path) -> None:
-        """Gh pr merge with PR number and --auto --rebase should produce no findings."""
+    def test_passes_squash_merge_strategy_with_pr_number(self, tmp_path: Path) -> None:
+        """Gh pr merge with PR number and --auto --squash should produce no findings."""
         md = make_md(
             tmp_path,
             "good.md",
@@ -238,7 +208,7 @@ class TestScanFilePassesCleanExamples:
             # Doc
 
             ```bash
-            gh pr merge 42 --auto --rebase
+            gh pr merge 42 --auto --squash
             ```
             """,
         )
