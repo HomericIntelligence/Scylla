@@ -3371,7 +3371,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "altair", marker = "extra == 'analysis'", specifier = ">=6.1.0,<7" },
-    { name = "click", specifier = ">=8.0,<9" },
+    { name = "click", specifier = ">=8.4.2,<9" },
     { name = "defusedxml", marker = "extra == 'dev'", specifier = ">=0.7.1,<1" },
     { name = "homericintelligence-hephaestus", specifier = ">=0.9.9,<1" },
     { name = "httpx", specifier = ">=0.28.1,<1" },
