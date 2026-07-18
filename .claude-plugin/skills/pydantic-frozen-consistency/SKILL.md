@@ -88,7 +88,7 @@ class TestTargetBase:
 ### 5. Run tests
 
 ```bash
-pixi run python -m pytest tests/ -v
+uv run python -m pytest tests/ -v
 ```
 
 ## Failed Attempts

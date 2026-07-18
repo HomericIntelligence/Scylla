@@ -22,8 +22,8 @@ Set `SCYLLA_JSON_LOGS=1` before invoking the CLI. Implemented at
 `src/scylla/cli/main.py:49-52`.
 
 ```bash
-SCYLLA_JSON_LOGS=1 pixi run scylla run-tier T0
-SCYLLA_JSON_LOGS=1 pixi run python scripts/manage_experiment.py run "$EXP_DIR"
+SCYLLA_JSON_LOGS=1 uv run scylla run-tier T0
+SCYLLA_JSON_LOGS=1 uv run python scripts/manage_experiment.py run "$EXP_DIR"
 ```
 
 Each log line is a JSON object. When an OTel span is active in the same
@@ -53,7 +53,7 @@ at `src/scylla/utils/tracing.py:49-155` and activated at
 ### Console (smoke-test)
 
 ```bash
-SCYLLA_OTEL_EXPORTER=console pixi run scylla run <test-id>
+SCYLLA_OTEL_EXPORTER=console uv run scylla run <test-id>
 ```
 
 ### OTLP collector (production)
@@ -65,7 +65,7 @@ SCYLLA_OTEL_EXPORTER=console pixi run scylla run <test-id>
 pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
 SCYLLA_OTEL_EXPORTER=otlp \
   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
-  pixi run scylla run <test-id>
+  uv run scylla run <test-id>
 ```
 
 The OTel SDK is **not** a hard dependency of Scylla; install it
@@ -88,7 +88,7 @@ partial file.
 
 ```bash
 SCYLLA_METRICS_PATH=/var/lib/node_exporter/textfile_collector/scylla.prom \
-  pixi run python scripts/manage_experiment.py run "$EXP_DIR"
+  uv run python scripts/manage_experiment.py run "$EXP_DIR"
 ```
 
 If `SCYLLA_METRICS_PATH` is unset, `get_default_emitter()` returns a
@@ -109,7 +109,7 @@ SCYLLA_JSON_LOGS=1 \
 SCYLLA_OTEL_EXPORTER=otlp \
 OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317 \
 SCYLLA_METRICS_PATH=/var/lib/node_exporter/textfile_collector/scylla.prom \
-  pixi run python scripts/manage_experiment.py run "$EXP_DIR"
+  uv run python scripts/manage_experiment.py run "$EXP_DIR"
 ```
 
 ---

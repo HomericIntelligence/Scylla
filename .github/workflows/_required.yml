@@ -20,6 +20,11 @@
 # `workflow_call` failed because the called workflow shared a concurrency group
 # and `cancel-in-progress` cancelled one of the two runs — inlining the job
 # bodies removes that hazard entirely. Closes #2016.
+#
+# Toolchain: uv (Odysseus ADR-017; migrated from pixi + pip, mirroring
+# HomericIntelligence/Hephaestus#2236). Each job sets up uv via
+# astral-sh/setup-uv and installs the locked environment with
+# `uv sync --all-groups --all-extras --locked`, then runs tools via `uv run`.
 name: Required Checks
 
 on:
@@ -113,10 +118,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
         with:
-          environment: lint
+          enable-cache: true
 
       - name: Cache pre-commit environments
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v5
@@ -131,19 +136,18 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
         run: |
-          # Use lightweight lint environment (skips heavy scientific packages)
-          pixi install --environment lint
-          pixi --version
-          pixi run --environment lint pre-commit run --all-files --show-diff-on-failure
+          uv sync --all-groups --all-extras --locked
+          uv --version
+          uv run pre-commit run --all-files --show-diff-on-failure
 
       - name: Enforce complexity limit (C901)
-        run: pixi run --environment lint ruff check --select C901 src/scylla/ scripts/
+        run: uv run ruff check --select C901 src/scylla/ scripts/
 
       - name: Run mypy
-        run: pixi run --environment lint mypy scripts/ src/scylla/ tests/
+        run: uv run mypy scripts/ src/scylla/ tests/
 
       - name: Check import layering contracts
-        run: pixi run --environment lint lint-imports
+        run: uv run lint-imports
 
       - name: Upload pre-commit diff
         if: failure()
@@ -169,7 +173,7 @@ jobs:
         run: |
           count=$(grep -rn "BaseExecutionInfo" . \
             --include="*.py" \
-            --exclude-dir=".pixi" \
+            --exclude-dir=".venv" \
             | grep -v "src/scylla/core/results.py" \
             | grep -v "src/scylla/core/__init__.py" \
             | grep -v "# deprecated" \
@@ -179,7 +183,7 @@ jobs:
           echo "BaseExecutionInfo usage count (excluding definition, re-export, and tests): $count"
           if [ "$count" -gt "0" ]; then
             echo "::error::Found $count usages of deprecated BaseExecutionInfo — remove before merging"
-            grep -rn "BaseExecutionInfo" . --include="*.py" --exclude-dir=".pixi" \
+            grep -rn "BaseExecutionInfo" . --include="*.py" --exclude-dir=".venv" \
               | grep -v "src/scylla/core/results.py" \
               | grep -v "src/scylla/core/__init__.py" \
               | grep -v "# deprecated" \
@@ -192,7 +196,7 @@ jobs:
         run: |
           count=$(grep -rn "BaseRunMetrics" . \
             --include="*.py" \
-            --exclude-dir=".pixi" \
+            --exclude-dir=".venv" \
             | grep -v "src/scylla/core/results.py" \
             | grep -v "# deprecated" \
             | grep -v "(deprecated)" \
@@ -201,7 +205,7 @@ jobs:
           echo "BaseRunMetrics usage count (excluding definition and tests): $count"
           if [ "$count" -gt "0" ]; then
             echo "::error::Found $count usages of deprecated BaseRunMetrics — remove before merging"
-            grep -rn "BaseRunMetrics" . --include="*.py" --exclude-dir=".pixi" \
+            grep -rn "BaseRunMetrics" . --include="*.py" --exclude-dir=".venv" \
               | grep -v "src/scylla/core/results.py" \
               | grep -v "# deprecated" \
               | grep -v "(deprecated)" \
@@ -221,42 +225,39 @@ jobs:
             exit 1
           fi
 
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
+        with:
+          enable-cache: true
+
+      # Early gate: fail fast if uv.lock is out of date before running expensive tests.
+      - name: Validate uv.lock is up-to-date
+        run: uv lock --check
+
+      - name: Install locked project environment
+        run: uv sync --all-groups --all-extras --locked
 
       - name: Check Python version consistency (pyproject.toml vs Dockerfile)
-        run: pixi run python scripts/check_python_version_consistency.py
-
-      - name: Check version consistency (pyproject.toml, pixi.toml, src/scylla/__init__.py)
-        run: pixi run python scripts/check_version_consistency.py
-
-      # Early gate: fail fast if pixi.lock is out of date before running expensive tests.
-      - name: Validate pixi.lock is up-to-date
-        run: |
-          if ! pixi install --locked 2>/dev/null; then
-            echo "::error::pixi.lock is stale — run 'pixi install' locally and commit pixi.lock"
-            exit 1
-          fi
+        run: uv run python scripts/check_python_version_consistency.py
 
       - name: Check doc/config consistency
-        run: pixi run python scripts/check_doc_config_consistency.py --verbose
+        run: uv run python scripts/check_doc_config_consistency.py --verbose
 
       - name: Enforce tests/unit/ structure conventions
-        run: pixi run python scripts/check_unit_test_structure.py
+        run: uv run python scripts/check_unit_test_structure.py
 
       - name: Validate config schemas
-        run: pixi run python scripts/validate_config_schemas.py config/defaults.yaml config/models/*.yaml tests/fixtures/config/tiers/*.yaml
+        run: uv run python scripts/validate_config_schemas.py config/defaults.yaml config/models/*.yaml tests/fixtures/config/tiers/*.yaml
 
       - name: Check cyclomatic complexity
-        run: pixi run hephaestus-check-complexity --threshold 10
+        run: uv run hephaestus-check-complexity --threshold 10
 
       - name: Enforce import-layer contracts (import-linter)
-        run: pixi run --environment lint lint-imports
+        run: uv run lint-imports
 
       - name: Run unit tests
         run: |
-          pixi run pip install -e .
-          pixi run pytest tests/unit --override-ini="addopts=" -v --strict-markers \
+          uv run pytest tests/unit --override-ini="addopts=" -v --strict-markers \
             --cov=src/scylla --cov-report=term-missing --cov-report=xml --cov-fail-under=75 \
             --junitxml=junit-unit.xml
 
@@ -293,7 +294,7 @@ jobs:
         run: |
           count=$(grep -rn "BaseExecutionInfo" . \
             --include="*.py" \
-            --exclude-dir=".pixi" \
+            --exclude-dir=".venv" \
             | grep -v "src/scylla/core/results.py" \
             | grep -v "src/scylla/core/__init__.py" \
             | grep -v "# deprecated" \
@@ -303,7 +304,7 @@ jobs:
           echo "BaseExecutionInfo usage count (excluding definition, re-export, and tests): $count"
           if [ "$count" -gt "0" ]; then
             echo "::error::Found $count usages of deprecated BaseExecutionInfo — remove before merging"
-            grep -rn "BaseExecutionInfo" . --include="*.py" --exclude-dir=".pixi" \
+            grep -rn "BaseExecutionInfo" . --include="*.py" --exclude-dir=".venv" \
               | grep -v "src/scylla/core/results.py" \
               | grep -v "src/scylla/core/__init__.py" \
               | grep -v "# deprecated" \
@@ -316,7 +317,7 @@ jobs:
         run: |
           count=$(grep -rn "BaseRunMetrics" . \
             --include="*.py" \
-            --exclude-dir=".pixi" \
+            --exclude-dir=".venv" \
             | grep -v "src/scylla/core/results.py" \
             | grep -v "# deprecated" \
             | grep -v "(deprecated)" \
@@ -325,7 +326,7 @@ jobs:
           echo "BaseRunMetrics usage count (excluding definition and tests): $count"
           if [ "$count" -gt "0" ]; then
             echo "::error::Found $count usages of deprecated BaseRunMetrics — remove before merging"
-            grep -rn "BaseRunMetrics" . --include="*.py" --exclude-dir=".pixi" \
+            grep -rn "BaseRunMetrics" . --include="*.py" --exclude-dir=".venv" \
               | grep -v "src/scylla/core/results.py" \
               | grep -v "# deprecated" \
               | grep -v "(deprecated)" \
@@ -344,27 +345,25 @@ jobs:
           rm nats-server.tar.gz
           nats-server --version
 
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
+        with:
+          enable-cache: true
+
+      - name: Validate uv.lock is up-to-date
+        run: uv lock --check
+
+      - name: Install locked project environment
+        run: uv sync --all-groups --all-extras --locked
 
       - name: Check Python version consistency (pyproject.toml vs Dockerfile)
-        run: pixi run python scripts/check_python_version_consistency.py
-
-      - name: Check version consistency (pyproject.toml, pixi.toml, src/scylla/__init__.py)
-        run: pixi run python scripts/check_version_consistency.py
-
-      - name: Validate pixi.lock is up-to-date
-        run: |
-          if ! pixi install --locked 2>/dev/null; then
-            echo "::error::pixi.lock is stale — run 'pixi install' locally and commit pixi.lock"
-            exit 1
-          fi
+        run: uv run python scripts/check_python_version_consistency.py
 
       - name: Run integration tests
         run: |
           # Integration tests: 5% floor prevents regression without blocking new work
           # --reruns 2: retry flaky integration tests (network/API calls) up to 2 times
-          pixi run pytest tests/integration -v \
+          uv run pytest tests/integration -v \
             --cov=src/scylla --cov-report=term-missing --cov-report=xml --cov-fail-under=5 \
             --reruns 2 --reruns-delay 5 \
             --junitxml=junit-integration.xml
@@ -390,14 +389,17 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v6
 
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
         with:
-          environment: lint
+          enable-cache: true
+
+      - name: Install locked project environment
+        run: uv sync --all-groups --all-extras --locked
 
       - name: Run pip-audit
         id: pip-audit
-        run: pixi run --environment lint pip-audit
+        run: uv run pip-audit --format json | uv run python scripts/filter_audit.py
 
       - name: Post pip-audit summary
         if: always()
@@ -446,14 +448,16 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v6
 
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
+        with:
+          enable-cache: true
 
       - name: Validate Dockerfile syntax
         run: |
           # Validate all Dockerfiles in the repo using docker build --check (BuildKit dry-run)
           find . -name "Dockerfile*" \
-            -not -path "./.pixi/*" \
+            -not -path "./.venv/*" \
             -not -path "./docker/*" \
             | sort | while read -r df; do
               echo "Checking $df ..."
@@ -465,16 +469,15 @@ jobs:
             docker build --check -f "$df" ./docker || exit 1
           done
 
-      - name: Install build backend dependencies
+      - name: Install locked build environment
         run: |
-          # --no-isolation skips the isolated venv, so the build backend must be
-          # present in the active environment.  Install both the 'build' frontend
-          # and hatchling (declared in pyproject.toml [build-system].requires).
-          pixi run pip install build "hatchling>=1.29.0,<2"
+          # The 'build' frontend and hatchling backend are in [dependency-groups].dev;
+          # --no-isolation then builds against the synced environment.
+          uv sync --all-groups --all-extras --locked
 
       - name: Build Python package (sdist + wheel)
         run: |
-          pixi run python -m build --no-isolation
+          uv run python -m build --no-isolation
           ls -lh dist/
 
       - name: Upload built distributions
@@ -512,8 +515,13 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v6
 
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
+        with:
+          enable-cache: true
+
+      - name: Install locked project environment
+        run: uv sync --all-groups --all-extras --locked
 
       - name: Download built distributions
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
@@ -522,9 +530,7 @@ jobs:
           path: dist/
 
       - name: Validate distribution metadata (twine check)
-        run: |
-          pixi run pip install twine
-          pixi run twine check dist/*
+        run: uv run twine check dist/*
 
   # ── 6c. install ────────────────────────────────────────────────────────────
   # Canonical 8-category `install` context. Installs the built wheel into a
@@ -571,16 +577,18 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v6
 
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
         with:
-          environment: lint
+          enable-cache: true
+
+      - name: Install locked project environment
+        run: uv sync --all-groups --all-extras --locked
 
       - name: Validate workflow YAML schemas
         run: |
-          pixi run --environment lint pip install check-jsonschema
           find .github/workflows -name "*.yml" | sort | \
-            xargs pixi run --environment lint check-jsonschema \
+            xargs uv run check-jsonschema \
               --schemafile https://json.schemastore.org/github-workflow
 
       - name: Validate JSON schemas in schemas/
@@ -600,41 +608,30 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v6
 
-      - name: Set up Pixi
-        uses: ./.github/actions/setup-pixi
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
+        with:
+          enable-cache: true
 
-      - name: Check version consistency (pyproject.toml, pixi.toml, __init__.py)
-        run: pixi run python scripts/check_version_consistency.py
+      - name: Install locked project environment
+        run: uv sync --all-groups --all-extras --locked
 
-      - name: Cross-check pyproject.toml and pixi.toml versions
-        run: |
-          pixi run python3 - <<'EOF'
-          import tomllib, sys
+      # Under uv, pyproject.toml is the single source of truth for the package
+      # version (pixi.toml is gone — ADR-017). This checker asserts that every
+      # remaining in-repo version declaration (src/scylla/__init__.py, skill
+      # templates) agrees with [project].version.
+      - name: Check package version single-source-of-truth
+        run: uv run python scripts/check_package_version_consistency.py --scan-skills
 
-          with open("pyproject.toml", "rb") as f:
-              pyproject = tomllib.load(f)
-          with open("pixi.toml", "rb") as f:
-              pixi = tomllib.load(f)
+      # Assert CI-tooling versions (setup-uv SHA, gitleaks) do not drift across
+      # workflow/action/pre-commit config files.
+      - name: Check CI tooling version sync
+        run: uv run python scripts/check_ci_version_sync.py --verbose
 
-          pyproject_ver = pyproject.get("project", {}).get("version") or \
-                          pyproject.get("tool", {}).get("poetry", {}).get("version")
-          pixi_ver = pixi.get("workspace", {}).get("version") or pixi.get("package", {}).get("version")
-
-          print(f"pyproject.toml version : {pyproject_ver}")
-          print(f"pixi.toml version      : {pixi_ver}")
-
-          if pyproject_ver and pixi_ver and pyproject_ver != pixi_ver:
-              print(f"::error::Version mismatch: pyproject.toml={pyproject_ver}, pixi.toml={pixi_ver}")
-              sys.exit(1)
-          print("Versions are consistent.")
-          EOF
-
-      - name: Validate pixi.lock is up-to-date
-        run: |
-          if ! pixi install --locked 2>/dev/null; then
-            echo "::error::pixi.lock is stale — run 'pixi install' locally and commit pixi.lock"
-            exit 1
-          fi
+      # Fail if uv.lock is out of sync with pyproject.toml — run 'uv lock'
+      # locally and commit the result.
+      - name: Validate uv.lock is up-to-date
+        run: uv lock --check
 
   # ── 9. markdownlint ────────────────────────────────────────────────────────
   markdownlint:
@@ -652,45 +649,27 @@ jobs:
         with:
           globs: "**/*.md"
 
-  # ── 10. pixi-check ─────────────────────────────────────────────────────────
-  pixi-check:
-    name: pixi-check
+  # ── 10. uv-lock-check ──────────────────────────────────────────────────────
+  # Replaces the former pixi-check job (removed with the pixi→uv migration,
+  # ADR-017). pixi-check was NOT a required ruleset context, so removing it does
+  # not affect the merge queue. This job proves the locked uv environment
+  # resolves and installs cleanly, mirroring HomericIntelligence/Hephaestus#2236.
+  uv-lock-check:
+    name: uv-lock-check
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-      - name: Skip if no pixi.toml
-        id: detect
-        run: |
-          if [ ! -f pixi.toml ]; then
-            echo "::notice::No pixi.toml in repo, skipping pixi-check"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Read canonical pixi version
-        id: read-version
-        if: steps.detect.outputs.skip == 'false'
-        shell: bash
-        run: echo "version=$(tr -d '[:space:]' < .github/pixi-version)" >> "$GITHUB_OUTPUT"
-
-      - name: Setup pixi
-        if: steps.detect.outputs.skip == 'false'
-        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f  # v0.10.0
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
         with:
-          pixi-version: ${{ steps.read-version.outputs.version }}
-          cache: true
-      - name: pixi install (locked)
-        if: steps.detect.outputs.skip == 'false'
-        run: |
-          if [ -f pixi.lock ]; then
-            pixi install --locked
-          else
-            echo "::warning::pixi.toml present but pixi.lock missing — running unlocked"
-            pixi install
-          fi
+          enable-cache: true
+      - name: Check uv.lock is in sync with pyproject.toml
+        run: uv lock --check
+      - name: Install locked environment
+        run: uv sync --all-groups --all-extras --locked
 
   # ── 11. justfile-check ─────────────────────────────────────────────────────
   justfile-check:

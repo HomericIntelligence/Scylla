@@ -52,7 +52,7 @@ HIGH - Affects test reliability and repository cleanliness
 ## Verification
 ```bash
 # Check for skipped tests
-pixi run python -m pytest tests/ -v -rs
+uv run python -m pytest tests/ -v -rs
 
 # Find .orig artifacts
 find tests -name "*.orig" -type f
@@ -95,7 +95,7 @@ HIGH - Critical for maintaining code quality
 ## Verification
 ```bash
 # Run tests with coverage (should fail if <75%)
-pixi run python -m pytest tests/ --cov=src/scylla --cov-report=term-missing --cov-fail-under=75
+uv run python -m pytest tests/ --cov=src/scylla --cov-report=term-missing --cov-fail-under=75
 ```
 
 ## Context
@@ -139,7 +139,7 @@ Add to `.pre-commit-config.yaml`:
 ```yaml
 - id: mypy-check-python
   name: Mypy Type Check Python
-  entry: pixi run mypy scylla/ --strict
+  entry: uv run mypy scylla/ --strict
   language: system
   files: ^scylla/.*\.py$
   types: [python]

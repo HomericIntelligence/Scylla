@@ -40,7 +40,7 @@ def check_filename_consistency(config: dict, file_path: Path) -> list[str]:
 
 - Skip `_`-prefixed files (test fixtures) — avoids false positives from fixtures with toy values
 - Allow version suffix pattern (`stem + "-"`) so `claude-sonnet-4-5.yaml` with `model_id: "claude-sonnet-4-5-20250929"` passes
-- Use `yaml.safe_load` for parsing (requires `pyyaml` in pixi dependencies)
+- Use `yaml.safe_load` for parsing (requires `pyyaml` in the dev dependencies)
 - Exit code 0 = all pass, 1 = any failure — correct for CI/pre-commit
 
 ### 2. Add `scripts/__init__.py` (CRITICAL for mypy)

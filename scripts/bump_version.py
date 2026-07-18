@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Bump the project version in pyproject.toml and pixi.toml atomically.
+"""Bump the project version in pyproject.toml.
 
 Reads the current version from ``pyproject.toml``, computes the new version
 by incrementing the specified part (major, minor, or patch), and writes the
-updated version to both ``pyproject.toml`` and ``pixi.toml``. After writing,
-validates consistency via ``check_version_consistency``.
+updated version back to ``pyproject.toml`` — the single source of truth for
+the package version under the uv toolchain (ADR-017).
 
 Usage:
     python scripts/bump_version.py patch
@@ -13,7 +13,7 @@ Usage:
 
 Exit codes:
     0: Version bumped successfully (or dry-run completed)
-    1: Error reading/writing files or post-bump consistency check failed
+    1: Error reading/writing files
 """
 
 import argparse
@@ -22,8 +22,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from scripts.check_version_consistency import check_version_consistency
-
 try:
     import tomllib
 except ImportError:
@@ -31,13 +29,6 @@ except ImportError:
 
 # Regex to match version = "X.Y.Z" lines in TOML files
 _PYPROJECT_VERSION_RE = re.compile(r'^(version\s*=\s*")([^"]+)(")', re.MULTILINE)
-# Matches only the version line within the [workspace] section of pixi.toml.
-# The pattern anchors to [workspace], then looks for the version = "..." line
-# that follows (before any subsequent section header).
-_PIXI_WORKSPACE_VERSION_RE = re.compile(
-    r'(\[workspace\][^\[]*?version\s*=\s*")([^"]+)(")',
-    re.DOTALL,
-)
 
 
 def get_current_version(repo_root: Path) -> tuple[int, int, int]:
@@ -156,36 +147,6 @@ def update_pyproject_version(repo_root: Path, old: str, new: str) -> None:
     pyproject_path.write_text(new_content)
 
 
-def update_pixi_version(repo_root: Path, old: str, new: str) -> None:
-    """Replace the version string in pixi.toml.
-
-    Args:
-        repo_root: Root directory of the repository.
-        old: The old version string to find.
-        new: The new version string to write.
-
-    Raises:
-        SystemExit: With code 1 if the file is missing or the version line
-            cannot be found.
-
-    """
-    pixi_path = repo_root / "pixi.toml"
-    if not pixi_path.is_file():
-        print(f"ERROR: pixi.toml not found: {pixi_path}", file=sys.stderr)
-        sys.exit(1)
-
-    content = pixi_path.read_text()
-    new_content, count = _PIXI_WORKSPACE_VERSION_RE.subn(rf"\g<1>{new}\g<3>", content, count=1)
-    if count == 0:
-        print(
-            f"ERROR: Could not find version line in {pixi_path}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    pixi_path.write_text(new_content)
-
-
 def create_git_tag(version: str, repo_root: Path, verbose: bool = False) -> int:
     """Create a git tag for the given version.
 
@@ -223,7 +184,7 @@ def bump_version(
     verbose: bool = False,
     tag: bool = False,
 ) -> int:
-    """Bump the project version atomically across pyproject.toml and pixi.toml.
+    """Bump the project version in pyproject.toml.
 
     Args:
         repo_root: Root directory of the repository.
@@ -255,16 +216,6 @@ def bump_version(
         print(f"Bumping version: {old_str} -> {new_str}")
 
     update_pyproject_version(repo_root, old_str, new_str)
-    update_pixi_version(repo_root, old_str, new_str)
-
-    # Validate consistency after writing
-    result = check_version_consistency(repo_root, verbose=verbose)
-    if result != 0:
-        print(
-            "ERROR: Post-bump consistency check failed. Files may be in an inconsistent state.",
-            file=sys.stderr,
-        )
-        return 1
 
     # Optionally create a git tag for the new version
     if tag:
@@ -275,8 +226,8 @@ def bump_version(
     print(f"Version bumped: {old_str} -> {new_str}")
     print()
     print("Next steps:")
-    print("  1. pixi lock")
-    print("  2. git add pyproject.toml pixi.toml pixi.lock")
+    print("  1. uv lock")
+    print("  2. git add pyproject.toml uv.lock")
     print(f'  3. git commit -m "feat(release): bump version to {new_str}"')
     print("  4. git push --tags")
     return 0
@@ -290,7 +241,7 @@ def main() -> int:
 
     """
     parser = argparse.ArgumentParser(
-        description="Bump project version in pyproject.toml and pixi.toml atomically",
+        description="Bump project version in pyproject.toml",
         epilog="Example: %(prog)s patch --verbose",
     )
     parser.add_argument(

@@ -77,7 +77,7 @@ model_id: "claude-opus-4-1"
 ### 5. Verify no validation warnings
 
 ```bash
-pixi run python -m pytest tests/unit/config/test_loader.py -v
+uv run python -m pytest tests/unit/config/test_loader.py -v
 ```
 
 Key tests:
@@ -88,7 +88,7 @@ Key tests:
 ### 6. Run full test suite
 
 ```bash
-pixi run python -m pytest tests/ -v
+uv run python -m pytest tests/ -v
 ```
 
 The coverage failure (`3.29% < 73%`) when running `tests/unit/config/test_loader.py` alone is expected — the coverage threshold is computed across the entire codebase. Always run `tests/` (full suite) for final verification.
@@ -127,4 +127,4 @@ When auditing model config files for `model_id` consistency, apply this checklis
 | Has explicit `model_id` field? | `grep "model_id" config/models/<file>.yaml` |
 | Filename stem matches `model_id`? | Check `validate_filename_model_id_consistency()` rules |
 | No misleading comments? | Read file header |
-| No validation warnings? | `pixi run python -m pytest tests/unit/config/test_loader.py::TestLoadAllModels::test_load_all_models_no_warnings` |
+| No validation warnings? | `uv run python -m pytest tests/unit/config/test_loader.py::TestLoadAllModels::test_load_all_models_no_warnings` |

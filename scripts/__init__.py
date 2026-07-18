@@ -16,7 +16,7 @@ collection:
   ``export_data``, ``manage_experiment``, ``common``, etc. are importable by
   their bare module names without a ``scripts.`` prefix.
 
-Scripts that are run *directly* (e.g. ``pixi run python scripts/foo.py``)
+Scripts that are run *directly* (e.g. ``uv run python scripts/foo.py``)
 rely on Python's standard behaviour of inserting the script's own directory
 at ``sys.path[0]``, so they can also import sibling modules (``common``,
 ``validation``) without an explicit ``sys.path`` manipulation.
@@ -27,7 +27,7 @@ deeper and must reach ``scylla.*`` as well as ``common`` / ``agent_utils``.
 
 Audit results (2026-02-28, issue #1193)
 -----------------------------------------
-``pixi run pytest --collect-only 2>&1 | grep 'ERROR|ModuleNotFoundError'``
+``uv run pytest --collect-only 2>&1 | grep 'ERROR|ModuleNotFoundError'``
 produced **no collection errors**.  All 3480 tests were collected successfully.
 No additional pythonpath entries are required beyond the existing configuration.
 """

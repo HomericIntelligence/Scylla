@@ -106,7 +106,7 @@ def test_invalid_score_raises_value_error(self, score: float) -> None:
 
 ```bash
 # Run affected tests
-pixi run python -m pytest tests/unit/metrics/ tests/unit/test_grading_consistency.py --no-cov -q
+uv run python -m pytest tests/unit/metrics/ tests/unit/test_grading_consistency.py --no-cov -q
 
 # Run pre-commit on changed files
 pre-commit run --files scylla/metrics/grading.py scylla/e2e/llm_judge.py \

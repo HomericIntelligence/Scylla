@@ -117,7 +117,7 @@ bash tests/.../validate_agent.sh /tmp/bad.md
 ### 5. Run full test suite
 
 ```bash
-pixi run python -m pytest tests/ -v
+uv run python -m pytest tests/ -v
 ```
 
 ## Failed Attempts

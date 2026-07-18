@@ -2,9 +2,8 @@
 """Detect CI tooling version drift across config files.
 
 Checks for version consistency across:
-1. Pixi version: canonical .github/pixi-version file vs workflow and Containerfile
-2. setup-pixi action SHA: consistent across all workflow and action files
-3. Gitleaks version: consistent across pre-commit config and security workflow
+1. setup-uv action SHA: consistent across all workflow and action files
+2. Gitleaks version: consistent across pre-commit config and security workflow
 
 Usage:
     python scripts/check_ci_version_sync.py
@@ -22,88 +21,8 @@ import sys
 from pathlib import Path
 
 
-def get_pixi_version_from_canonical(repo_root: Path) -> str:
-    """Extract pixi version from canonical .github/pixi-version file.
-
-    Args:
-        repo_root: Root directory of the repository.
-
-    Returns:
-        The version string (e.g. ``"v0.67.2"``).
-
-    Raises:
-        SystemExit: With code 1 if the canonical file is missing.
-
-    """
-    canonical_path = repo_root / ".github" / "pixi-version"
-    if not canonical_path.is_file():
-        print(f"ERROR: Canonical pixi version file not found: {canonical_path}", file=sys.stderr)
-        sys.exit(1)
-
-    version = canonical_path.read_text().strip()
-    return version
-
-
-def validate_pixi_consistency(repo_root: Path, verbose: bool = False) -> int:
-    """Validate pixi version consistency across all config files.
-
-    Checks:
-    1. All pixi-version: entries in .github/**/*.yml (excluding GitHub Actions template syntax)
-    2. ARG PIXI_VERSION= in ci/Containerfile
-
-    Args:
-        repo_root: Root directory of the repository.
-        verbose: If True, print detailed validation messages.
-
-    Returns:
-        0 if all versions match, 1 if any drift is found.
-
-    """
-    canonical_version = get_pixi_version_from_canonical(repo_root)
-
-    errors = []
-
-    # Check workflows
-    workflows_dir = repo_root / ".github" / "workflows"
-    if workflows_dir.is_dir():
-        for workflow_file in sorted(workflows_dir.glob("*.yml")):
-            content = workflow_file.read_text()
-            # Match pixi-version: <version> (not GitHub Actions template syntax like ${{ ... }})
-            matches = re.findall(r"pixi-version:\s*([a-zA-Z0-9v.]+)(?:\s|$)", content)
-            for match in matches:
-                if match != canonical_version:
-                    errors.append(
-                        f"Pixi version mismatch in {workflow_file.relative_to(repo_root)}:\n"
-                        f"  Canonical: {canonical_version}\n"
-                        f"  Found: {match}"
-                    )
-
-    # Check Containerfile
-    containerfile = repo_root / "ci" / "Containerfile"
-    if containerfile.is_file():
-        content = containerfile.read_text()
-        match = re.search(r"ARG\s+PIXI_VERSION=(\S+)", content)
-        if match:
-            found_version = match.group(1)
-            if found_version != canonical_version:
-                errors.append(
-                    f"Pixi version mismatch in {containerfile.relative_to(repo_root)}:\n"
-                    f"  Canonical: {canonical_version}\n"
-                    f"  Found: {found_version}"
-                )
-
-    if errors:
-        for error in errors:
-            print(f"ERROR: {error}", file=sys.stderr)
-        return 1
-
-    if verbose:
-        print(f"OK: Pixi version consistent ({canonical_version})")
-    return 0
-
-
-def get_setup_pixi_shas(repo_root: Path) -> list[str]:
-    """Extract all prefix-dev/setup-pixi@SHA references.
+def get_setup_uv_shas(repo_root: Path) -> list[str]:
+    """Extract all astral-sh/setup-uv@SHA references.
 
     Scans:
     1. All .github/**/*.yml files
@@ -123,7 +42,7 @@ def get_setup_pixi_shas(repo_root: Path) -> list[str]:
     if workflows_dir.is_dir():
         for workflow_file in sorted(workflows_dir.glob("*.yml")):
             content = workflow_file.read_text()
-            matches = re.findall(r"prefix-dev/setup-pixi@(\S+)", content)
+            matches = re.findall(r"astral-sh/setup-uv@(\S+)", content)
             shas.extend(matches)
 
     # Check composite actions
@@ -131,16 +50,16 @@ def get_setup_pixi_shas(repo_root: Path) -> list[str]:
     if actions_dir.is_dir():
         for action_file in sorted(actions_dir.glob("*/action.yml")):
             content = action_file.read_text()
-            matches = re.findall(r"prefix-dev/setup-pixi@(\S+)", content)
+            matches = re.findall(r"astral-sh/setup-uv@(\S+)", content)
             shas.extend(matches)
 
     return shas
 
 
-def validate_setup_pixi_sha_consistency(repo_root: Path, verbose: bool = False) -> int:
-    """Validate setup-pixi action SHA consistency across all config files.
+def validate_setup_uv_sha_consistency(repo_root: Path, verbose: bool = False) -> int:
+    """Validate setup-uv action SHA consistency across all config files.
 
-    Checks that all prefix-dev/setup-pixi@SHA references use the same SHA.
+    Checks that all astral-sh/setup-uv@SHA references use the same SHA.
 
     Args:
         repo_root: Root directory of the repository.
@@ -150,17 +69,17 @@ def validate_setup_pixi_sha_consistency(repo_root: Path, verbose: bool = False) 
         0 if all SHAs match (or none found), 1 if drift is found.
 
     """
-    shas = get_setup_pixi_shas(repo_root)
+    shas = get_setup_uv_shas(repo_root)
 
     if not shas:
         if verbose:
-            print("OK: No setup-pixi SHA usage found")
+            print("OK: No setup-uv SHA usage found")
         return 0
 
     unique_shas = set(shas)
     if len(unique_shas) > 1:
         print(
-            f"ERROR: setup-pixi action SHA inconsistency detected:\n"
+            f"ERROR: setup-uv action SHA inconsistency detected:\n"
             f"  Found {len(unique_shas)} different SHAs: {unique_shas}",
             file=sys.stderr,
         )
@@ -168,7 +87,7 @@ def validate_setup_pixi_sha_consistency(repo_root: Path, verbose: bool = False) 
 
     if verbose:
         sha = next(iter(unique_shas))
-        print(f"OK: setup-pixi SHA consistent ({sha})")
+        print(f"OK: setup-uv SHA consistent ({sha})")
     return 0
 
 
@@ -258,8 +177,7 @@ def check_ci_version_sync(repo_root: Path, verbose: bool = False) -> int:
 
     """
     results = [
-        validate_pixi_consistency(repo_root, verbose=verbose),
-        validate_setup_pixi_sha_consistency(repo_root, verbose=verbose),
+        validate_setup_uv_sha_consistency(repo_root, verbose=verbose),
         validate_gitleaks_consistency(repo_root, verbose=verbose),
     ]
 

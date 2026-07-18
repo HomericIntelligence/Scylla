@@ -41,7 +41,7 @@
 4. **Verify locally**
 
    ```bash
-   pixi run pre-commit run shellcheck --all-files
+   uv run pre-commit run shellcheck --all-files
    ```
 
    Expected output: `ShellCheck...Passed`
@@ -85,7 +85,7 @@
 | Hook              | Exclude pattern                          |
 |-------------------|------------------------------------------|
 | markdownlint-cli2 | combined regex (notes, build, docs/arxiv, docs/design) |
-| yamllint          | `^(\.pixi\|build)/`                      |
+| yamllint          | `^(\.venv\|build)/`                      |
 | shellcheck        | `^(build/\|docs/arxiv/)` (after this fix) |
 
 Markdownlint-cli2 full pattern:

@@ -14,7 +14,7 @@ cd "$REPO_ROOT"
 EXPERIMENT_DIR="/home/mvillmow/fullruns/haiku-rewrite/test-001/2026-03-30T04-09-50-test-001"
 
 echo "=== Step 1: Patch checkpoint for 21 unjudged runs ==="
-pixi run python3 -c "
+uv run python3 -c "
 import json
 from pathlib import Path
 
@@ -54,7 +54,7 @@ print(f'\nPatched {len(runs)} runs. Checkpoint saved.')
 
 echo ""
 echo "=== Step 2: Run judge pipeline for the 21 patched runs ==="
-pixi run python scripts/manage_experiment.py run \
+uv run python scripts/manage_experiment.py run \
     --config tests/fixtures/tests/test-001 \
     --experiment-id test-001 \
     --results-dir /home/mvillmow/fullruns/haiku-rewrite/test-001 \
@@ -65,14 +65,14 @@ pixi run python scripts/manage_experiment.py run \
 
 echo ""
 echo "=== Step 3: Regenerate analysis artifacts ==="
-pixi run python scripts/generate_all_results.py \
+uv run python scripts/generate_all_results.py \
     --data-dir /home/mvillmow/fullruns/haiku-rewrite \
     --output-dir docs/arxiv/haiku
 
 echo ""
 echo "=== Done ==="
 echo "Verify: check that runs.csv now has 1080 rows"
-pixi run python3 -c "
+uv run python3 -c "
 import csv
 from pathlib import Path
 rows = sum(1 for _ in csv.reader(open('docs/arxiv/haiku/data/runs.csv'))) - 1

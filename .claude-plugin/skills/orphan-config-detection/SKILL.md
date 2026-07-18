@@ -106,7 +106,7 @@ File: `tests/unit/test_config_loader.py` — add `TestModelConfigOrphanValidatio
 ### 5. Run checks
 
 ```bash
-pixi run python -m pytest tests/unit/test_config_validation.py tests/unit/test_config_loader.py -v
+uv run python -m pytest tests/unit/test_config_validation.py tests/unit/test_config_loader.py -v
 pre-commit run --files scylla/config/validation.py scylla/config/loader.py tests/unit/test_config_validation.py tests/unit/test_config_loader.py
 ```
 

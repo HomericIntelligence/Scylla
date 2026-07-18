@@ -88,7 +88,7 @@ Remove the `E2ERunner(...)` construction line from every method. Adopt **all-or-
 
 ```bash
 # All tests in file pass
-pixi run python -m pytest tests/unit/e2e/test_runner.py -v
+uv run python -m pytest tests/unit/e2e/test_runner.py -v
 
 # Only one E2ERunner(...) call remains — inside the fixture
 grep -n "E2ERunner(" tests/unit/e2e/test_runner.py

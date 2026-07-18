@@ -5,7 +5,7 @@ extends: default
 
 ignore: |
   helm/**/templates/
-  .pixi/
+  .venv/
   build/
   .git/
   node_modules/

@@ -74,7 +74,7 @@ Remove lines like `- BaseExecutionInfo (core/results.py) - Legacy dataclass (dep
 ### Phase 6 — Verify
 
 ```bash
-pixi run python -m pytest tests/ -v
+uv run python -m pytest tests/ -v
 grep -rn "BaseExecutionInfo" scylla/ tests/   # should return empty
 pre-commit run --all-files
 ```

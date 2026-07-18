@@ -49,8 +49,8 @@ class TestRunScript:
         assert "--data-dir" in call_cmd
         assert "/tmp" in call_cmd
 
-    def test_command_includes_pixi_run(self) -> None:
-        """Command starts with 'pixi run python'."""
+    def test_command_includes_uv_run(self) -> None:
+        """Command starts with 'uv run python'."""
         mock_result = MagicMock()
         mock_result.returncode = 0
 
@@ -58,7 +58,7 @@ class TestRunScript:
             run_script("scripts/export_data.py", [], "desc")
 
         call_cmd = mock_run.call_args[0][0]
-        assert call_cmd[:3] == ["pixi", "run", "python"]
+        assert call_cmd[:3] == ["uv", "run", "python"]
 
 
 class TestMain:

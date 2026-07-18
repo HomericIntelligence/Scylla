@@ -81,7 +81,7 @@ same textfile format, so this choice is not Prometheus-specific.
 
    ```bash
    export SCYLLA_METRICS_PATH=/var/lib/node_exporter/textfiles/scylla.prom
-   pixi run scylla run ...
+   uv run scylla run ...
    ```
 
 3. Confirm samples appear in Prometheus / VictoriaMetrics under metric

@@ -154,7 +154,7 @@ echo ""
 
 echo "=== Phase 1: agent execution (${THREADS} threads, --until agent_complete) ===" \
     | tee -a "$LOG_FILE"
-pixi run python scripts/manage_experiment.py run \
+uv run python scripts/manage_experiment.py run \
     --threads "$THREADS" \
     --until agent_complete \
     --max-concurrent-agents "$MAX_CONCURRENT_AGENTS" \
@@ -162,14 +162,14 @@ pixi run python scripts/manage_experiment.py run \
 
 echo "=== Phase 2: diff capture (1 thread, --until diff_captured) ===" \
     | tee -a "$LOG_FILE"
-pixi run python scripts/manage_experiment.py run \
+uv run python scripts/manage_experiment.py run \
     --threads 1 \
     --until diff_captured \
     "${COMMON_ARGS[@]}" 2>&1 | tee -a "$LOG_FILE"
 
 echo "=== Phase 3: judging + finalization (${THREADS} threads) ===" \
     | tee -a "$LOG_FILE"
-pixi run python scripts/manage_experiment.py run \
+uv run python scripts/manage_experiment.py run \
     --threads "$THREADS" \
     --max-concurrent-agents "$MAX_CONCURRENT_AGENTS" \
     "${COMMON_ARGS[@]}" 2>&1 | tee -a "$LOG_FILE"

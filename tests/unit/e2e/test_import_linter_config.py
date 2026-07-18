@@ -38,16 +38,16 @@ class TestImportLinterConfig:
         root_pkgs = cfg.get("importlinter", "root_packages")
         assert "scylla" in root_pkgs.split(), "root_packages must list 'scylla'"
 
-    def test_lint_imports_task_in_pixi_toml(self) -> None:
-        """pixi.toml must have a lint-imports task."""
-        pixi_text = (REPO_ROOT / "pixi.toml").read_text()
-        assert "lint-imports" in pixi_text, (
-            "pixi.toml must define a lint-imports task for import-linter"
+    def test_lint_imports_recipe_in_justfile(self) -> None:
+        """Justfile must expose a lint-imports recipe (run under uv)."""
+        justfile_text = (REPO_ROOT / "justfile").read_text()
+        assert "lint-imports" in justfile_text, (
+            "justfile must define a lint-imports recipe for import-linter"
         )
 
     def test_import_linter_in_dev_dependencies(self) -> None:
-        """import-linter must appear in pixi.toml dev pypi-dependencies."""
-        pixi_text = (REPO_ROOT / "pixi.toml").read_text()
-        assert "import-linter" in pixi_text, (
-            "import-linter must be listed in pixi.toml dev pypi-dependencies"
+        """import-linter must appear in pyproject.toml [dependency-groups].dev."""
+        pyproject_text = (REPO_ROOT / "pyproject.toml").read_text()
+        assert "import-linter" in pyproject_text, (
+            "import-linter must be listed in pyproject.toml [dependency-groups].dev"
         )

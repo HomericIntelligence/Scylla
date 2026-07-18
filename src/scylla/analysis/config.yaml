@@ -167,10 +167,10 @@ reproducibility:
   # Analysis pipeline version
   pipeline_version: "1.0.0"
 
-  # Expected pixi environment
-  pixi_environment: "analysis"
+  # Expected uv extra providing the analysis stack
+  uv_environment: "analysis"
 
-  # Critical dependencies (from pixi.toml)
+  # Critical dependencies (from pyproject.toml [project.optional-dependencies].analysis)
   dependencies:
     python: ">=3.10"
     pandas: ">=2.0.0"

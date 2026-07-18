@@ -26,7 +26,7 @@ Run the existing grep chain locally and verify it returns 0:
 ```bash
 count=$(grep -rn "SomeDeprecatedSymbol" . \
   --include="*.py" \
-  --exclude-dir=".pixi" \
+  --exclude-dir=".venv" \
   | grep -v "definition_file.py" \
   | grep -v "# deprecated" \
   | grep -v "test_file.py" \
@@ -74,7 +74,7 @@ are needed.
   run: |
     count=$(grep -rn "BaseExecutionInfo" . \
       --include="*.py" \
-      --exclude-dir=".pixi" \
+      --exclude-dir=".venv" \
       | grep -v "scylla/core/results.py" \
       | grep -v "scylla/core/__init__.py" \
       | grep -v "# deprecated" \
@@ -84,7 +84,7 @@ are needed.
     echo "BaseExecutionInfo usage count (excluding definition, re-export, and tests): $count"
     if [ "$count" -gt "0" ]; then
       echo "::error::Found $count usages of deprecated BaseExecutionInfo — remove before merging"
-      grep -rn "BaseExecutionInfo" . --include="*.py" --exclude-dir=".pixi" \
+      grep -rn "BaseExecutionInfo" . --include="*.py" --exclude-dir=".venv" \
         | grep -v "scylla/core/results.py" \
         | grep -v "scylla/core/__init__.py" \
         | grep -v "# deprecated" \
@@ -104,7 +104,7 @@ Key changes from the warning step:
 ### 4. Verify tests still pass
 
 ```bash
-pixi run python -m pytest tests/ -v
+uv run python -m pytest tests/ -v
 ```
 
 This CI change touches only `.github/workflows/test.yml` — no Python source

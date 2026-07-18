@@ -85,7 +85,7 @@ Analyze Scylla for completeness, quality, and maturity across six dimensions. Pr
 
 **Tasks to Evaluate:**
 
-1. Run `pixi run python -m pytest tests/unit/ --co -q 2>/dev/null | tail -5` to count collected tests
+1. Run `uv run python -m pytest tests/unit/ --co -q 2>/dev/null | tail -5` to count collected tests
 2. Check that each `src/scylla/` module has a corresponding test file in `tests/unit/`
 3. Sample 3 test files for mocking discipline (no real network/filesystem calls in unit tests)
 4. Count how many of the 47 test fixtures have all 4 required files present
@@ -133,7 +133,7 @@ Analyze Scylla for completeness, quality, and maturity across six dimensions. Pr
 
 **Success Criteria:**
 
-- `pixi.toml` defines reproducible environments with pinned versions
+- `pyproject.toml` defines reproducible environments with pinned versions
 - `docker/Dockerfile` + `docker/docker-compose.yml` support containerized agent execution
 - `.github/` CI workflows gate on tests and lint
 - `.pre-commit-config.yaml` enforces ruff, mypy, yamllint, markdownlint on commit
@@ -143,7 +143,7 @@ Analyze Scylla for completeness, quality, and maturity across six dimensions. Pr
 
 1. Check `.github/` for CI workflow files and what they gate on
 2. Verify `docker/Dockerfile` and `docker/docker-compose.yml` are complete and match `docs/design/container-architecture.md`
-3. Check `pixi.toml` for version pinning strategy
+3. Check `pyproject.toml` for version pinning strategy
 4. Verify `.pre-commit-config.yaml` hooks cover all configured linters
 5. Check `.env.example` lists all API keys needed (Anthropic, GitHub, etc.)
 
@@ -249,7 +249,7 @@ For each section: assign a score with 2-3 specific evidence points (file paths w
 ## Technology-Specific Checklist (Python / AI Research Framework)
 
 - [ ] `pyproject.toml` defines package metadata, entry points, and dependency bounds
-- [ ] `pixi.toml` locks dependencies for reproducible environments
+- [ ] `uv.lock` locks dependencies for reproducible environments
 - [ ] `ruff` configured with appropriate rule sets (not just defaults)
 - [ ] `mypy` configured with `strict` or documented relaxations
 - [ ] `pytest` configured with `--cov-fail-under` threshold

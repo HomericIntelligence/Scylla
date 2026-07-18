@@ -12,7 +12,7 @@
 ```
 .github/dependabot.yml                  (new)
 .github/workflows/security.yml          (new)
-pixi.toml                               (modified — added [feature.lint.pypi-dependencies])
+pyproject.toml                          (modified — added pip-audit to [dependency-groups] dev)
 ```
 
 ## Commit
@@ -34,22 +34,21 @@ feat(ci): add dependency security scanning via pip-audit and Dependabot
 
 The `PreToolUse` hook fires on any GitHub Actions YAML write and emits a message about injection risks. It is advisory (not blocking). When the file has no `${{ }}` in `run:` blocks, it is safe to proceed via Bash heredoc as a workaround.
 
-### pixi.toml section semantics
+### dependency-group semantics
 
-- `[feature.X.dependencies]` → conda-forge packages
-- `[feature.X.pypi-dependencies]` → PyPI packages
-- pip-audit is PyPI-only → must go in `pypi-dependencies`
+- Dev tooling (pip-audit, ruff, mypy, pytest, …) goes in `[dependency-groups]` `dev` in `pyproject.toml`
+- `uv sync --all-groups --all-extras --locked` installs it from the locked resolution
+- pip-audit is available via `uv run pip-audit`
 
-### Cache key separation
+### Caching
 
-The existing test workflow uses `pixi-${{ runner.os }}-${{ hashFiles('pixi.lock') }}`.
-The new security workflow uses `pixi-lint-${{ runner.os }}-${{ hashFiles('pixi.lock') }}` to avoid cache namespace collisions between the `default` and `lint` environments.
+`astral-sh/setup-uv` with `enable-cache: true` caches the uv download/build cache, keyed off `uv.lock`. No hand-rolled `actions/cache` step or per-environment cache-key separation is needed — a single uv cache serves every workflow.
 
 ## Commands Run
 
 ```bash
 # Stage and commit
-git add pixi.toml .github/dependabot.yml .github/workflows/security.yml
+git add pyproject.toml .github/dependabot.yml .github/workflows/security.yml
 git commit -m "feat(ci): add dependency security scanning via pip-audit and Dependabot"
 
 # Push and create PR

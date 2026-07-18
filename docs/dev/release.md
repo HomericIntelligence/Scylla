@@ -17,7 +17,7 @@ The `release.yml` workflow handles the full release pipeline:
 
 1. Trigger the **Release** workflow via GitHub Actions → *Run workflow* with the
    desired version part (`patch`, `minor`, or `major`).
-2. The workflow bumps the version in `pyproject.toml` and `pixi.toml`, commits,
+2. The workflow bumps the version in `pyproject.toml`, commits,
    creates a tag (`vX.Y.Z`), and opens a PR.
 3. Once the version-bump PR merges the tag is already pushed, which triggers the
    `release` → `build` → `publish-pypi` chain automatically.

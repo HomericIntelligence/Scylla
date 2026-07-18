@@ -57,7 +57,7 @@ hatch build            # now produces only wheel
 
 ```bash
 pre-commit run --files pyproject.toml
-pixi run python -m pytest tests/ -v
+uv run python -m pytest tests/ -v
 ```
 
 No test changes needed — this is a build configuration change only.
