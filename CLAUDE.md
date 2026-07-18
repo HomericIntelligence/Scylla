@@ -318,7 +318,7 @@ Skills live in two places. Pick the right location based on **scope**, not conve
 - Location: `.claude-plugin/skills/<name>/SKILL.md` (39 skills) and `skills/<name>/SKILL.md` (1 skill)
 - Use when the skill is tightly coupled to Scylla's domain:
   - Evaluation tier semantics (T0–T6 ablation patterns)
-  - Repo-specific config schemas (pixi, model configs, judge prompts)
+  - Repo-specific config schemas (uv/pyproject, model configs, judge prompts)
   - Scylla automation (e2e runner internals, batch result analysis)
   - Fixes to this repo's CI, pre-commit hooks, or doc policies
 - Examples: `doc-contradiction-resolution`, `config-default-model-drift`, `wired-runner-fixture`
@@ -327,7 +327,7 @@ Skills live in two places. Pick the right location based on **scope**, not conve
 
 - Location: `HomericIntelligence/ProjectMnemosyne/skills/<name>.md` (flat format)
 - Use when the skill benefits other HomericIntelligence repos:
-  - Language/tooling techniques (Python, mypy, pixi, pre-commit) that apply broadly
+  - Language/tooling techniques (Python, mypy, uv, pre-commit) that apply broadly
   - Generic debugging patterns (e.g., Pydantic None-coercion, rebase conflict resolution)
   - CI/CD patterns reusable across the 12-repo ecosystem
   - Cross-cutting research methodology
@@ -371,16 +371,17 @@ All agents reference these shared files to avoid duplication:
 
 ## Environment Setup
 
-This project uses Pixi for environment management with Python 3.10+:
+This project uses [uv](https://docs.astral.sh/uv/) for environment management with Python 3.10+ (Odysseus ADR-017):
 
 ```bash
-# Pixi is already configured - dependencies are in pixi.toml
+# Dependencies are declared in pyproject.toml and locked in uv.lock
+uv sync --all-groups --all-extras
 
 # Run Python tests
-pixi run python -m pytest tests/ -v
+uv run python -m pytest tests/ -v
 
-# Run pre-commit hooks (includes black, ruff, mypy)
-pre-commit run --all-files
+# Run pre-commit hooks (includes ruff, mypy)
+uv run pre-commit run --all-files
 ```
 
 ## Common Commands
@@ -433,11 +434,11 @@ pre-commit run --all-files
 
 **No CHANGELOG.md.** Do not create, edit, or file issues against `CHANGELOG.md`. Release notes are generated from commits at release time via `gh release create --generate-notes`. Audit reports MUST NOT flag missing/stale changelog entries.
 
-**After any `pyproject.toml` or `pixi.toml` change**, regenerate the lock file before committing:
+**After any `pyproject.toml` change**, regenerate the lock file before committing:
 
 ```bash
-pixi install  # regenerates pixi.lock
-git add pixi.lock
+uv lock  # regenerates uv.lock
+git add uv.lock
 ```
 
 **Before pushing from a worktree** (auto-impl agents), always run:
@@ -481,7 +482,8 @@ Scylla/
 +-- .claude/                     # Operational configurations
 |   +-- agents/                  # Agent configs
 |   +-- shared/                  # Shared reference files
-+-- pixi.toml                    # Pixi configuration
++-- pyproject.toml               # Project + uv dependency configuration
++-- uv.lock                      # Resolved dependency lockfile
 +-- CLAUDE.md                    # This file
 +-- README.md                    # Project overview
 ```

@@ -127,6 +127,22 @@ def mann_whitney_u(
         )
         return 0.0, 1.0
 
+    # Guard against fully-tied input (every observation across both groups is
+    # identical). The two samples are drawn from the same degenerate
+    # distribution, so there is no location shift to detect. SciPy >= 1.18
+    # returns p=nan here (undefined normal approximation with zero rank
+    # variance); older versions returned a valid p. Treat identical
+    # distributions as "not significant" (p=1.0), consistent with the n<2 and
+    # ValueError guards below.
+    combined = np.concatenate([g1, g2])
+    if np.all(combined == combined[0]):
+        logger.warning(
+            "Mann-Whitney U test called with fully-tied input (all values "
+            "identical across both groups). No location shift to test; "
+            "returning U=0, p=1.0."
+        )
+        return 0.0, 1.0
+
     try:
         statistic, pvalue = stats.mannwhitneyu(g1, g2, alternative="two-sided")
         return float(statistic), float(pvalue)

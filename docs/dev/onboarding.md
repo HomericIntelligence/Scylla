@@ -9,14 +9,14 @@ The following tools are required. Versions are pinned in `.tool-versions` at the
 
 | Tool | Pinned version | Purpose |
 |------|---------------|---------|
-| `pixi` | 0.63.2 | Dependency and environment manager |
-| `just` | 1.36.0 | Task runner (delegates to `pixi run`) |
+| `uv` | 0.63.2 | Dependency and environment manager |
+| `just` | 1.36.0 | Task runner (delegates to `uv run`) |
 | `gh` | 2.65.0 | GitHub CLI (PR workflow) |
 
-Install `pixi` if not already present:
+Install `uv` if not already present:
 
 ```bash
-curl -fsSL https://pixi.sh/install.sh | bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 Install `just` and `gh` via your system package manager, or let `mise`/`asdf` pick up `.tool-versions`.
@@ -28,8 +28,8 @@ Install `just` and `gh` via your system package manager, or let `mise`/`asdf` pi
 git clone https://github.com/HomericIntelligence/Scylla.git
 cd Scylla
 
-# Install all dependencies (creates .pixi/ env)
-pixi install
+# Install all dependencies (creates .venv/ env)
+uv sync --all-groups --all-extras
 
 # Copy environment template and add API keys
 cp .env.example .env
@@ -39,8 +39,8 @@ cp .env.example .env
 ## Verify Installation
 
 ```bash
-pixi run python --version   # Should be 3.10+
-pixi run pytest tests/ -v   # All tests should pass
+uv run python --version   # Should be 3.10+
+uv run pytest tests/ -v   # All tests should pass
 just --list                  # Shows available task recipes
 ```
 
@@ -63,7 +63,7 @@ just format
 just typecheck
 
 # Watch tests — re-runs automatically on file change
-# (requires pytest-watch, already in pixi.toml [feature.dev.pypi-dependencies])
+# (requires pytest-watch, already in pyproject.toml [dependency-groups] dev)
 just watch
 
 # Debug a single test with pdb
@@ -87,12 +87,12 @@ VS Code will prompt to install the recommended extensions on first open.
 
 For Codespaces, a `.devcontainer/devcontainer.json` is provided. It uses the
 `mcr.microsoft.com/devcontainers/python:1-3.10-bookworm` base image and installs
-`pixi` via a community devcontainer feature, then runs `pixi install` after creation.
+`uv` via a community devcontainer feature, then runs `uv sync --all-groups --all-extras` after creation.
 
-> **Note**: The `ghcr.io/prulloac/devcontainer-features/pixi:1` feature is a community
+> **Note**: The `ghcr.io/prulloac/devcontainer-features/uv:1` feature is a community
 > contribution. If it is unavailable, replace `postCreateCommand` with a shell command
-> that downloads and installs pixi directly:
-> `"postCreateCommand": "curl -fsSL https://pixi.sh/install.sh | bash && pixi install"`
+> that downloads and installs uv directly:
+> `"postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && uv sync --all-groups --all-extras"`
 
 ## First Contribution Walkthrough
 

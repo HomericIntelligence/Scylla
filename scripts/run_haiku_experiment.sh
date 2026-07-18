@@ -37,11 +37,11 @@ preflight() {
         echo "  OK: claude CLI found"
     fi
 
-    if ! command -v pixi &>/dev/null; then
-        echo "FAIL: pixi not found in PATH"
+    if ! command -v uv &>/dev/null; then
+        echo "FAIL: uv not found in PATH"
         fail=1
     else
-        echo "  OK: pixi found"
+        echo "  OK: uv found"
     fi
 
     for test_id in "${TESTS[@]}"; do
@@ -99,7 +99,7 @@ run_stage() {
     case "$stage" in
         1)
             echo "[$test_id] Stage 1: Agent execution (10 concurrent agents)"
-            pixi run python scripts/manage_experiment.py run \
+            uv run python scripts/manage_experiment.py run \
                 "${common_args[@]}" \
                 --max-concurrent-agents 10 \
                 --until agent_complete \
@@ -107,14 +107,14 @@ run_stage() {
             ;;
         2)
             echo "[$test_id] Stage 2: Commit + Diff + Promote (2 concurrent agents)"
-            pixi run python scripts/manage_experiment.py run \
+            uv run python scripts/manage_experiment.py run \
                 "${common_args[@]}" \
                 --max-concurrent-agents 2 \
                 --until promoted_to_completed
             ;;
         3)
             echo "[$test_id] Stage 3: Judging + Finalization (5 concurrent agents)"
-            pixi run python scripts/manage_experiment.py run \
+            uv run python scripts/manage_experiment.py run \
                 "${common_args[@]}" \
                 --max-concurrent-agents 5 \
                 "${off_peak_args[@]}"
@@ -136,7 +136,7 @@ verify_stage() {
     echo ""
     echo "[$test_id] Verifying runs reached: ${expected_state}"
 
-    pixi run python -c "
+    uv run python -c "
 import json, sys
 from pathlib import Path
 

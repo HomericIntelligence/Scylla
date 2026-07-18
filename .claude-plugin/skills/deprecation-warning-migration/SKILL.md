@@ -159,12 +159,12 @@ Document the deprecation in the PR body so it surfaces in the auto-generated rel
 ### 7. Add non-blocking CI tracking step
 
 ```yaml
-# .github/workflows/test.yml (after checkout, before pixi install)
+# .github/workflows/test.yml (after checkout, before uv sync)
 - name: Track deprecated BaseRunMetrics usage
   run: |
     count=$(grep -rn "BaseRunMetrics" . \
       --include="*.py" \
-      --exclude-dir=".pixi" \
+      --exclude-dir=".venv" \
       | grep -v "scylla/core/results.py" \
       | grep -v "# deprecated" \
       | grep -v "test_results.py" \
@@ -172,7 +172,7 @@ Document the deprecation in the PR body so it surfaces in the auto-generated rel
     echo "BaseRunMetrics usage count (excluding definition and tests): $count"
     if [ "$count" -gt "0" ]; then
       echo "::warning::Found $count usages of deprecated BaseRunMetrics"
-      grep -rn "BaseRunMetrics" . --include="*.py" --exclude-dir=".pixi" \
+      grep -rn "BaseRunMetrics" . --include="*.py" --exclude-dir=".venv" \
         | grep -v "scylla/core/results.py" \
         | grep -v "# deprecated" \
         | grep -v "test_results.py"
@@ -190,8 +190,8 @@ Document the deprecation in the PR body so it surfaces in the auto-generated rel
 pre-commit run --all-files
 
 # Full unit test suite
-pixi run pip install -e .
-pixi run pytest tests/unit/ -v
+uv sync --all-groups --all-extras --locked
+uv run pytest tests/unit/ -v
 
 # Manual smoke test
 python -c "

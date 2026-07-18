@@ -48,7 +48,7 @@ repos:
           AST-based Python security scanning. Replaces the naive pygrep shell=True
           check with bandit which understands code context (skips comments/strings).
           Medium+ severity only (-ll) to avoid low-severity noise.
-        entry: pixi run --environment lint bandit
+        entry: uv run bandit
         language: system
         args: [-c, pyproject.toml, --severity-level, medium]
         files: ^(scripts|src/scylla)/.*\.py$
@@ -65,29 +65,22 @@ repos:
         types: [python]
       - id: pip-audit
         name: pip-audit CVE Scan
-        entry: pixi run audit
+        entry: bash -c 'uv run pip-audit --format json | uv run python scripts/filter_audit.py'
         language: system
-        files: ^(pyproject\.toml|pixi\.toml|pixi\.lock)$
+        files: ^(pyproject\.toml|uv\.lock)$
         pass_filenames: false
-      - id: check-pixi-lock
-        name: Check pixi.lock is up-to-date
-        entry: pixi install --locked
+      - id: check-uv-lock
+        name: Check uv.lock is up-to-date
+        entry: uv lock --check
         language: system
-        files: ^(pyproject\.toml|pixi\.toml|pixi\.lock)$
-        pass_filenames: false
-      - id: check-version-consistency
-        name: Check pyproject.toml/pixi.toml Version Consistency
-        description: Fails if pyproject.toml and pixi.toml package versions differ
-        entry: pixi run python scripts/check_version_consistency.py
-        language: system
-        files: ^(pyproject\.toml|pixi\.toml)$
+        files: ^(pyproject\.toml|uv\.lock)$
         pass_filenames: false
       - id: check-ci-version-sync
         name: Check CI Tooling Version Sync
-        description: Fails if pixi, setup-pixi action SHA, or gitleaks versions drift across config files
-        entry: pixi run python scripts/check_ci_version_sync.py
+        description: Fails if setup-uv action SHA or gitleaks versions drift across config files
+        entry: uv run python scripts/check_ci_version_sync.py
         language: system
-        files: ^(\.github/pixi-version|\.github/workflows/.*\.ya?ml|\.github/actions/.*/action\.ya?ml|ci/Containerfile|\.pre-commit-config\.yaml)$
+        files: ^(\.github/workflows/.*\.ya?ml|\.github/actions/.*/action\.ya?ml|ci/Containerfile|\.pre-commit-config\.yaml)$
         pass_filenames: false
 
   # Python formatting and linting
@@ -95,24 +88,24 @@ repos:
     hooks:
       - id: ruff-format-python
         name: Ruff Format Python
-        description: Format Python files in scripts/, src/scylla/, tests/, and all subdirectories using pixi run ruff format
-        entry: pixi run ruff format scripts/ src/scylla/ tests/
+        description: Format Python files in scripts/, src/scylla/, tests/, and all subdirectories using uv run ruff format
+        entry: uv run ruff format scripts/ src/scylla/ tests/
         language: system
         files: ^(scripts|src/scylla|tests)/.*\.py$
         types: [python]
         pass_filenames: false
       - id: ruff-check-python
         name: Ruff Check Python
-        description: Lint Python files in scripts/, src/scylla/, tests/, and all subdirectories using pixi run ruff check
-        entry: pixi run ruff check --fix scripts/ src/scylla/ tests/
+        description: Lint Python files in scripts/, src/scylla/, tests/, and all subdirectories using uv run ruff check
+        entry: uv run ruff check --fix scripts/ src/scylla/ tests/
         language: system
         files: ^(scripts|src/scylla|tests)/.*\.py$
         types: [python]
         pass_filenames: false
       - id: mypy-check-python
         name: Mypy Type Check Python
-        description: Type check Python files in scripts/, src/scylla/, tests/ using pixi run mypy.
-        entry: pixi run mypy scripts/ src/scylla/ tests/
+        description: Type check Python files in scripts/, src/scylla/, tests/ using uv run mypy.
+        entry: uv run mypy scripts/ src/scylla/ tests/
         language: system
         files: ^(scripts|src/scylla|tests)/.*\.py$
         types: [python]
@@ -129,49 +122,49 @@ repos:
       - id: validate-model-configs
         name: Validate Model Config Naming
         description: Ensure model config filenames match the model_id and required fields are present
-        entry: pixi run python scripts/validate_model_configs.py
+        entry: uv run python scripts/validate_model_configs.py
         language: system
         files: ^config/models/.*\.yaml$
         pass_filenames: false
       - id: check-model-config-consistency
         name: Check Model Config Filename/model_id Consistency
         description: Fails if any config/models/*.yaml filename does not match its model_id field
-        entry: pixi run python scripts/check_model_config_consistency.py
+        entry: uv run python scripts/check_model_config_consistency.py
         language: system
         files: ^config/models/.*\.yaml$
         pass_filenames: false
       - id: check-defaults-filename
         name: Check Defaults Config Filename
         description: Fails if config/defaults.yaml is renamed or replaced with a non-standard filename
-        entry: pixi run python scripts/check_defaults_filename.py
+        entry: uv run python scripts/check_defaults_filename.py
         language: system
         files: ^config/defaults\.yaml$
         pass_filenames: false
       - id: check-tier-config-consistency
         name: Check Tier Config Filename/tier Consistency
         description: Fails if any config/tiers/*.yaml filename does not match its tier field
-        entry: pixi run python scripts/check_tier_config_consistency.py
+        entry: uv run python scripts/check_tier_config_consistency.py
         language: system
         files: ^config/tiers/.*\.yaml$
         pass_filenames: false
       - id: check-python-version-consistency
         name: Check Python Version Consistency
         description: Fails if pyproject.toml Python classifiers and Dockerfile FROM version differ
-        entry: pixi run python scripts/check_python_version_consistency.py
+        entry: uv run python scripts/check_python_version_consistency.py
         language: system
         files: ^(pyproject\.toml|docker/Dockerfile)$
         pass_filenames: false
       - id: check-unit-test-structure
         name: Check Unit Test Structure
         description: Fails if any test_*.py file exists directly under tests/unit/ (enforces sub-package mirroring convention)
-        entry: pixi run python scripts/check_unit_test_structure.py
+        entry: uv run python scripts/check_unit_test_structure.py
         language: system
         files: ^tests/unit/.*\.py$
         pass_filenames: false
       - id: audit-doc-policy
         name: Audit Doc Policy Violations
         description: Fails if any markdown file contains command examples that violate CLAUDE.md policies
-        entry: pixi run python scripts/audit_doc_examples.py
+        entry: uv run python scripts/audit_doc_examples.py
         language: system
         files: \.md$
         types: [markdown]
@@ -179,7 +172,7 @@ repos:
       - id: check-docstring-fragments
         name: Check Orphaned Docstring Fragments
         description: Detects orphaned lowercase continuation lines in module-level and function docstrings (e.g., lines starting with connector words like 'across', 'and', 'or') and fails the commit
-        entry: pixi run hephaestus-check-docstrings --directory src/scylla/
+        entry: uv run hephaestus-check-docstrings --directory src/scylla/
         language: system
         files: \.py$
         types: [python]
@@ -187,7 +180,7 @@ repos:
       - id: check-doc-config-consistency
         name: Check Doc/Config Metric Consistency
         description: Fails if coverage threshold in CLAUDE.md or README.md --cov path diverges from pyproject.toml
-        entry: pixi run python scripts/check_doc_config_consistency.py
+        entry: uv run python scripts/check_doc_config_consistency.py
         language: system
         files: ^(CLAUDE\.md|README\.md|pyproject\.toml)$
         pass_filenames: false
@@ -197,7 +190,7 @@ repos:
           Validates config/defaults.yaml, config/models/*.yaml,
           config/tiers/*.yaml, and tests/fixtures/config/tiers/*.yaml
           against their JSON schemas in schemas/
-        entry: pixi run python scripts/validate_config_schemas.py
+        entry: uv run python scripts/validate_config_schemas.py
         language: system
         files: >-
           ^(config/defaults\.yaml|config/models/.+\.yaml|config/tiers/.+\.yaml|
@@ -208,7 +201,7 @@ repos:
         description: >-
           Fails if any markdown file pairs a tier ID (T0–T6) with the wrong
           canonical name (e.g. T3/Tooling instead of T3/Delegation).
-        entry: pixi run python scripts/check_tier_label_consistency.py
+        entry: uv run python scripts/check_tier_label_consistency.py
         language: system
         files: \.md$
         types: [markdown]
@@ -216,7 +209,7 @@ repos:
       - id: ruff-check-complexity
         name: Ruff Complexity Check (C901)
         description: Fail if any function exceeds McCabe complexity 12 without a noqa directive
-        entry: pixi run ruff check --select C901 scripts/ src/scylla/
+        entry: uv run ruff check --select C901 scripts/ src/scylla/
         language: system
         files: ^(scripts|src/scylla)/.*\.py$
         types: [python]
@@ -224,20 +217,20 @@ repos:
       - id: check-max-complexity
         name: Check Cyclomatic Complexity
         description: Fails if any function in src/scylla/ exceeds max cyclomatic complexity of 10
-        entry: pixi run hephaestus-check-complexity --threshold 10 --path src/scylla/
+        entry: uv run hephaestus-check-complexity --threshold 10 --path src/scylla/
         language: system
         files: ^src/scylla/.*\.py$
         pass_filenames: false
       - id: check-package-version-consistency
         name: Check Package Version Consistency
         description: >-
-          Fails if pixi.toml or src/scylla/__init__.py version diverges from
-          pyproject.toml. Use --scan-skills to also check skill template files
-          for aspirational version references.
-        entry: pixi run python scripts/check_package_version_consistency.py --scan-skills
+          Fails if src/scylla/__init__.py version diverges from pyproject.toml.
+          Use --scan-skills to also check skill template files for aspirational
+          version references.
+        entry: uv run python scripts/check_package_version_consistency.py --scan-skills
         language: system
         files: >-
-          ^(pyproject\.toml|pixi\.toml|src/scylla/__init__\.py|
+          ^(pyproject\.toml|src/scylla/__init__\.py|
           \.claude-plugin/skills/.*\.md|\.claude/.*\.md)$
         pass_filenames: false
 
@@ -259,7 +252,7 @@ repos:
         name: YAML Lint
         description: Lint YAML files for syntax and style
         args: ['--config-file', '.yamllint.yaml']
-        exclude: ^(\.pixi|build)/
+        exclude: ^(\.venv|build)/
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py

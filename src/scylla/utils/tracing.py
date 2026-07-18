@@ -18,8 +18,8 @@ whether tracing is actually configured.
 
 Activation::
 
-    SCYLLA_OTEL_EXPORTER=console pixi run scylla run <test-id>
-    SCYLLA_OTEL_EXPORTER=otlp    pixi run scylla run <test-id>
+    SCYLLA_OTEL_EXPORTER=console uv run scylla run <test-id>
+    SCYLLA_OTEL_EXPORTER=otlp    uv run scylla run <test-id>
 
 Recognised values:
 

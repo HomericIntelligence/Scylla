@@ -44,7 +44,7 @@ This failure pattern has a specific shape:
 ### 1. Confirm the ImportError
 
 ```bash
-pixi run python -c "from scylla.core.results import JudgmentInfoBase, MetricsInfoBase; print('OK')"
+uv run python -c "from scylla.core.results import JudgmentInfoBase, MetricsInfoBase; print('OK')"
 # Expected (broken): ImportError: cannot import name 'JudgmentInfoBase'
 ```
 
@@ -163,13 +163,13 @@ MetricsInfo inheritance hierarchy:
 
 ```bash
 # Quick import check
-pixi run python -c "from scylla.core.results import JudgmentInfoBase, MetricsInfoBase; print('OK')"
+uv run python -c "from scylla.core.results import JudgmentInfoBase, MetricsInfoBase; print('OK')"
 
 # Specific test file (36 tests)
-pixi run python -m pytest tests/unit/core/test_metrics_judgment.py -v
+uv run python -m pytest tests/unit/core/test_metrics_judgment.py -v
 
 # Full unit suite
-pixi run python -m pytest tests/unit/ --no-cov
+uv run python -m pytest tests/unit/ --no-cov
 
 # Pre-commit
 pre-commit run --files scylla/core/results.py scylla/core/__init__.py

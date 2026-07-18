@@ -21,7 +21,7 @@ The script classifies each run into one of five categories:
 ### Scan and classify all runs (dry run)
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ --dry-run
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ --dry-run
 ```
 
 This shows:
@@ -33,7 +33,7 @@ This shows:
 ### Re-run all incomplete runs
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/
 ```
 
 This will:
@@ -47,7 +47,7 @@ This will:
 ### Only regenerate runs with deleted results (no agent execution)
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
     --status results
 ```
 
@@ -56,7 +56,7 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-not
 ### Only re-run failed agents
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
     --status failed
 ```
 
@@ -65,7 +65,7 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-not
 ### Re-run partial and missing runs
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
     --status partial --status missing
 ```
 
@@ -77,7 +77,7 @@ To exclude certain statuses, you must explicitly list the ones you want:
 
 ```bash
 # Re-run everything except missing
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
     --status failed --status partial --status results
 ```
 
@@ -86,21 +86,21 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-not
 ### Re-run failed runs in T0 only
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
     --tier T0 --status failed
 ```
 
 ### Re-run specific runs across all tiers
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
     --runs 1,2,3 --status failed
 ```
 
 ### Re-run failed and partial runs in T0/00
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-nothinking-haiku/ \
     --tier T0 --subtest 00 --status failed --status partial
 ```
 
@@ -114,10 +114,10 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001-not
 
 ```bash
 # Dry run to see what needs completion
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ --dry-run
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ --dry-run
 
 # Complete partial and missing runs
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
     --status partial --status missing
 ```
 
@@ -129,7 +129,7 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
 
 ```bash
 # Re-run only failed agents
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
     --status failed
 ```
 
@@ -141,7 +141,7 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
 
 ```bash
 # Regenerate without re-running agents (fast)
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
     --status results
 ```
 
@@ -152,7 +152,7 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
 **Solution**:
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
     --tier T0 --subtest 00 --runs 1,5,7
 ```
 
@@ -161,7 +161,7 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
 ### Skip the final regenerate step
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
     --status failed --skip-regenerate
 ```
 
@@ -170,7 +170,7 @@ pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
 ### Verbose logging for debugging
 
 ```bash
-pixi run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
+uv run python scripts/manage_experiment.py rerun-agents ~/fullruns/test001/ \
     --status failed -v
 ```
 

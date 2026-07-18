@@ -3,21 +3,32 @@
 #
 # This image provides:
 # - Python 3.12 environment (same base as docker/Dockerfile)
-# - pixi v0.70.2 with default + lint environments pre-installed
+# - uv with the locked project environment (all groups + extras) pre-installed
 # - pre-commit hook environments baked in (largest speedup)
 # - BATS for shell testing
 # - Non-root user 'ci' for rootless Podman compatibility
+#
+# Toolchain: uv (Odysseus ADR-017; migrated from pixi + pip).
 #
 # Build (OCI-compliant — works with both podman and docker):
 #   podman build -f ci/Containerfile -t scylla-ci:local .
 #   docker build -f ci/Containerfile -t scylla-ci:local .
 #
 # Run:
-#   podman run --rm -v .:/workspace:Z scylla-ci:local pixi run pytest tests/unit
-#   podman run --rm -v .:/workspace:Z scylla-ci:local pixi run pre-commit run --all-files
+#   podman run --rm -v .:/workspace:Z scylla-ci:local uv run pytest tests/unit
+#   podman run --rm -v .:/workspace:Z scylla-ci:local uv run pre-commit run --all-files
 
 # ============================================================================
-# Stage 1: Builder — install pixi and Python environments
+# Stage 0: uv binary source — pulled as a named stage so `COPY --from=uv`
+# resolves identically under both podman/buildah and docker. A bare
+# `COPY --from=ghcr.io/astral-sh/uv:<tag>@<digest>` (tag AND digest together)
+# is rejected by buildah with "no stage or image found with that name", so we
+# alias the digest-pinned image to a stage name here and COPY from the alias.
+# ============================================================================
+FROM ghcr.io/astral-sh/uv:0.11.21@sha256:ff07b86af50d4d9391d9daf4ff89ce427bc544f9aae87057e69a1cc0aa369946 AS uv
+
+# ============================================================================
+# Stage 1: Builder — install uv and the locked project environment
 # ============================================================================
 # NOTE: docker/Dockerfile pins a different SHA256 for the same python:3.12-slim tag.
 # Both intentionally kept separate; if you update either digest, update both files together.
@@ -26,9 +37,14 @@ FROM python:3.12-slim@sha256:804ddf3251a60bbf9c92e73b7566c40428d54d0e79d3428194e
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    # Pixi install location
-    PIXI_HOME=/opt/pixi \
-    PATH="/opt/pixi/bin:$PATH"
+    # Build the project virtualenv in a fixed, copyable location.
+    UV_PROJECT_ENVIRONMENT=/opt/scylla-venv \
+    # Bytecode-compile on install for faster cold starts.
+    UV_COMPILE_BYTECODE=1 \
+    # Copy (not hardlink) from the cache so the venv is self-contained for the
+    # runtime-stage COPY --from=builder.
+    UV_LINK_MODE=copy \
+    PATH="/opt/scylla-venv/bin:$PATH"
 
 # Install build dependencies + git (required by pre-commit hooks)
 # apt-get upgrade picks up any security patches released after the base image was pinned
@@ -42,38 +58,35 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     bats \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pixi (pinned version matching CI workflows)
-# IMPORTANT: PIXI_VERSION must be kept in sync with:
-#   - .github/actions/setup-pixi/action.yml (pixi-version field)
-#   - .github/workflows/_required.yml (pixi-check job, pixi-version field)
-# When bumping, update ALL THREE locations together.
-# Using official installer — no root required after this point
-ARG PIXI_VERSION=v0.70.2
-RUN curl -fsSL https://pixi.sh/install.sh \
-    | PIXI_VERSION="${PIXI_VERSION}" PIXI_HOME=/opt/pixi bash
+# Install uv (pinned digest matching the setup-uv action used in CI workflows).
+# IMPORTANT: keep this pinned uv image in sync with astral-sh/setup-uv in
+# .github/workflows/*.yml when bumping.
+COPY --from=uv /uv /uvx /usr/local/bin/
 
-# Layer 1: Dependency files — cache layer invalidated only when deps change
-# Copy in order of change frequency (least → most frequent)
+# Layer 1: Dependency files — cache layer invalidated only when deps change.
+# Copy in order of change frequency (least → most frequent). The editable
+# install of the project itself needs the force-included files to exist, so we
+# COPY only src/scylla/analysis/schemas/ and src/scylla/py.typed before syncing
+# (the rest of src/scylla/ is bind-mounted at runtime).
 WORKDIR /opt/scylla-build
-COPY pixi.lock pixi.toml pyproject.toml .pre-commit-config.yaml README.md ./
-# hatchling editable build requires force-included files to exist
-# (see [tool.hatch.build.targets.wheel.force-include] in pyproject.toml)
+COPY uv.lock pyproject.toml .pre-commit-config.yaml README.md ./
+# hatchling build requires force-included files to exist for the wheel/editable build.
 COPY src/scylla/analysis/schemas/ src/scylla/analysis/schemas/
 COPY src/scylla/py.typed src/scylla/py.typed
 
-# Layer 2: Install pixi environments (default + lint)
-# This bakes all Python packages into the image — no network needed at runtime
-RUN pixi install --manifest-path pixi.toml && \
-    pixi install --manifest-path pixi.toml --environment lint
+# Layer 2: Install the locked dependency set (all groups + extras) into the venv.
+# --no-install-project defers the project's own install (its full source tree is
+# not present in this layer) so this layer stays cached across source changes;
+# the project is installed editable at runtime against the mounted tree.
+RUN uv sync --all-groups --all-extras --locked --no-install-project
 
-# Layer 3: Install pre-commit hook environments
+# Layer 3: Install pre-commit hook environments.
 # Baking this in means 'pre-commit run --all-files' starts immediately,
 # without downloading hook repos or creating virtualenvs at CI time.
-# Hooks that use 'language: system' (pixi run ...) just need pixi available.
+# Hooks that use 'language: system' (uv run ...) just need uv + the venv available.
 # pre-commit install-hooks requires a git repo, so we init a temporary one.
 RUN git init . && \
-    pixi run --manifest-path pixi.toml --environment lint \
-    pre-commit install-hooks && \
+    uv run pre-commit install-hooks && \
     rm -rf .git
 
 # ============================================================================
@@ -89,8 +102,9 @@ LABEL org.opencontainers.image.source="https://github.com/HomericIntelligence/Sc
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIXI_HOME=/opt/pixi \
-    PATH="/opt/pixi/bin:$PATH"
+    UV_PROJECT_ENVIRONMENT=/opt/scylla-venv \
+    UV_LINK_MODE=copy \
+    PATH="/opt/scylla-venv/bin:$PATH"
 
 # Runtime-only system packages (no build tools)
 # apt-get upgrade picks up any security patches released after the base image was pinned
@@ -101,8 +115,9 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     bats \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pixi binary and pre-installed environments from builder
-COPY --from=builder /opt/pixi /opt/pixi
+# Copy the uv binaries and the pre-installed project virtualenv from builder.
+COPY --from=uv /uv /uvx /usr/local/bin/
+COPY --from=builder /opt/scylla-venv /opt/scylla-venv
 
 # Copy pre-commit hook cache from builder (baked-in hook envs)
 COPY --from=builder /root/.cache/pre-commit /root/.cache/pre-commit
@@ -120,6 +135,6 @@ RUN cp -r /root/.cache/pre-commit /home/ci/.cache/ 2>/dev/null || true && \
 WORKDIR /workspace
 
 # No ENTRYPOINT — commands are provided externally by CI or run_ci_local.sh
-# Example: podman run --rm -v .:/workspace:Z scylla-ci:local pixi run pytest
+# Example: podman run --rm -v .:/workspace:Z scylla-ci:local uv run pytest
 
 USER ci

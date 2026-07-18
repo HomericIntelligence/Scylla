@@ -18,7 +18,7 @@ steps are spelled out.
 > - `EXP_DIR` — the experiment directory (the parent of `checkpoint.json`).
 >   This is `checkpoint.experiment_dir` in the JSON.
 > - `CKPT` — `$EXP_DIR/checkpoint.json`.
-> - All `pixi run` commands assume you are at the repo root.
+> - All `uv run` commands assume you are at the repo root.
 > - Code references use the form `path:line` and point at the version of the
 >   tree that this runbook was authored against; line numbers may drift but
 >   the function names will not.
@@ -29,7 +29,7 @@ steps are spelled out.
 
 ### Symptoms
 
-- `pixi run python scripts/manage_experiment.py run --resume ...` aborts
+- `uv run python scripts/manage_experiment.py run --resume ...` aborts
   immediately with a `CheckpointError: Failed to load checkpoint from
   <path>: ...` traceback.
 - `cat $CKPT | python -m json.tool` fails with a JSON parse error.
@@ -74,7 +74,7 @@ python -m json.tool "$CKPT" >/dev/null
 ls -la "$EXP_DIR"/checkpoint.tmp.*.json 2>/dev/null
 
 # What does the experiment status helper report?
-pixi run python -c "
+uv run python -c "
 from pathlib import Path
 from scylla.e2e.checkpoint import get_experiment_status
 print(get_experiment_status(Path('$EXP_DIR')))
@@ -130,13 +130,13 @@ print(get_experiment_status(Path('$EXP_DIR')))
    checkpoint — only mismatched bookkeeping inside an otherwise valid one.
 
    ```bash
-   pixi run python scripts/manage_experiment.py repair "$CKPT"
+   uv run python scripts/manage_experiment.py repair "$CKPT"
    ```
 
 6. **Resume.** Once `python -m json.tool "$CKPT"` parses, run:
 
    ```bash
-   pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR"
+   uv run python scripts/manage_experiment.py run --resume "$EXP_DIR"
    ```
 
    The runner's `_load_checkpoint_and_config` path
@@ -197,7 +197,7 @@ The CLI wrapper is `scripts/manage_experiment.py`, lines 182-245 for the
 flags and lines 749-810 / 1172-1218 for the dispatch:
 
 ```bash
-pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
+uv run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
     --from <RUN_STATE>                  # e.g. replay_generated
     [--from-tier <TIER_STATE>]
     [--from-experiment <EXPERIMENT_STATE>]
@@ -214,7 +214,7 @@ pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
 
 ```bash
 # What states are runs currently in? (top-of-experiment summary)
-pixi run python -c "
+uv run python -c "
 from pathlib import Path
 from scylla.e2e.checkpoint import load_checkpoint
 c = load_checkpoint(Path('$CKPT'))
@@ -223,7 +223,7 @@ print('tier_states:', c.tier_states)
 "
 
 # Per-run states for a given tier/subtest
-pixi run python -c "
+uv run python -c "
 from pathlib import Path
 from scylla.e2e.checkpoint import load_checkpoint
 c = load_checkpoint(Path('$CKPT'))
@@ -302,7 +302,7 @@ flip `status` to `interrupted` on you.
 
 ```bash
 # What does the checkpoint claim?
-pixi run python -c "
+uv run python -c "
 from pathlib import Path
 from scylla.e2e.checkpoint import load_checkpoint
 c = load_checkpoint(Path('$CKPT'))
@@ -328,7 +328,7 @@ documented levers, derived from the code, are:
    write so the next resume sees a fresh timestamp:
 
    ```bash
-   pixi run python -c "
+   uv run python -c "
    from pathlib import Path
    from scylla.e2e.checkpoint import load_checkpoint, save_checkpoint
    c = load_checkpoint(Path('$CKPT'))
@@ -362,7 +362,7 @@ documented levers, derived from the code, are:
    PID=$(cat "$EXP_DIR/experiment.pid")
    kill "$PID" && sleep 2 && kill -9 "$PID" 2>/dev/null || true
    rm -f "$EXP_DIR/experiment.pid"
-   pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR"
+   uv run python scripts/manage_experiment.py run --resume "$EXP_DIR"
    ```
 
 > **Note:** there is no CLI flag like `--no-zombie-check` or
@@ -374,7 +374,7 @@ documented levers, derived from the code, are:
 - After step 1 (heartbeat refresh), `is_zombie()` returns `False`:
 
    ```bash
-   pixi run python -c "
+   uv run python -c "
    from pathlib import Path
    from scylla.e2e.checkpoint import load_checkpoint
    from scylla.e2e.health import is_zombie
@@ -454,7 +454,7 @@ ls -la "$EXP_DIR"/checkpoint.tmp.*.json 2>/dev/null
 
    ```bash
    # When you next resume, lower the cap:
-   pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
+   uv run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
        --max-concurrent-workspaces 1
    ```
 

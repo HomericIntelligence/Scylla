@@ -12,7 +12,7 @@ globs:
 
 ignores:
   # Build artifacts and tooling caches
-  - ".pixi/**"
+  - ".venv/**"
   - ".pytest_cache/**"
   - "build/**"
   - "node_modules/**"

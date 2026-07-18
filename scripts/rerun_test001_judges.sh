@@ -14,11 +14,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "=== Patching checkpoint ==="
-pixi run python scripts/patch_checkpoint_for_rejudge.py
+uv run python scripts/patch_checkpoint_for_rejudge.py
 
 echo ""
 echo "=== Step 1: Resume diff+judge for T3/16-41 run1 (agent done, workspace present) ==="
-pixi run python scripts/manage_experiment.py run \
+uv run python scripts/manage_experiment.py run \
     --config tests/fixtures/tests/test-001 \
     --experiment-id test-001 \
     --results-dir results \
@@ -38,7 +38,7 @@ pixi run python scripts/manage_experiment.py run \
 
 echo ""
 echo "=== Step 2: Re-judge bad-judge runs (score=0.0 garbage) for T3/T5/T6 ==="
-pixi run python scripts/manage_experiment.py run \
+uv run python scripts/manage_experiment.py run \
     --config tests/fixtures/tests/test-001 \
     --experiment-id test-001 \
     --results-dir results \
@@ -48,7 +48,7 @@ pixi run python scripts/manage_experiment.py run \
 
 echo ""
 echo "=== Step 3: Regenerate analysis artifacts ==="
-pixi run python scripts/generate_all_results.py \
+uv run python scripts/generate_all_results.py \
     --data-dir "$HOME/fullruns/haiku-rewrite" \
     --output-dir docs/arxiv/haiku
 

@@ -2,16 +2,12 @@
 
 from pathlib import Path
 
-import pytest
-
 from scripts.check_ci_version_sync import (
     check_ci_version_sync,
     get_gitleaks_versions,
-    get_pixi_version_from_canonical,
-    get_setup_pixi_shas,
+    get_setup_uv_shas,
     validate_gitleaks_consistency,
-    validate_pixi_consistency,
-    validate_setup_pixi_sha_consistency,
+    validate_setup_uv_sha_consistency,
 )
 
 # ---------------------------------------------------------------------------
@@ -19,20 +15,10 @@ from scripts.check_ci_version_sync import (
 # ---------------------------------------------------------------------------
 
 
-def setup_pixi_version_file(repo_root: Path, version: str) -> Path:
-    """Write .github/pixi-version canonical file."""
-    github_dir = repo_root / ".github"
-    github_dir.mkdir(parents=True, exist_ok=True)
-    path = github_dir / "pixi-version"
-    path.write_text(version)
-    return path
-
-
 def setup_workflow(
     repo_root: Path,
     name: str,
-    pixi_version: str | None = None,
-    setup_pixi_sha: str | None = None,
+    setup_uv_sha: str | None = None,
 ) -> Path:
     """Write a minimal GitHub workflow file."""
     github_workflows = repo_root / ".github" / "workflows"
@@ -42,14 +28,9 @@ def setup_workflow(
     lines = ["name: Test Workflow", "on: push", "jobs:", "  test:", "    runs-on: ubuntu-latest"]
     lines.append("    steps:")
 
-    if pixi_version:
-        lines.append("      - name: Setup pixi")
-        lines.append("        with:")
-        lines.append(f"          pixi-version: {pixi_version}")
-
-    if setup_pixi_sha:
-        lines.append("      - name: Another step")
-        lines.append(f"        uses: prefix-dev/setup-pixi@{setup_pixi_sha}")
+    if setup_uv_sha:
+        lines.append("      - name: Setup uv")
+        lines.append(f"        uses: astral-sh/setup-uv@{setup_uv_sha}")
 
     content = "\n".join(lines) + "\n"
     path.write_text(content)
@@ -58,42 +39,22 @@ def setup_workflow(
 
 def setup_composite_action(
     repo_root: Path,
-    setup_pixi_sha: str | None = None,
+    setup_uv_sha: str | None = None,
 ) -> Path:
-    """Write .github/actions/setup-pixi/action.yml composite action."""
-    actions_dir = repo_root / ".github" / "actions" / "setup-pixi"
+    """Write .github/actions/setup-env/action.yml composite action."""
+    actions_dir = repo_root / ".github" / "actions" / "setup-env"
     actions_dir.mkdir(parents=True, exist_ok=True)
     path = actions_dir / "action.yml"
 
     lines = [
-        "name: Setup pixi",
-        "inputs:",
-        "  environment:",
-        "    description: Environment to activate",
-        "    default: default",
+        "name: Setup uv",
         "runs:",
         "  using: composite",
         "  steps:",
     ]
 
-    if setup_pixi_sha:
-        lines.append(f"    - uses: prefix-dev/setup-pixi@{setup_pixi_sha}")
-
-    content = "\n".join(lines) + "\n"
-    path.write_text(content)
-    return path
-
-
-def setup_containerfile(repo_root: Path, pixi_version: str | None = None) -> Path:
-    """Write ci/Containerfile with ARG PIXI_VERSION."""
-    ci_dir = repo_root / "ci"
-    ci_dir.mkdir(parents=True, exist_ok=True)
-    path = ci_dir / "Containerfile"
-
-    lines = ["FROM python:3.12-slim"]
-    if pixi_version:
-        lines.append(f"ARG PIXI_VERSION={pixi_version}")
-    lines.append("RUN echo 'test'")
+    if setup_uv_sha:
+        lines.append(f"    - uses: astral-sh/setup-uv@{setup_uv_sha}")
 
     content = "\n".join(lines) + "\n"
     path.write_text(content)
@@ -141,138 +102,67 @@ def setup_security_workflow(
 
 
 # ---------------------------------------------------------------------------
-# Tests for get_pixi_version_from_canonical
+# Tests for get_setup_uv_shas
 # ---------------------------------------------------------------------------
 
 
-class TestGetPixiVersionFromCanonical:
-    """Tests for get_pixi_version_from_canonical()."""
-
-    def test_reads_canonical_file(self, tmp_path: Path) -> None:
-        """Should read pixi version from .github/pixi-version."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        assert get_pixi_version_from_canonical(tmp_path) == "v0.67.2"
-
-    def test_strips_whitespace(self, tmp_path: Path) -> None:
-        """Should strip leading/trailing whitespace."""
-        setup_pixi_version_file(tmp_path, "  v0.67.2  \n")
-        assert get_pixi_version_from_canonical(tmp_path) == "v0.67.2"
-
-    def test_missing_file_exits_one(self, tmp_path: Path) -> None:
-        """Should sys.exit(1) if canonical file doesn't exist."""
-        with pytest.raises(SystemExit) as exc_info:
-            get_pixi_version_from_canonical(tmp_path)
-        assert exc_info.value.code == 1
-
-
-# ---------------------------------------------------------------------------
-# Tests for validate_pixi_consistency
-# ---------------------------------------------------------------------------
-
-
-class TestValidatePixiConsistency:
-    """Tests for validate_pixi_consistency()."""
-
-    def test_pixi_consistent_passes(self, tmp_path: Path) -> None:
-        """Should return 0 when all pixi versions match."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.67.2")
-        setup_containerfile(tmp_path, pixi_version="v0.67.2")
-
-        assert validate_pixi_consistency(tmp_path) == 0
-
-    def test_pixi_drift_in_workflow_fails(self, tmp_path: Path) -> None:
-        """Should return 1 when workflow has mismatched pixi-version."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.63.2")
-        setup_containerfile(tmp_path, pixi_version="v0.67.2")
-
-        result = validate_pixi_consistency(tmp_path)
-        assert result == 1
-
-    def test_pixi_drift_in_containerfile_fails(self, tmp_path: Path) -> None:
-        """Should return 1 when Containerfile has mismatched ARG."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.67.2")
-        setup_containerfile(tmp_path, pixi_version="v0.63.2")
-
-        result = validate_pixi_consistency(tmp_path)
-        assert result == 1
-
-    def test_multiple_workflows_all_checked(self, tmp_path: Path) -> None:
-        """Should check all workflows in .github/workflows/."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.67.2")
-        setup_workflow(tmp_path, "test.yml", pixi_version="v0.63.2")
-        setup_containerfile(tmp_path, pixi_version="v0.67.2")
-
-        result = validate_pixi_consistency(tmp_path)
-        assert result == 1
-
-
-# ---------------------------------------------------------------------------
-# Tests for get_setup_pixi_shas
-# ---------------------------------------------------------------------------
-
-
-class TestGetSetupPixiShas:
-    """Tests for get_setup_pixi_shas()."""
+class TestGetSetupUvShas:
+    """Tests for get_setup_uv_shas()."""
 
     def test_extracts_sha_from_workflows(self, tmp_path: Path) -> None:
-        """Should extract prefix-dev/setup-pixi@SHA from workflows."""
+        """Should extract astral-sh/setup-uv@SHA from workflows."""
         sha = "abc1234def567"
-        setup_workflow(tmp_path, "build.yml", setup_pixi_sha=sha)
-        shas = get_setup_pixi_shas(tmp_path)
+        setup_workflow(tmp_path, "build.yml", setup_uv_sha=sha)
+        shas = get_setup_uv_shas(tmp_path)
         assert sha in shas
 
     def test_extracts_sha_from_composite_action(self, tmp_path: Path) -> None:
         """Should extract SHA from composite action."""
         sha = "abc1234def567"
-        setup_composite_action(tmp_path, setup_pixi_sha=sha)
-        shas = get_setup_pixi_shas(tmp_path)
+        setup_composite_action(tmp_path, setup_uv_sha=sha)
+        shas = get_setup_uv_shas(tmp_path)
         assert sha in shas
 
     def test_multiple_workflows_all_checked(self, tmp_path: Path) -> None:
         """Should extract SHAs from all workflows."""
         sha1 = "abc1234def567"
         sha2 = "xyz9876abc543"
-        setup_workflow(tmp_path, "build.yml", setup_pixi_sha=sha1)
-        setup_workflow(tmp_path, "test.yml", setup_pixi_sha=sha2)
-        shas = get_setup_pixi_shas(tmp_path)
+        setup_workflow(tmp_path, "build.yml", setup_uv_sha=sha1)
+        setup_workflow(tmp_path, "test.yml", setup_uv_sha=sha2)
+        shas = get_setup_uv_shas(tmp_path)
         assert sha1 in shas
         assert sha2 in shas
 
 
 # ---------------------------------------------------------------------------
-# Tests for validate_setup_pixi_sha_consistency
+# Tests for validate_setup_uv_sha_consistency
 # ---------------------------------------------------------------------------
 
 
-class TestValidateSetupPixiShaConsistency:
-    """Tests for validate_setup_pixi_sha_consistency()."""
+class TestValidateSetupUvShaConsistency:
+    """Tests for validate_setup_uv_sha_consistency()."""
 
-    def test_setup_pixi_sha_consistent_passes(self, tmp_path: Path) -> None:
-        """Should return 0 when all setup-pixi SHAs match."""
+    def test_setup_uv_sha_consistent_passes(self, tmp_path: Path) -> None:
+        """Should return 0 when all setup-uv SHAs match."""
         sha = "abc1234def567"
-        setup_composite_action(tmp_path, setup_pixi_sha=sha)
-        setup_workflow(tmp_path, "build.yml", setup_pixi_sha=sha)
+        setup_composite_action(tmp_path, setup_uv_sha=sha)
+        setup_workflow(tmp_path, "build.yml", setup_uv_sha=sha)
 
-        assert validate_setup_pixi_sha_consistency(tmp_path) == 0
+        assert validate_setup_uv_sha_consistency(tmp_path) == 0
 
-    def test_setup_pixi_sha_drift_fails(self, tmp_path: Path) -> None:
-        """Should return 1 when setup-pixi SHAs differ."""
+    def test_setup_uv_sha_drift_fails(self, tmp_path: Path) -> None:
+        """Should return 1 when setup-uv SHAs differ."""
         sha1 = "abc1234def567"
         sha2 = "xyz9876abc543"
-        setup_composite_action(tmp_path, setup_pixi_sha=sha1)
-        setup_workflow(tmp_path, "build.yml", setup_pixi_sha=sha2)
+        setup_composite_action(tmp_path, setup_uv_sha=sha1)
+        setup_workflow(tmp_path, "build.yml", setup_uv_sha=sha2)
 
-        result = validate_setup_pixi_sha_consistency(tmp_path)
+        result = validate_setup_uv_sha_consistency(tmp_path)
         assert result == 1
 
-    def test_no_setup_pixi_usage_passes(self, tmp_path: Path) -> None:
-        """Should pass (return 0) if no setup-pixi usage found."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        result = validate_setup_pixi_sha_consistency(tmp_path)
+    def test_no_setup_uv_usage_passes(self, tmp_path: Path) -> None:
+        """Should pass (return 0) if no setup-uv usage found."""
+        result = validate_setup_uv_sha_consistency(tmp_path)
         assert result == 0
 
 
@@ -345,63 +235,39 @@ class TestCheckCiVersionSync:
     """Tests for check_ci_version_sync()."""
 
     def test_passes_when_all_consistent(self, tmp_path: Path) -> None:
-        """Should return 0 when all three checks pass."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.67.2")
-        setup_containerfile(tmp_path, pixi_version="v0.67.2")
-
+        """Should return 0 when all checks pass."""
         sha = "abc1234def567"
-        setup_composite_action(tmp_path, setup_pixi_sha=sha)
-        setup_workflow(tmp_path, "test.yml", setup_pixi_sha=sha)
+        setup_composite_action(tmp_path, setup_uv_sha=sha)
+        setup_workflow(tmp_path, "test.yml", setup_uv_sha=sha)
 
         setup_pre_commit_config(tmp_path, gitleaks_version="v8.30.1")
         setup_security_workflow(tmp_path, gitleaks_version="8.30.1")
 
         assert check_ci_version_sync(tmp_path) == 0
 
-    def test_fails_on_pixi_drift(self, tmp_path: Path) -> None:
-        """Should return 1 on pixi version drift."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.63.2")
-        setup_containerfile(tmp_path, pixi_version="v0.67.2")
-
-        assert check_ci_version_sync(tmp_path) == 1
-
-    def test_fails_on_setup_pixi_sha_drift(self, tmp_path: Path) -> None:
-        """Should return 1 on setup-pixi SHA drift."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.67.2")
-        setup_containerfile(tmp_path, pixi_version="v0.67.2")
-
+    def test_fails_on_setup_uv_sha_drift(self, tmp_path: Path) -> None:
+        """Should return 1 on setup-uv SHA drift."""
         sha1 = "abc1234def567"
         sha2 = "xyz9876abc543"
-        setup_composite_action(tmp_path, setup_pixi_sha=sha1)
-        setup_workflow(tmp_path, "test.yml", setup_pixi_sha=sha2)
+        setup_composite_action(tmp_path, setup_uv_sha=sha1)
+        setup_workflow(tmp_path, "test.yml", setup_uv_sha=sha2)
 
         assert check_ci_version_sync(tmp_path) == 1
 
     def test_fails_on_gitleaks_drift(self, tmp_path: Path) -> None:
         """Should return 1 on gitleaks version drift."""
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.67.2")
-        setup_containerfile(tmp_path, pixi_version="v0.67.2")
-
         setup_pre_commit_config(tmp_path, gitleaks_version="v8.30.1")
         setup_security_workflow(tmp_path, gitleaks_version="8.21.2")
 
         assert check_ci_version_sync(tmp_path) == 1
 
-    def test_all_three_checks_reported_together(self, tmp_path: Path) -> None:
-        """Should report all three checks together."""
-        # Pixi drift
-        setup_pixi_version_file(tmp_path, "v0.67.2")
-        setup_workflow(tmp_path, "build.yml", pixi_version="v0.63.2")
-
-        # Setup-pixi SHA drift
+    def test_all_checks_reported_together(self, tmp_path: Path) -> None:
+        """Should report all checks together."""
+        # Setup-uv SHA drift
         sha1 = "abc1234def567"
         sha2 = "xyz9876abc543"
-        setup_composite_action(tmp_path, setup_pixi_sha=sha1)
-        setup_workflow(tmp_path, "test.yml", setup_pixi_sha=sha2)
+        setup_composite_action(tmp_path, setup_uv_sha=sha1)
+        setup_workflow(tmp_path, "test.yml", setup_uv_sha=sha2)
 
         # Gitleaks drift
         setup_pre_commit_config(tmp_path, gitleaks_version="v8.30.1")

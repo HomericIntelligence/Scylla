@@ -65,9 +65,9 @@ done
 gh pr checks <N>
 gh run view <run-id> --log-failed 2>&1 | grep -A5 "Error\|FAILED\|failed\|error" | head -60
 
-# Common fix: pixi lock file out of sync
-pixi install  # regenerates pixi.lock
-git add pixi.lock && git commit -m "fix: update pixi.lock"
+# Common fix: uv lock file out of sync
+uv lock  # regenerates uv.lock
+git add uv.lock && git commit -m "fix: update uv.lock"
 git push --force-with-lease origin <branch>
 gh pr merge <N> --auto --squash
 ```
@@ -154,7 +154,7 @@ gh pr list --state open --json number,mergeable \
 | `.claude-plugin/plugin.json` | Every skill branch conflicts | Python JSON merge: add new skill to ours array |
 | `scylla/core/results.py` | Multiple PRs touch same file | Take THEIRS; verify imports; run tests |
 | `.pre-commit-config.yaml` | Hook additions conflict | Take THEIRS for the specific hook entry |
-| `pixi.lock` | pyproject.toml changes | Run `pixi install` to regenerate |
+| `uv.lock` | pyproject.toml changes | Run `uv lock` to regenerate |
 | `tests/unit/e2e/test_runner.py` | Test fixture changes | Take THEIRS (new tests don't break existing) |
 
 ## Failed Attempts

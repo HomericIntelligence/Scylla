@@ -333,7 +333,7 @@ Until the per-run constants in §3.1 are measured, operators should:
 
 Use this procedure to populate the `TBD` cells in §3 for a given (tier, model)
 pair. All commands assume a checked-out Scylla worktree and a configured
-`pixi` environment.
+`uv` environment.
 
 ### 7.1 Single-run instrumentation
 
@@ -344,7 +344,7 @@ DISK_BEFORE=$(du -sb "$EXPERIMENT_DIR" 2>/dev/null | cut -f1)
 # 2. Launch one sub-test with --max-subtests 1 --runs-per-subtest 1, wrapped
 #    in /usr/bin/time -v to capture peak RSS and elapsed wall-clock.
 /usr/bin/time -v -o /tmp/scylla-time.txt \
-  pixi run python scripts/manage_experiment.py run \
+  uv run python scripts/manage_experiment.py run \
     --experiment-id capacity-probe-T${TIER}-${MODEL_SHORT} \
     --tiers T${TIER} \
     --models ${MODEL} \
@@ -389,7 +389,7 @@ CHECKPOINT=$(find "$EXPERIMENT_DIR" -name checkpoint.json | head -1)
 wc -l "$CHECKPOINT"
 
 # Extract input/output tokens for the agent and judge for the single run:
-pixi run python -c "
+uv run python -c "
 import json, sys
 ck = json.load(open('$CHECKPOINT'))
 # Walk into ck['tier_states'][...] to extract token counts; exact path

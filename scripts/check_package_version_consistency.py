@@ -5,11 +5,10 @@ Reads the canonical version from ``pyproject.toml`` ``[project].version`` and
 validates that every other version declaration in the repository matches.
 
 Checks (always run):
-1. ``pixi.toml`` ``[workspace].version`` matches canonical version.
-2. ``src/scylla/__init__.py`` ``__version__`` matches canonical version.
+1. ``src/scylla/__init__.py`` ``__version__`` matches canonical version.
 
 Check (opt-in via ``--scan-skills``):
-3. Markdown files under ``.claude-plugin/skills/`` and ``.claude/`` do not
+2. Markdown files under ``.claude-plugin/skills/`` and ``.claude/`` do not
    reference version numbers higher than the canonical version.
 
 Usage:
@@ -87,39 +86,6 @@ def get_canonical_version(pyproject_path: Path) -> str:
         sys.exit(1)
 
     return str(version)
-
-
-def check_pixi_version(repo_root: Path, canonical: str) -> list[str]:
-    """Check that ``pixi.toml`` version matches the canonical version.
-
-    Args:
-        repo_root: Repository root directory.
-        canonical: The canonical version string from ``pyproject.toml``.
-
-    Returns:
-        List of error strings (empty if the check passes).
-
-    """
-    pixi_path = repo_root / "pixi.toml"
-    if not pixi_path.is_file():
-        return [f"pixi.toml not found at {pixi_path}"]
-
-    try:
-        with open(pixi_path, "rb") as f:
-            data = tomllib.load(f)
-    except Exception as exc:
-        return [f"Could not parse pixi.toml: {exc}"]
-
-    pixi_version = data.get("workspace", {}).get("version")
-    if pixi_version is None:
-        return ["pixi.toml: No [workspace].version found"]
-
-    if str(pixi_version) != canonical:
-        return [
-            f"pixi.toml: Version mismatch — "
-            f"pixi.toml has '{pixi_version}', pyproject.toml has '{canonical}'"
-        ]
-    return []
 
 
 def check_init_version(repo_root: Path, canonical: str) -> list[str]:
@@ -278,21 +244,14 @@ def check_package_version_consistency(
 
     all_errors: list[str] = []
 
-    # Check 1: pixi.toml
-    pixi_errors = check_pixi_version(repo_root, canonical)
-    if pixi_errors:
-        all_errors.extend(pixi_errors)
-    elif verbose:
-        print(f"PASS: pixi.toml version matches ({canonical})")
-
-    # Check 2: src/scylla/__init__.py
+    # Check 1: src/scylla/__init__.py
     init_errors = check_init_version(repo_root, canonical)
     if init_errors:
         all_errors.extend(init_errors)
     elif verbose:
         print(f"PASS: src/scylla/__init__.py __version__ matches ({canonical})")
 
-    # Check 3: Skill files (opt-in)
+    # Check 2: Skill files (opt-in)
     if scan_skills:
         skill_errors = check_skill_files(repo_root, canonical)
         if skill_errors:

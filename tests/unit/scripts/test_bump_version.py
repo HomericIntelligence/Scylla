@@ -11,7 +11,6 @@ from scripts.bump_version import (
     compute_new_version,
     create_git_tag,
     get_current_version,
-    update_pixi_version,
     update_pyproject_version,
 )
 
@@ -32,23 +31,9 @@ def write_pyproject(directory: Path, version: str) -> Path:
     return path
 
 
-def write_pixi_toml(directory: Path, version: str) -> Path:
-    """Write a minimal pixi.toml with the given version."""
-    content = textwrap.dedent(f"""\
-        [workspace]
-        name = "test-project"
-        version = "{version}"
-        channels = ["conda-forge"]
-    """)
-    path = directory / "pixi.toml"
-    path.write_text(content)
-    return path
-
-
 def setup_repo(root: Path, version: str) -> None:
-    """Create both pyproject.toml and pixi.toml with matching version."""
+    """Create pyproject.toml with the given version (single source of truth)."""
     write_pyproject(root, version)
-    write_pixi_toml(root, version)
 
 
 def init_git_repo(root: Path) -> None:
@@ -214,64 +199,6 @@ class TestUpdatePyprojectVersion:
 
 
 # ---------------------------------------------------------------------------
-# TestUpdatePixiVersion
-# ---------------------------------------------------------------------------
-
-
-class TestUpdatePixiVersion:
-    """Tests for update_pixi_version()."""
-
-    def test_updates_version(self, tmp_path: Path) -> None:
-        """Should write the new version to pixi.toml."""
-        write_pixi_toml(tmp_path, "0.1.0")
-        update_pixi_version(tmp_path, "0.1.0", "0.2.0")
-        content = (tmp_path / "pixi.toml").read_text()
-        assert 'version = "0.2.0"' in content
-
-    def test_preserves_other_content(self, tmp_path: Path) -> None:
-        """Should not alter other lines in pixi.toml."""
-        write_pixi_toml(tmp_path, "0.1.0")
-        update_pixi_version(tmp_path, "0.1.0", "0.2.0")
-        content = (tmp_path / "pixi.toml").read_text()
-        assert 'name = "test-project"' in content
-
-    def test_missing_file_exits_one(self, tmp_path: Path) -> None:
-        """Should sys.exit(1) if pixi.toml is missing."""
-        with pytest.raises(SystemExit) as exc_info:
-            update_pixi_version(tmp_path, "0.1.0", "0.2.0")
-        assert exc_info.value.code == 1
-
-    def test_no_version_line_exits_one(self, tmp_path: Path) -> None:
-        """Should sys.exit(1) if no version line found."""
-        path = tmp_path / "pixi.toml"
-        path.write_text("[workspace]\nname = 'test'\n")
-        with pytest.raises(SystemExit) as exc_info:
-            update_pixi_version(tmp_path, "0.1.0", "0.2.0")
-        assert exc_info.value.code == 1
-
-    def test_only_updates_workspace_version(self, tmp_path: Path) -> None:
-        """Should only replace version in [workspace], not in other sections."""
-        content = textwrap.dedent("""\
-            [workspace]
-            name = "test-project"
-            version = "0.1.0"
-
-            [package.metadata]
-            version = "0.1.0"
-        """)
-        path = tmp_path / "pixi.toml"
-        path.write_text(content)
-        update_pixi_version(tmp_path, "0.1.0", "0.2.0")
-        updated = path.read_text()
-        lines = updated.splitlines()
-        workspace_version_line = next((ln for ln in lines if 'version = "0.2.0"' in ln), None)
-        assert workspace_version_line is not None, "workspace version not updated"
-        # The [package.metadata] version should remain unchanged
-        assert updated.count('version = "0.1.0"') == 1
-        assert updated.count('version = "0.2.0"') == 1
-
-
-# ---------------------------------------------------------------------------
 # TestCreateGitTag
 # ---------------------------------------------------------------------------
 
@@ -321,31 +248,28 @@ class TestBumpVersion:
     """Tests for bump_version() orchestrator."""
 
     def test_patch_bump(self, tmp_path: Path) -> None:
-        """Should bump patch version in both files."""
+        """Should bump patch version in pyproject.toml."""
         setup_repo(tmp_path, "0.1.0")
         init_git_repo(tmp_path)
         result = bump_version(tmp_path, "patch")
         assert result == 0
         assert 'version = "0.1.1"' in (tmp_path / "pyproject.toml").read_text()
-        assert 'version = "0.1.1"' in (tmp_path / "pixi.toml").read_text()
 
     def test_minor_bump(self, tmp_path: Path) -> None:
-        """Should bump minor version in both files."""
+        """Should bump minor version in pyproject.toml."""
         setup_repo(tmp_path, "1.2.3")
         init_git_repo(tmp_path)
         result = bump_version(tmp_path, "minor")
         assert result == 0
         assert 'version = "1.3.0"' in (tmp_path / "pyproject.toml").read_text()
-        assert 'version = "1.3.0"' in (tmp_path / "pixi.toml").read_text()
 
     def test_major_bump(self, tmp_path: Path) -> None:
-        """Should bump major version in both files."""
+        """Should bump major version in pyproject.toml."""
         setup_repo(tmp_path, "1.2.3")
         init_git_repo(tmp_path)
         result = bump_version(tmp_path, "major")
         assert result == 0
         assert 'version = "2.0.0"' in (tmp_path / "pyproject.toml").read_text()
-        assert 'version = "2.0.0"' in (tmp_path / "pixi.toml").read_text()
 
     def test_no_git_tag_by_default(self, tmp_path: Path) -> None:
         """Should not create a git tag when --tag is not passed."""
@@ -391,7 +315,6 @@ class TestBumpVersion:
         result = bump_version(tmp_path, "patch", dry_run=True)
         assert result == 0
         assert 'version = "0.1.0"' in (tmp_path / "pyproject.toml").read_text()
-        assert 'version = "0.1.0"' in (tmp_path / "pixi.toml").read_text()
 
     def test_dry_run_prints_message(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -419,19 +342,11 @@ class TestBumpVersion:
         init_git_repo(tmp_path)
         bump_version(tmp_path, "patch")
         captured = capsys.readouterr()
-        assert "pixi lock" in captured.out
+        assert "uv lock" in captured.out
         assert "git commit" in captured.out
 
     def test_missing_pyproject_exits_one(self, tmp_path: Path) -> None:
         """Should sys.exit(1) if pyproject.toml is missing."""
-        write_pixi_toml(tmp_path, "0.1.0")
-        with pytest.raises(SystemExit) as exc_info:
-            bump_version(tmp_path, "patch")
-        assert exc_info.value.code == 1
-
-    def test_missing_pixi_exits_one(self, tmp_path: Path) -> None:
-        """Should sys.exit(1) if pixi.toml is missing."""
-        write_pyproject(tmp_path, "0.1.0")
         with pytest.raises(SystemExit) as exc_info:
             bump_version(tmp_path, "patch")
         assert exc_info.value.code == 1

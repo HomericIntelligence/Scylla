@@ -22,7 +22,7 @@ THRESHOLD=${THRESHOLD:-"??"}
 echo "Running pytest coverage validation before push (threshold: ${THRESHOLD}%)..."
 
 # Coverage flags come from pyproject.toml addopts — no duplication here
-if pixi run pytest -x; then
+if uv run pytest -x; then
     echo "✅ Coverage validation passed (threshold: ${THRESHOLD}%). Proceeding with push."
     exit 0
 else

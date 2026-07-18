@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build arXiv paper and submission package
 # Run from this directory: cd docs/arxiv/haiku && ./build.sh
-# Or via pixi:            pixi run --environment docs paper-build
+# Requires a LaTeX engine on PATH (tectonic preferred, or a texlive pdflatex).
 
 set -e  # Exit on error
 
@@ -58,8 +58,8 @@ elif command -v pdflatex &> /dev/null; then
         exit 1
     }
 else
-    echo "✗ No LaTeX engine found. Install via: pixi install --environment docs"
-    echo "  Alternatively, install tectonic or texlive on your system."
+    echo "✗ No LaTeX engine found. Install tectonic (https://tectonic-typesetting.github.io)"
+    echo "  or a texlive distribution (pdflatex + bibtex) on your system."
     exit 1
 fi
 

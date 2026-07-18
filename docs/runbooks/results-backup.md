@@ -30,7 +30,7 @@ recover when the `results/` artifacts are partially or fully lost.
 |------|--------------------|
 | `$EXP_DIR/runs/<tier>/<sub>/run_N/workspace/` | Re-cloned on next resume |
 | `$EXP_DIR/checkpoint.tmp.*.json` | Leftover from a clean run; safe to drop |
-| HTML coverage reports (`htmlcov/`) | `pixi run test` regenerates |
+| HTML coverage reports (`htmlcov/`) | `uv run pytest` regenerates |
 
 ---
 
@@ -80,7 +80,7 @@ Use `manage_experiment.py repair` to reconstruct the checkpoint from the
 on-disk `run_result.json` files:
 
 ```bash
-pixi run python scripts/manage_experiment.py repair "$EXP_DIR"
+uv run python scripts/manage_experiment.py repair "$EXP_DIR"
 ```
 
 This reconciles `completed_runs` and `run_states` with whatever
@@ -99,7 +99,7 @@ This reconciles `completed_runs` and `run_states` with whatever
 2. Reset those runs to `pending` and re-execute:
 
    ```bash
-   pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
+   uv run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
      --from workspace_setup \
      --filter-tier <TIER> --filter-subtest <SUBTEST>
    ```
@@ -113,7 +113,7 @@ Restore from the latest backup, then resume:
 
 ```bash
 rsync -av "backup-host:/backups/scylla/$(basename $EXP_DIR)/latest/" "$EXP_DIR/"
-pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR"
+uv run python scripts/manage_experiment.py run --resume "$EXP_DIR"
 ```
 
 Runs completed before the backup are preserved; runs in-progress at

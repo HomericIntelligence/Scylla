@@ -123,7 +123,7 @@ has a Python-level Pydantic default for `default_model`. Existing fixture-based 
 ### 8. Run validation
 
 ```bash
-pixi run python -m pytest tests/ --no-cov    # all tests pass
+uv run python -m pytest tests/ --no-cov    # all tests pass
 pre-commit run --all-files                    # all hooks pass
 ```
 

@@ -272,10 +272,10 @@ All 2247 existing tests: ✅ passing (no regressions)
 
 ```bash
 # Core imports
-pixi run python -c "from scylla.core import MetricsInfoBase, JudgmentInfoBase; print('core OK')"
+uv run python -c "from scylla.core import MetricsInfoBase, JudgmentInfoBase; print('core OK')"
 
 # Inheritance
-pixi run python -c "
+uv run python -c "
 from scylla.reporting.result import MetricsInfo, JudgmentInfo
 from scylla.core import MetricsInfoBase, JudgmentInfoBase
 m = MetricsInfo(tokens_input=100, tokens_output=50, cost_usd=0.01, api_calls=1)
@@ -285,10 +285,10 @@ print('JudgmentInfo is JudgmentInfoBase:', isinstance(j, JudgmentInfoBase))
 "
 
 # Backward compat
-pixi run python -c "from scylla.core.results import BaseRunMetrics; m = BaseRunMetrics(tokens_input=100, tokens_output=50, cost_usd=0.01); print('BaseRunMetrics OK')"
+uv run python -c "from scylla.core.results import BaseRunMetrics; m = BaseRunMetrics(tokens_input=100, tokens_output=50, cost_usd=0.01); print('BaseRunMetrics OK')"
 
 # Full test suite
-pixi run python -m pytest tests/ --no-cov -q
+uv run python -m pytest tests/ --no-cov -q
 ```
 
 ### Pre-commit

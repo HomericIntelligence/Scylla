@@ -29,15 +29,15 @@ echo "Paper directory: $PAPER_DIR"
 echo
 
 echo "--- Step 1/3: Exporting data ---"
-pixi run python scripts/export_data.py --data-dir "$DATA_DIR" --output-dir "$PAPER_DIR/data"
+uv run python scripts/export_data.py --data-dir "$DATA_DIR" --output-dir "$PAPER_DIR/data"
 echo
 
 echo "--- Step 2/3: Generating tables ---"
-pixi run python scripts/generate_tables.py --data-dir "$DATA_DIR" --output-dir "$PAPER_DIR/tables"
+uv run python scripts/generate_tables.py --data-dir "$DATA_DIR" --output-dir "$PAPER_DIR/tables"
 echo
 
 echo "--- Step 3/3: Generating figures ---"
-pixi run python scripts/generate_figures.py --data-dir "$DATA_DIR" --output-dir "$PAPER_DIR/figures"
+uv run python scripts/generate_figures.py --data-dir "$DATA_DIR" --output-dir "$PAPER_DIR/figures"
 echo
 
 # Build PDF if build.sh exists

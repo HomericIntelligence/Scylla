@@ -2,7 +2,7 @@
 """Analyze dryrun3 experiment results and produce Go/NoGo assessment.
 
 Usage:
-    pixi run python scripts/analyze_dryrun3.py --results-dir ~/dryrun3
+    uv run python scripts/analyze_dryrun3.py --results-dir ~/dryrun3
 """
 
 from __future__ import annotations

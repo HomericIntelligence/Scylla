@@ -10,7 +10,7 @@ point.
 
 Example::
 
-    SCYLLA_JSON_LOGS=1 pixi run scylla run-tier T0
+    SCYLLA_JSON_LOGS=1 uv run scylla run-tier T0
 
 Each emitted record is a single JSON object on its own line with the
 fields ``timestamp`` (ISO-8601 UTC), ``level``, ``name``, and

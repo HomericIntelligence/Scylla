@@ -325,5 +325,5 @@ Tests for this figure are located in:
 Verify figure generation with:
 
 ```bash
-pixi run pytest tests/analysis/test_figures.py::test_fig04_pass_rate_by_tier -v
+uv run pytest tests/analysis/test_figures.py::test_fig04_pass_rate_by_tier -v
 ```

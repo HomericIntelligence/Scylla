@@ -20,7 +20,7 @@ import pytest
 hatchling_ourselves = pytest.importorskip(
     "hatchling",
     reason="hatchling (the build backend) must be an env dependency so this "
-    "guard cannot silently stop running — see pixi.toml [pypi-dependencies]",
+    "guard cannot silently stop running — see pyproject.toml [dependency-groups].dev",
 )
 
 from hatchling.builders.sdist import SdistBuilder  # noqa: E402

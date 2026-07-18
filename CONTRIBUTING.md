@@ -20,33 +20,35 @@ Thank you for your interest in contributing to Scylla! This guide will help you 
 ## Quick Start
 
 **New to Scylla?** See [docs/dev/onboarding.md](docs/dev/onboarding.md) for the
-canonical setup guide: prerequisites, `pixi install`, running tests, IDE setup (VS Code /
+canonical setup guide: prerequisites, `uv sync`, running tests, IDE setup (VS Code /
 Codespaces), and a first-contribution walkthrough.
 
 **TL;DR:**
 
 ```bash
-pixi install && pixi run pytest tests/ -v
+uv sync && uv run pytest tests/ -v
 ```
 
 ## Development Setup
 
 ### Prerequisites
 
-- **Python**: 3.10+ (managed via Pixi)
+- **Python**: 3.10+ (managed via uv)
+- **uv**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - **Git**: For version control
 - **Docker**: Optional, for containerized experiments
 - **API Keys**: See `.env.example` for required keys
 
 ### Installing Dependencies
 
-Scylla uses Pixi for dependency management:
+Scylla uses [uv](https://docs.astral.sh/uv/) for dependency management (Odysseus ADR-017):
 
 ```bash
-# Pixi automatically manages dependencies from pixi.toml
-pixi run python --version
+# uv resolves and installs the locked environment from pyproject.toml + uv.lock
+uv sync --all-groups --all-extras
+uv run python --version
 
-# All dependencies are installed in .pixi/ directory
+# All dependencies are installed in the project's .venv/ directory
 # No manual pip install needed
 ```
 
@@ -99,18 +101,18 @@ git checkout -b 123-fix-judge-timeout
 # Follow existing test patterns
 
 # Run your tests
-pixi run pytest tests/unit/your_test.py -v
+uv run pytest tests/unit/your_test.py -v
 ```
 
 ### 4. Run Code Quality Checks
 
 ```bash
 # Format and lint code
-pixi run ruff check src/scylla/ --fix
-pixi run ruff format src/scylla/
+uv run ruff check src/scylla/ --fix
+uv run ruff format src/scylla/
 
 # Run all tests
-pixi run pytest tests/ -v
+uv run pytest tests/ -v
 
 # Type checking (via pre-commit)
 pre-commit run mypy --all-files
@@ -176,21 +178,22 @@ Scylla follows [Semantic Versioning](https://semver.org/) (SemVer).
 
 ### Version Declaration Sites
 
-The version is declared in three files that **must stay in sync**:
+`pyproject.toml` `[project].version` is the **single source of truth** for the
+package version. Other in-repo declarations must stay in sync with it:
 
 | File | Field | Role |
 |------|-------|------|
 | `pyproject.toml` | `project.version` | Canonical source (used by hatchling for package metadata) |
-| `pixi.toml` | `workspace.version` | Pixi workspace version |
 | `src/scylla/__init__.py` | `__version__` | Runtime access; imported by the CLI |
 
-A CI check (`scripts/check_version_consistency.py`) verifies all three agree on every PR.
+A CI check (`scripts/check_package_version_consistency.py`) verifies they agree on every PR.
 
 ### How to Bump the Version
 
-1. Update the version string in all three files listed above.
-2. Run `pixi install` to regenerate `pixi.lock` (the lock encodes the package SHA).
-3. Commit all changes (including `pixi.lock`).
+1. Run `uv run python scripts/bump_version.py <patch|minor|major>` (or `just bump <part>`),
+   which updates `pyproject.toml`.
+2. Run `uv lock` to regenerate `uv.lock`.
+3. Commit all changes (including `uv.lock`).
 
 ### Creating a Release
 
@@ -316,29 +319,29 @@ Scylla uses a dual-threshold coverage strategy:
 | Unit floor | `src/scylla/` only | CI `test.yml` unit step (`--cov-fail-under=75`) | 75% |
 | Integration floor | `src/scylla/` only | CI `test.yml` integration step (`--cov-fail-under=5`) | 5% |
 
-- **`pixi run test`** runs all tests with the combined 75% floor from `pyproject.toml`.
-- **`pixi run test-unit`** runs `tests/unit/` with the same 75% `src/scylla/` floor as CI, giving you local parity with the CI unit step.
+- **`uv run pytest`** runs all tests with the combined 75% floor from `pyproject.toml`.
+- **`uv run pytest tests/unit --override-ini=addopts= --cov=src/scylla --cov-fail-under=75`** runs `tests/unit/` with the same 75% `src/scylla/` floor as CI, giving you local parity with the CI unit step.
 - **CI** uses `--override-ini="addopts="` to bypass `pyproject.toml` and apply its own per-step floors independently.
 
 ### Running Tests
 
 ```bash
 # All tests (combined 75% coverage floor)
-pixi run test
+uv run pytest
 
 # Unit tests with CI-matching 75% src/scylla/ coverage floor
-pixi run test-unit
+uv run pytest tests/unit --override-ini=addopts= --cov=src/scylla --cov-fail-under=75
 
 # Specific categories
-pixi run pytest tests/unit/ -v          # Unit tests only
-pixi run pytest tests/unit/analysis/ -v # Includes integration-style tests
+uv run pytest tests/unit/ -v          # Unit tests only
+uv run pytest tests/unit/analysis/ -v # Includes integration-style tests
 
 # Specific modules
-pixi run pytest tests/unit/analysis/ -v
-pixi run pytest tests/unit/metrics/ -v
+uv run pytest tests/unit/analysis/ -v
+uv run pytest tests/unit/metrics/ -v
 
 # With coverage
-pixi run pytest tests/ --cov=src/scylla --cov-report=html
+uv run pytest tests/ --cov=src/scylla --cov-report=html
 ```
 
 ### Writing Tests
@@ -525,10 +528,10 @@ def calculate_metric(data: pd.DataFrame, threshold: float = 0.5) -> float:
 
 ```bash
 # Fast test iteration (no rendering)
-pixi run python scripts/generate_all_results.py --no-render
+uv run python scripts/generate_all_results.py --no-render
 
 # Run specific test file
-pixi run pytest tests/unit/analysis/test_stats.py -v -k "test_bootstrap"
+uv run pytest tests/unit/analysis/test_stats.py -v -k "test_bootstrap"
 
 # Auto-format on save in your editor
 # Configure VSCode/PyCharm to run ruff on save
@@ -541,10 +544,10 @@ pixi run pytest tests/unit/analysis/test_stats.py -v -k "test_bootstrap"
 export SCYLLA_LOG_LEVEL=DEBUG
 
 # Run with pdb
-pixi run python -m pdb scripts/manage_experiment.py
+uv run python -m pdb scripts/manage_experiment.py
 
 # Pytest debugging
-pixi run pytest tests/ -v --pdb  # Drop into debugger on failure
+uv run pytest tests/ -v --pdb  # Drop into debugger on failure
 ```
 
 ## Project Structure

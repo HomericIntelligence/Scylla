@@ -109,7 +109,7 @@ def main() -> None:
     print("Checkpoint saved. Run these two commands in sequence:\n")
     print(
         "# Step 1: Resume diff+judge for T3/16-41 run1 (agent done, workspace present)\n"
-        "pixi run python scripts/manage_experiment.py run \\\n"
+        "uv run python scripts/manage_experiment.py run \\\n"
         "    --config tests/fixtures/tests/test-001 \\\n"
         "    --experiment-id test-001 \\\n"
         "    --results-dir results \\\n"
@@ -129,7 +129,7 @@ def main() -> None:
     )
     print(
         "# Step 2: Re-judge all bad-judge runs (run_result.json exists but score=0.0)\n"
-        "pixi run python scripts/manage_experiment.py run \\\n"
+        "uv run python scripts/manage_experiment.py run \\\n"
         "    --config tests/fixtures/tests/test-001 \\\n"
         "    --experiment-id test-001 \\\n"
         "    --results-dir results \\\n"

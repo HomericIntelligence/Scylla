@@ -70,13 +70,13 @@ Net: +30 lines, -29 lines (essentially neutral size)
 ## Verification Results
 
 ```
-pixi run python -c "from scylla.core.results import JudgmentInfoBase, MetricsInfoBase; print('OK')"
+uv run python -c "from scylla.core.results import JudgmentInfoBase, MetricsInfoBase; print('OK')"
 # → OK
 
-pixi run python -m pytest tests/unit/core/test_metrics_judgment.py --no-cov -q
+uv run python -m pytest tests/unit/core/test_metrics_judgment.py --no-cov -q
 # → 36 passed
 
-pixi run python -m pytest tests/unit/ --no-cov -q --ignore=tests/unit/config/test_validation.py
+uv run python -m pytest tests/unit/ --no-cov -q --ignore=tests/unit/config/test_validation.py
 # → 2350 passed
 
 pre-commit run --files scylla/core/results.py scylla/core/__init__.py

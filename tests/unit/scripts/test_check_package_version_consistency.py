@@ -8,7 +8,6 @@ import pytest
 from scripts.check_package_version_consistency import (
     check_init_version,
     check_package_version_consistency,
-    check_pixi_version,
     check_skill_files,
     find_aspirational_versions,
     get_canonical_version,
@@ -27,18 +26,6 @@ def write_pyproject(directory: Path, version: str = "0.1.0") -> Path:
         version = "{version}"
     """)
     path = directory / "pyproject.toml"
-    path.write_text(content)
-    return path
-
-
-def write_pixi(directory: Path, version: str = "0.1.0") -> Path:
-    """Write a minimal pixi.toml with the given version."""
-    content = textwrap.dedent(f"""\
-        [workspace]
-        name = "scylla"
-        version = "{version}"
-    """)
-    path = directory / "pixi.toml"
     path.write_text(content)
     return path
 
@@ -64,12 +51,10 @@ def setup_minimal_repo(
     root: Path,
     *,
     pyproject_version: str = "0.1.0",
-    pixi_version: str = "0.1.0",
     init_version: str = "0.1.0",
 ) -> None:
     """Set up a minimal repo with consistent version files."""
     write_pyproject(root, pyproject_version)
-    write_pixi(root, pixi_version)
     write_init(root, init_version)
 
 
@@ -112,42 +97,6 @@ class TestGetCanonicalVersion:
         with pytest.raises(SystemExit) as exc_info:
             get_canonical_version(path)
         assert exc_info.value.code == 1
-
-
-# ---------------------------------------------------------------------------
-# TestCheckPixiVersion
-# ---------------------------------------------------------------------------
-
-
-class TestCheckPixiVersion:
-    """Tests for check_pixi_version()."""
-
-    def test_matching_version_passes(self, tmp_path: Path) -> None:
-        """Should return empty list when pixi.toml version matches."""
-        write_pixi(tmp_path, "0.1.0")
-        assert check_pixi_version(tmp_path, "0.1.0") == []
-
-    def test_mismatched_version_fails(self, tmp_path: Path) -> None:
-        """Should return error when pixi.toml version differs."""
-        write_pixi(tmp_path, "0.2.0")
-        errors = check_pixi_version(tmp_path, "0.1.0")
-        assert len(errors) == 1
-        assert "0.2.0" in errors[0]
-        assert "0.1.0" in errors[0]
-
-    def test_missing_pixi_toml(self, tmp_path: Path) -> None:
-        """Should return error when pixi.toml is missing."""
-        errors = check_pixi_version(tmp_path, "0.1.0")
-        assert len(errors) == 1
-        assert "not found" in errors[0]
-
-    def test_missing_workspace_version(self, tmp_path: Path) -> None:
-        """Should return error when [workspace].version key is absent."""
-        path = tmp_path / "pixi.toml"
-        path.write_text('[workspace]\nname = "scylla"\n')
-        errors = check_pixi_version(tmp_path, "0.1.0")
-        assert len(errors) == 1
-        assert "No [workspace].version" in errors[0]
 
 
 # ---------------------------------------------------------------------------
@@ -405,11 +354,6 @@ class TestCheckPackageVersionConsistency:
         setup_minimal_repo(tmp_path)
         assert check_package_version_consistency(tmp_path) == 0
 
-    def test_pixi_mismatch_returns_one(self, tmp_path: Path) -> None:
-        """Should return 1 when pixi.toml version differs."""
-        setup_minimal_repo(tmp_path, pixi_version="0.2.0")
-        assert check_package_version_consistency(tmp_path) == 1
-
     def test_init_mismatch_returns_one(self, tmp_path: Path) -> None:
         """Should return 1 when __init__.py version differs."""
         setup_minimal_repo(tmp_path, init_version="0.2.0")
@@ -455,10 +399,10 @@ class TestCheckPackageVersionConsistency:
 
     def test_error_count_reported(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         """Should report total violation count on failure."""
-        setup_minimal_repo(tmp_path, pixi_version="0.2.0", init_version="0.3.0")
+        setup_minimal_repo(tmp_path, init_version="0.3.0")
         check_package_version_consistency(tmp_path)
         captured = capsys.readouterr()
-        assert "2 package version consistency violation(s)" in captured.err
+        assert "1 package version consistency violation(s)" in captured.err
 
     def test_missing_pyproject_exits(self, tmp_path: Path) -> None:
         """Should sys.exit(1) if pyproject.toml is missing."""

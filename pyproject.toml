@@ -49,7 +49,11 @@ nats = [
 ]
 analysis = [
     "matplotlib>=3.10.9,<4",
-    "numpy>=2.2.6,<3",
+    # Cap below 2.5: numpy 2.5's type stubs use `type X =` (PEP 695) syntax that
+    # mypy rejects under target-version py310. 2.4.x stubs are compatible and
+    # match the last-known-good pixi resolution. Revisit when mypy handles PEP
+    # 695 stubs at older targets or requires-python is bumped.
+    "numpy>=2.2.6,<2.5",
     "pandas>=2.3.3,<3",
     "seaborn>=0.13.2,<1",
     "scipy>=1.15.3,<2",
@@ -57,6 +61,46 @@ analysis = [
     "vl-convert-python>=1.9.0.post1,<2",
     "krippendorff>=0.8.2,<1",
     "statsmodels>=0.14,<1",
+]
+
+# ── uv dependency groups (dev tooling) ────────────────────────────────────────
+# uv-native dev group. Mirrors [project.optional-dependencies].dev PLUS every
+# tool that previously lived only in pixi.toml [feature.*.dependencies] /
+# [feature.*.pypi-dependencies] or was `pip install`-ed inside CI:
+#   from optional-dependencies.dev: pytest, pytest-asyncio, pytest-cov,
+#     pre-commit, ruff, defusedxml
+#   from pixi [dependencies]      : pytest-timeout, pytest-rerunfailures,
+#     types-pyyaml, types-jsonschema
+#   from pixi [feature.dev]       : mypy, yamllint, pip-audit, import-linter,
+#     pytest-watch (ptw), bump2version, just (installed via setup-just in CI)
+#   from pixi [feature.lint]      : bandit[toml], check-jsonschema
+#   pip-installed in CI (_required.yml build/package jobs): build, twine
+# [project.optional-dependencies] is retained for pip-compat installs.
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1,<10",
+    "pytest-asyncio>=1.4.0,<2",
+    "pytest-cov>=7.1.0,<8",
+    "pytest-timeout>=2.0,<3",
+    "pytest-rerunfailures>=14.0,<15",
+    "pytest-watch>=4.2,<5",
+    "pre-commit>=4.6.0,<5",
+    "ruff>=0.15.20,<1",
+    "mypy>=1.8.0,<2",
+    "yamllint>=1.35.0,<2",
+    "defusedxml>=0.7.1,<1",
+    "pip-audit>=2.7,<3",
+    "bandit[toml]>=1.7.5,<2",
+    "import-linter>=2.0,<3",
+    "check-jsonschema>=0.29,<1",
+    "build>=1.2,<2",
+    "twine>=5.0,<7",
+    "bump2version>=1.0.1,<2",
+    "types-pyyaml>=6.0.12.20250915,<7",
+    "types-jsonschema>=4.26.0.20260202,<5",
+    # Build backend importable in-env so tests/unit/config/test_wheel_contents.py
+    # (empty-wheel regression guard) can build real artifacts under `uv run`.
+    "hatchling>=1.29.0,<2",
 ]
 
 [project.urls]
@@ -156,7 +200,7 @@ filterwarnings = [
 # Bandit AST-based Python security scanner configuration.
 # Replaces the pygrep shell=True pre-commit hook with deeper analysis.
 # Scoped to scripts/ and scylla/ (not tests/ — assert is intentional there).
-exclude_dirs = ["tests", "build", ".pixi", "docs"]
+exclude_dirs = ["tests", "build", ".venv", "docs"]
 skips = [
     "B101",   # assert statements — intentional in Python, not a security issue
     "B404",   # subprocess import — we use subprocess with shell=False explicitly

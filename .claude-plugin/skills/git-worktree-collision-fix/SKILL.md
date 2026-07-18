@@ -155,7 +155,7 @@ class MetricsInfoBase(BaseModel):
 
 ## Verified Workflow
 
-1. Run baseline dry run: `pixi run python scripts/run_e2e_batch.py --tiers T0 --model haiku --judge-model haiku --runs 1 --max-subtests 1 --fresh -v --threads 1 --results-dir /tmp/e2e-verify`
+1. Run baseline dry run: `uv run python scripts/run_e2e_batch.py --tiers T0 --model haiku --judge-model haiku --runs 1 --max-subtests 1 --fresh -v --threads 1 --results-dir /tmp/e2e-verify`
 2. Analyze results — distinguish framework ERRORs from legitimate agent FAILs by reading `judge/judge_01/timing.json` (has `"failed": true` key) and `run_result.json`
 3. Run parallel dry run: `--tiers T0 T1 --threads 2 --max-subtests 2` to verify no branch collisions
 4. All 2219+ unit tests must pass before pushing

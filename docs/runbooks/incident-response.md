@@ -38,7 +38,7 @@ find "$EXP_DIR/runs" -name run_result.json | head -5 \
   | xargs -I{} python -m json.tool {}
 
 # Check experiment config hash consistency
-pixi run python -c "
+uv run python -c "
 from pathlib import Path
 from scylla.e2e.checkpoint import load_checkpoint
 c = load_checkpoint(Path('$CKPT'))
@@ -68,13 +68,13 @@ The runner will recreate the workspace and re-run the agent from scratch.
 cp -a "$CKPT" "$CKPT.pre-invalidate.$(date +%s)"
 
 # Reset one subtest in tier T3 to pending
-pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
+uv run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
   --from workspace_setup \
   --filter-tier T3 \
   --filter-subtest S0042
 
 # Reset all failed runs across the experiment
-pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
+uv run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
   --from workspace_setup \
   --filter-status failed
 ```
@@ -92,7 +92,7 @@ used for the whole tier):
 ```bash
 cp -a "$CKPT" "$CKPT.pre-invalidate.$(date +%s)"
 
-pixi run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
+uv run python scripts/manage_experiment.py run --resume "$EXP_DIR" \
   --from workspace_setup \
   --filter-tier T2
 ```

@@ -10,7 +10,7 @@ and `git remote origin` pointing at `HomericIntelligence/Scylla`.
 >
 > - `NEW_TAG` — the version being shipped, e.g. `v0.2.0`.
 > - `PREV_TAG` — the last known-good tag, e.g. `v0.1.0`.
-> - All `pixi run` commands assume you are at the repo root.
+> - All `uv run` commands assume you are at the repo root.
 
 ---
 
@@ -33,7 +33,7 @@ pre-commit run --all-files
 ### Tag and push
 
 ```bash
-# Create annotated tag (pixi.lock and pyproject.toml must be committed)
+# Create annotated tag (uv.lock and pyproject.toml must be committed)
 git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
 git push origin "$NEW_TAG"
 ```
@@ -46,7 +46,7 @@ CI validates the tag build automatically. Monitor the
 ```bash
 # Confirm the tag is visible and the wheel builds cleanly
 gh release list --repo HomericIntelligence/Scylla | head -5
-pixi run python -m build --wheel --no-isolation 2>&1 | tail -5
+uv run python -m build --wheel --no-isolation 2>&1 | tail -5
 ```
 
 ---
@@ -70,7 +70,7 @@ Roll back when all three are true:
 git checkout -b 2001-rollback-to-v0.1.0 v0.1.0
 
 # If you need to force evaluation hosts to use the prior image, rebuild:
-pixi run ci-build   # builds scylla-ci:local from ci/Containerfile
+uv run ci-build   # builds scylla-ci:local from ci/Containerfile
 
 # Push the rollback branch and open an expedited PR
 git push -u origin 2001-rollback-to-v0.1.0

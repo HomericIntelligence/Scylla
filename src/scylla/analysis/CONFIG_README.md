@@ -115,7 +115,7 @@ When making breaking changes to the configuration schema:
 Configuration values are tested in `tests/unit/analysis/test_config.py`:
 
 ```bash
-pixi run pytest tests/unit/analysis/test_config.py -v
+uv run pytest tests/unit/analysis/test_config.py -v
 ```
 
 ## Migration Guide
@@ -140,7 +140,7 @@ from scylla.analysis.config import ALPHA, BOOTSTRAP_RESAMPLES
 ### Updating Configuration
 
 1. Edit `src/scylla/analysis/config.yaml`
-2. Run tests to verify: `pixi run pytest tests/unit/analysis/`
+2. Run tests to verify: `uv run pytest tests/unit/analysis/`
 3. Commit both `config.yaml` and `config.py` together
 
 ## Benefits

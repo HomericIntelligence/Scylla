@@ -91,7 +91,7 @@ If you have archived shell scripts that shouldn't be linted (e.g., `docs/arxiv/`
 
 ```bash
 pre-commit run --all-files
-pixi run python -m pytest tests/ -v
+uv run python -m pytest tests/ -v
 ```
 
 ## Failed Attempts

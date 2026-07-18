@@ -101,7 +101,7 @@ def test_instance_of_grading_info_base(self) -> None:
 ### 7. Verify
 
 ```bash
-pixi run python -m pytest tests/ --no-cov -q   # all tests pass
+uv run python -m pytest tests/ --no-cov -q   # all tests pass
 pre-commit run --all-files                       # ruff, mypy, black all pass
 ```
 

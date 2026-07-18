@@ -16,7 +16,7 @@ The `manage_experiment.py regenerate` subcommand rebuilds `results.json` and all
 Regenerate results from existing run data (no re-judging):
 
 ```bash
-pixi run python scripts/manage_experiment.py regenerate /path/to/experiment/
+uv run python scripts/manage_experiment.py regenerate /path/to/experiment/
 ```
 
 ### Re-judge Missing Runs
@@ -24,7 +24,7 @@ pixi run python scripts/manage_experiment.py regenerate /path/to/experiment/
 Re-run judges for runs that are missing valid judge results, then regenerate:
 
 ```bash
-pixi run python scripts/manage_experiment.py regenerate /path/to/experiment/ --rejudge
+uv run python scripts/manage_experiment.py regenerate /path/to/experiment/ --rejudge
 ```
 
 ### Override Judge Model
@@ -32,7 +32,7 @@ pixi run python scripts/manage_experiment.py regenerate /path/to/experiment/ --r
 Specify a different judge model for re-judging:
 
 ```bash
-pixi run python scripts/manage_experiment.py regenerate /path/to/experiment/ \
+uv run python scripts/manage_experiment.py regenerate /path/to/experiment/ \
     --rejudge --judge-model claude-opus-4-5-20251101
 ```
 
@@ -41,7 +41,7 @@ pixi run python scripts/manage_experiment.py regenerate /path/to/experiment/ \
 Preview what would be done without modifying files:
 
 ```bash
-pixi run python scripts/manage_experiment.py regenerate /path/to/experiment/ \
+uv run python scripts/manage_experiment.py regenerate /path/to/experiment/ \
     --rejudge --dry-run --verbose
 ```
 
@@ -109,7 +109,7 @@ After manually fixing a `run_result.json` file:
 vim ~/fullruns/experiment/T0/00-test/run_01/run_result.json
 
 # Regenerate all results
-pixi run python scripts/manage_experiment.py regenerate ~/fullruns/experiment/
+uv run python scripts/manage_experiment.py regenerate ~/fullruns/experiment/
 ```
 
 ### Example 2: Re-judge Failed Judges
@@ -118,7 +118,7 @@ After a judge timeout or failure:
 
 ```bash
 # Re-run judges and regenerate
-pixi run python scripts/manage_experiment.py regenerate ~/fullruns/experiment/ \
+uv run python scripts/manage_experiment.py regenerate ~/fullruns/experiment/ \
     --rejudge --verbose
 ```
 
@@ -127,7 +127,7 @@ pixi run python scripts/manage_experiment.py regenerate ~/fullruns/experiment/ \
 Check what would be re-judged without making changes:
 
 ```bash
-pixi run python scripts/manage_experiment.py regenerate ~/fullruns/experiment/ \
+uv run python scripts/manage_experiment.py regenerate ~/fullruns/experiment/ \
     --rejudge --dry-run --verbose
 ```
 

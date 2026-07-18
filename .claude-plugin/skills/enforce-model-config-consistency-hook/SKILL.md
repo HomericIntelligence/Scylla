@@ -52,16 +52,16 @@ The script then:
 3. Calls `validate_filename_model_id_consistency(config_file, model_id)`
 4. Collects all warning strings; exits 1 if any are non-empty
 
-### 3. Add the pre-commit hook using `pixi run`
+### 3. Add the pre-commit hook using `uv run`
 
-Because the script imports from `scylla/`, it must run inside the pixi environment:
+Because the script imports from `scylla/`, it must run inside the uv environment:
 
 ```yaml
 # .pre-commit-config.yaml
 - id: check-model-config-consistency
   name: Check Model Config Filename/model_id Consistency
   description: Fails if any config/models/*.yaml filename does not match its model_id field (uses scylla.config.validation)
-  entry: pixi run python scripts/check_model_config_consistency.py
+  entry: uv run python scripts/check_model_config_consistency.py
   language: system
   files: ^config/models/.*\.yaml$
   pass_filenames: false
@@ -69,7 +69,7 @@ Because the script imports from `scylla/`, it must run inside the pixi environme
 
 **Key details:**
 
-- `pixi run python ...` rather than plain `python ...` ensures the venv with `pyyaml` and project packages is active
+- `uv run python ...` rather than plain `python ...` ensures the venv with `pyyaml` and project packages is active
 - `pass_filenames: false` — the script scans the directory itself, not individual changed files
 - `files: ^config/models/.*\.yaml$` — only trigger when model configs change
 
@@ -109,11 +109,11 @@ def write_yaml(directory: Path, filename: str, content: str) -> Path:
 
 ## Failed Attempts
 
-### Using `python` instead of `pixi run python` in hook entry
+### Using `python` instead of `uv run python` in hook entry
 
 When `entry: python scripts/check_model_config_consistency.py` is used, the script cannot
-import `scylla.config.validation` because the pixi venv packages are not available in the
-pre-commit environment's `python`. Always use `pixi run python` for scripts that import
+import `scylla.config.validation` because the uv venv packages are not available in the
+pre-commit environment's `python`. Always use `uv run python` for scripts that import
 from the project's own packages.
 
 ### Forgetting `sys.path` injection
@@ -132,4 +132,4 @@ to `sys.path`.
 | Hook trigger         | `^config/models/.*\.yaml$`                  |
 | Validation function  | `scylla.config.validation.validate_filename_model_id_consistency` |
 | Fixtures skipped     | Files prefixed with `_`                     |
-| Entry command        | `pixi run python scripts/check_model_config_consistency.py` |
+| Entry command        | `uv run python scripts/check_model_config_consistency.py` |

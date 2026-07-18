@@ -17,7 +17,7 @@ Trigger this skill when:
 - A shell script (`.sh`) has no automated tests and edge cases have been identified in review/issues
 - Tests must avoid live external calls (API, git remotes) — requiring mock stubs
 - The script uses `set -uo pipefail` and you need to verify `grep`/`jq` exit-code behavior in combination
-- You need a runnable BATS suite integrated with `pixi run` and triggered from GitHub Actions CI
+- You need a runnable BATS suite integrated into the project's test tooling and triggered from GitHub Actions CI
 - Edge cases include: different exit codes (0 vs 1), warning vs critical paths, empty vs populated command output
 
 ## Results & Parameters
@@ -80,15 +80,17 @@ clean_state() {
 }
 ```
 
-### pixi.toml Integration
+### Invoking the suite
 
-```toml
-[tasks]
-test-shell = "bats tests/shell/ --recursive"
+BATS is a system tool (not a Python package), so run it directly rather than through
+the Python package manager:
 
-[feature.dev.dependencies]
-bats-core = ">=1.11.0"   # available on conda-forge
+```bash
+bats tests/shell/ --recursive --timing
 ```
+
+`bats-core` is installed as a system dependency in CI (see the CI workflow below);
+locally, install it into `~/.local` (see Attempt 3).
 
 ### CI Workflow (`.github/workflows/shell-test.yml`)
 
@@ -107,8 +109,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.1
-      - run: pixi run test-shell
+      - name: Install bats
+        run: sudo apt-get update && sudo apt-get install -y bats
+      - run: bats tests/shell/ --recursive --timing
 ```
 
 ### Test Case Pattern
@@ -188,19 +191,16 @@ For each scenario:
 ### 7. Run locally before committing
 
 ```bash
-bats tests/shell/ --recursive
+bats tests/shell/ --recursive --timing
 ```
 
 All tests must pass before staging.
 
-### 8. Add bats-core to pixi.toml
+### 8. Ensure bats is available in CI
 
-```toml
-[feature.dev.dependencies]
-bats-core = ">=1.11.0"
-```
-
-Verify it's on conda-forge first: `pixi search 'bats*'`
+BATS is not a Python package, so it is not managed by uv. Install it as a system
+dependency in the CI workflow (`sudo apt-get install -y bats`) and, for local runs,
+into `~/.local` (see Attempt 3).
 
 ### 9. Add CI workflow (shell-test.yml)
 
@@ -209,7 +209,7 @@ Trigger only on `.sh` file changes and `tests/shell/**` for fast CI.
 ### 10. Commit, push, PR, auto-merge
 
 ```bash
-git add pixi.toml .github/workflows/shell-test.yml tests/shell/
+git add .github/workflows/shell-test.yml tests/shell/
 git commit -m "feat(tests): Add BATS test suite for <script>.sh\n\nCloses #<issue>"
 git push -u origin <branch>
 gh pr create --title "feat(tests): ..." --body "Closes #<issue>"
@@ -263,7 +263,7 @@ git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats-install
 # bats is now at ~/.local/bin/bats
 ```
 
-For CI, use pixi with `bats-core` from conda-forge — it's available as `bats-core = ">=1.11.0"`.
+For CI, install `bats` as a system package (`sudo apt-get install -y bats` on ubuntu-latest).
 
 ## Related Skills
 

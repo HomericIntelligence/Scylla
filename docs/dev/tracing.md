@@ -27,7 +27,7 @@ Set the `SCYLLA_OTEL_EXPORTER` environment variable before invoking the CLI:
 Example:
 
 ```bash
-SCYLLA_OTEL_EXPORTER=console pixi run scylla run 001-justfile-to-makefile --tier T0 --runs 1
+SCYLLA_OTEL_EXPORTER=console uv run scylla run 001-justfile-to-makefile --tier T0 --runs 1
 ```
 
 ## Required packages (operators install these)
@@ -247,7 +247,7 @@ service:
    ```bash
    SCYLLA_OTEL_EXPORTER=otlp \
    OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
-   pixi run scylla run 001-justfile-to-makefile --tier T0 --runs 1
+   uv run scylla run 001-justfile-to-makefile --tier T0 --runs 1
    ```
 
 4. Open the Jaeger UI at <http://localhost:16686>, select the

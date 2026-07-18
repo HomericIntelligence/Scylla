@@ -229,7 +229,7 @@ The converter has been designed to preserve all content from `research_paper.tex
 
 - **LaTeX Distribution**: TeX Live 2023 or later (already installed)
 - **Compilers**: pdflatex, bibtex (already available)
-- **Python 3.10+**: For converter script (via pixi)
+- **Python 3.10+**: For converter script (via uv)
 - **arXiv Account**: For submission
 
 ## Support

@@ -40,7 +40,7 @@ Scylla is a comprehensive testing framework for AI agent workflows that:
 ## Quick Start Guide
 
 ```bash
-pixi install && pixi run pytest tests/ -v
+uv sync && uv run pytest tests/ -v
 ```
 
 See [docs/dev/onboarding.md](docs/dev/onboarding.md) for full onboarding instructions,
@@ -73,7 +73,7 @@ See [CLI Reference](#cli-reference) for the full command set.
 ## CLI Reference
 
 Scylla ships a `scylla` command-line tool (declared in `pyproject.toml` as
-`scylla = "scylla.cli.main:cli"`). After `pixi install` the binary is available in the
+`scylla = "scylla.cli.main:cli"`). After `uv sync` the binary is available in the
 environment:
 
 ```bash
@@ -217,7 +217,7 @@ Part of a 12-repository ecosystem:
 Generate all outputs (data exports, figures, tables):
 
 ```bash
-pixi run python scripts/generate_all_results.py \
+uv run python scripts/generate_all_results.py \
   --data-dir ~/fullruns \
   --output-dir results/analysis
 ```
@@ -232,12 +232,12 @@ pixi run python scripts/generate_all_results.py \
 
 ```bash
 # Development mode - no rendering
-pixi run python scripts/generate_all_results.py \
+uv run python scripts/generate_all_results.py \
   --no-render \
   --exclude test001-dryrun test001-debug
 
 # Regenerate tables only (assumes data/figures exist)
-pixi run python scripts/generate_all_results.py \
+uv run python scripts/generate_all_results.py \
   --skip-data --skip-figures
 ```
 
@@ -246,7 +246,7 @@ pixi run python scripts/generate_all_results.py \
 **1. Export Data Only**
 
 ```bash
-pixi run python scripts/export_data.py \
+uv run python scripts/export_data.py \
   --data-dir ~/fullruns \
   --output-dir results/analysis/data
 ```
@@ -256,7 +256,7 @@ pixi run python scripts/export_data.py \
 **2. Generate Figures Only (34 figures × 5 formats)**
 
 ```bash
-pixi run python scripts/generate_figures.py \
+uv run python scripts/generate_figures.py \
   --data-dir ~/fullruns \
   --output-dir results/analysis/figures
 ```
@@ -266,7 +266,7 @@ pixi run python scripts/generate_figures.py \
 **3. Generate Tables Only (11 tables × 2 formats)**
 
 ```bash
-pixi run python scripts/generate_tables.py \
+uv run python scripts/generate_tables.py \
   --data-dir ~/fullruns \
   --output-dir results/analysis/tables
 ```
@@ -338,10 +338,10 @@ with open('results/analysis/data/statistical_results.json') as f:
 
 ```bash
 # Run full experiment
-pixi run python scripts/manage_experiment.py run --config config/test.yaml
+uv run python scripts/manage_experiment.py run --config config/test.yaml
 
 # Run specific tiers
-pixi run python scripts/manage_experiment.py run \
+uv run python scripts/manage_experiment.py run \
   --tiers-dir tests/fixtures/tests/test-001 \
   --tiers T0 T1 --runs 10 -v
 ```
@@ -359,11 +359,11 @@ pixi run python scripts/manage_experiment.py run \
 
 ```bash
 # Re-run failed agents
-pixi run python scripts/manage_experiment.py rerun-agents \
+uv run python scripts/manage_experiment.py rerun-agents \
   ~/fullruns/test_experiment --tier T0 T1
 
 # Re-run failed judges
-pixi run python scripts/manage_experiment.py rerun-judges \
+uv run python scripts/manage_experiment.py rerun-judges \
   ~/fullruns/test_experiment
 ```
 
@@ -371,11 +371,11 @@ pixi run python scripts/manage_experiment.py rerun-judges \
 
 ```bash
 # Regenerate all results
-pixi run python scripts/manage_experiment.py regenerate \
+uv run python scripts/manage_experiment.py regenerate \
   ~/fullruns/test_experiment
 
 # Repair corrupt checkpoint
-pixi run python scripts/manage_experiment.py repair \
+uv run python scripts/manage_experiment.py repair \
   ~/fullruns/test_experiment/checkpoint.json
 ```
 
@@ -444,7 +444,7 @@ Schema: `src/scylla/analysis/schemas/run_result.schema.json`
 Scylla has a comprehensive test suite covering all functionality. To see the current test count:
 
 ```bash
-pixi run pytest tests/ --collect-only -q | tail -1
+uv run pytest tests/ --collect-only -q | tail -1
 ```
 
 #### Test Categories
@@ -457,29 +457,29 @@ pixi run pytest tests/ --collect-only -q | tail -1
 
 ```bash
 # All tests (comprehensive)
-pixi run pytest tests/ --verbose
+uv run pytest tests/ --verbose
 
 # Unit tests only (fastest)
-pixi run pytest tests/unit/ -v
+uv run pytest tests/unit/ -v
 
 # Specific modules
-pixi run pytest tests/unit/analysis/ -v
-pixi run pytest tests/unit/adapters/ -v
-pixi run pytest tests/unit/config/ -v
+uv run pytest tests/unit/analysis/ -v
+uv run pytest tests/unit/adapters/ -v
+uv run pytest tests/unit/config/ -v
 
 # Coverage analysis
-pixi run pytest tests/ --cov=src/scylla --cov-report=html
+uv run pytest tests/ --cov=src/scylla --cov-report=html
 
 # Specific test file
-pixi run pytest tests/unit/analysis/test_stats.py -v
+uv run pytest tests/unit/analysis/test_stats.py -v
 ```
 
 #### Test Quality Assurance
 
 ```bash
 # Code quality (linting + formatting)
-pixi run ruff check src/scylla/
-pixi run ruff format src/scylla/ --check
+uv run ruff check src/scylla/
+uv run ruff format src/scylla/ --check
 ```
 
 ### Git Hooks
@@ -519,11 +519,11 @@ The coverage threshold is read directly from `pyproject.toml` — update it ther
 
 ```bash
 # Linting
-pixi run ruff check src/scylla/analysis/
+uv run ruff check src/scylla/analysis/
 
 # Auto-fix and format
-pixi run ruff check --fix src/scylla/analysis/
-pixi run ruff format src/scylla/analysis/
+uv run ruff check --fix src/scylla/analysis/
+uv run ruff format src/scylla/analysis/
 ```
 
 ---
@@ -634,9 +634,9 @@ We welcome contributions! Please see **[CONTRIBUTING.md](CONTRIBUTING.md)** for 
 
 1. Fork the repository and clone locally
 2. Copy `.env.example` to `.env` and configure API keys
-3. Install dependencies: `curl -fsSL https://pixi.sh/install.sh | bash`
+3. Install uv, then dependencies: `curl -LsSf https://astral.sh/uv/install.sh | sh` then `uv sync --all-groups --all-extras`
 4. Install git hooks: `bash scripts/install_hooks.sh`
-5. Run tests: `pixi run pytest tests/ -v`
+5. Run tests: `uv run pytest tests/ -v`
 6. Check [CONTRIBUTING.md](CONTRIBUTING.md) for detailed workflow
 
 **Areas for contribution:**

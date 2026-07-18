@@ -17,7 +17,7 @@
 # Override: CONTAINER_ENGINE=docker ./scripts/run_ci_local.sh
 #
 # Image: uses 'scylla-ci:local' if available, falls back to GHCR image.
-# Build locally: pixi run ci-build  (or: podman build -f ci/Containerfile -t scylla-ci:local .)
+# Build locally: just ci-build  (or: podman build -f ci/Containerfile -t scylla-ci:local .)
 
 set -euo pipefail
 
@@ -85,7 +85,7 @@ resolve_image() {
     else
         log_warn "Local image '${LOCAL_IMAGE}' not found."
         log_warn "Pulling from GHCR: ${GHCR_IMAGE}"
-        log_warn "(To build locally: pixi run ci-build)"
+        log_warn "(To build locally: just ci-build)"
         "${CONTAINER_ENGINE}" pull "${GHCR_IMAGE}"
         CI_IMAGE="${GHCR_IMAGE}"
     fi
@@ -125,14 +125,14 @@ run_in_container() {
 run_pre_commit() {
     log_step "Pre-commit (linting, type checking, security hooks)"
     run_in_container \
-        pixi run --environment lint \
+        uv run \
         pre-commit run --all-files --show-diff-on-failure
 }
 
 run_test_unit() {
     log_step "Unit tests (pytest tests/unit, 75% coverage floor)"
     run_in_container \
-        pixi run pytest tests/unit \
+        uv run pytest tests/unit \
             --override-ini="addopts=" \
             -v --strict-markers \
             --cov=src/scylla --cov-report=term-missing \
@@ -142,20 +142,20 @@ run_test_unit() {
 run_test_integration() {
     log_step "Integration tests (pytest tests/integration)"
     run_in_container \
-        pixi run pytest tests/integration \
+        uv run pytest tests/integration \
             -v --cov=src/scylla --cov-report=term-missing
 }
 
 run_security() {
     log_step "Security scan (pip-audit, HIGH/CRITICAL only)"
     run_in_container \
-        pixi run --environment lint pip-audit
+        sh -c 'uv run pip-audit --format json | uv run python scripts/filter_audit.py'
 }
 
 run_shell_tests() {
     log_step "Shell tests (BATS)"
     run_in_container \
-        sh -c "PREFLIGHT_INTEGRATION=0 pixi run test-shell"
+        sh -c "PREFLIGHT_INTEGRATION=0 bats tests/shell/ --recursive --timing"
 }
 
 # ============================================================================

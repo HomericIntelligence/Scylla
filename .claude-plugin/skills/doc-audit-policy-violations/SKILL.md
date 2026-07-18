@@ -37,13 +37,13 @@ The canonical policies to check are defined in `CLAUDE.md`. The four enforced ru
 
 ```bash
 # Report all violations with file:line references
-pixi run python scripts/audit_doc_examples.py
+uv run python scripts/audit_doc_examples.py
 
 # Verbose mode (shows violating line content)
-pixi run python scripts/audit_doc_examples.py --verbose
+uv run python scripts/audit_doc_examples.py --verbose
 
 # JSON output (for programmatic consumption)
-pixi run python scripts/audit_doc_examples.py --json
+uv run python scripts/audit_doc_examples.py --json
 ```
 
 Exit code: `0` = no violations, `1` = violations found.
@@ -56,7 +56,7 @@ Excluded paths (archived/test-fixture content):
 
 - `docs/arxiv/`
 - `tests/claude-code/`
-- `.pixi/`
+- `.venv/`
 - `build/`
 - `node_modules/`
 
