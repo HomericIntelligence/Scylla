@@ -41,7 +41,7 @@ dev = [
     "pytest-asyncio>=1.4.0,<2",
     "pytest-cov>=7.1.0,<8",
     "pre-commit>=4.6.0,<5",
-    "ruff>=0.15.20,<1",
+    "ruff>=0.15.22,<1",
     "defusedxml>=0.7.1,<1",
 ]
 nats = [
@@ -85,7 +85,7 @@ dev = [
     "pytest-rerunfailures>=14.0,<15",
     "pytest-watch>=4.2,<5",
     "pre-commit>=4.6.0,<5",
-    "ruff>=0.15.20,<1",
+    "ruff>=0.15.22,<1",
     "mypy>=1.8.0,<2",
     "yamllint>=1.35.0,<2",
     "defusedxml>=0.7.1,<1",
