@@ -484,7 +484,8 @@ Scylla/
 |   +-- shared/                  # Shared reference files
 +-- pyproject.toml               # Project + uv dependency configuration
 +-- uv.lock                      # Resolved dependency lockfile
-+-- CLAUDE.md                    # This file
++-- AGENTS.md                    # This file
++-- CLAUDE.md                    # Pointer to AGENTS.md
 +-- README.md                    # Project overview
 ```
 
