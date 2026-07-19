@@ -14,7 +14,7 @@ This is configured in `.claude/settings.json`:
 
 ## Why Thinking Mode is Disabled
 
-Per the CLAUDE.md guidelines, thinking mode should only be used for:
+Per the AGENTS.md guidelines, thinking mode should only be used for:
 
 - Designing evaluation protocols and experiment methodology
 - Analyzing benchmark results and identifying patterns
@@ -62,7 +62,7 @@ To enable thinking mode by default (NOT recommended for this project), edit `.cl
 
 ## Thinking Budget Guidelines
 
-When thinking mode IS enabled (rare cases), follow these budget guidelines from CLAUDE.md:
+When thinking mode IS enabled (rare cases), follow these budget guidelines from AGENTS.md:
 
 | Task Type | Budget | Examples | Rationale |
 |-----------|--------|----------|-----------|

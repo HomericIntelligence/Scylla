@@ -56,5 +56,5 @@ This document is referenced by 20+ locations across 13 files in the codebase.
 ## Quick Links
 
 - Main project documentation: [../README.md](../README.md)
-- Claude instructions: [../CLAUDE.md](../CLAUDE.md)
+- Agent instructions: [../AGENTS.md](../AGENTS.md)
 - Agent hierarchy: [../agents/hierarchy.md](../agents/hierarchy.md)

@@ -20,7 +20,7 @@ PROJECT_ROOT = Path(__file__).parents[3]
 # Documentation files that describe Scylla's role
 DOC_FILES = [
     PROJECT_ROOT / "README.md",
-    PROJECT_ROOT / "CLAUDE.md",
+    PROJECT_ROOT / "AGENTS.md",
     PROJECT_ROOT / "docs" / "design" / "architecture.md",
 ]
 

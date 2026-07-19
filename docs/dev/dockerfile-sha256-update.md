@@ -145,7 +145,7 @@ local-only verification and are not automated in CI.
 
 ## PR Workflow
 
-Follow the standard project workflow from `CLAUDE.md`:
+Follow the standard project workflow from `AGENTS.md`:
 
 ```bash
 # 1. Create a feature branch

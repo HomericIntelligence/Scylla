@@ -293,6 +293,6 @@ This entire module uses Python because it interfaces with Python-only scientific
 - **matplotlib/seaborn**: Plotting libraries (optional renderers)
 - **altair**: Vega-Lite specification generation
 
-Per CLAUDE.md: "Interface with Python-only libraries → Python (allowed, document why)".
+Per AGENTS.md: "Interface with Python-only libraries → Python (allowed, document why)".
 
 Mojo cannot be used here as there are no equivalent libraries in Mojo for these operations.

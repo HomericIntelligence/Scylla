@@ -68,4 +68,4 @@ git push origin --delete <branch-name>
 
 **Important:** Always clean up after merge to avoid accumulating stale branches.
 
-See [CLAUDE.md](../../CLAUDE.md#git-workflow) for complete PR creation instructions.
+See [AGENTS.md](../../AGENTS.md#git-workflow) for complete PR creation instructions.

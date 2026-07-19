@@ -71,7 +71,7 @@ The corresponding CLI flags (wired by
 
 The 120-sub-test total is the canonical workload; counts come from
 [`tests/claude-code/shared/tiers.yaml`](../../tests/claude-code/shared/tiers.yaml)
-and are mirrored in [`/CLAUDE.md`](../../CLAUDE.md):
+and are mirrored in [`/AGENTS.md`](../../AGENTS.md):
 
 | Tier | Name | Sub-tests |
 |------|------|-----------|
@@ -480,7 +480,7 @@ work begins.
 ### 8.4 Partial-tier failure semantics
 
 A failure in one tier does **not** abort the experiment
-([`/CLAUDE.md`](../../CLAUDE.md), §"Partial-Failure Semantics"). When sizing,
+([`/AGENTS.md`](../../AGENTS.md), §"Partial-Failure Semantics"). When sizing,
 budget for the *full* envelope: a tier that fails early will free its share
 of disk and RAM, but a tier that fails late may still have consumed its
 upper-bound resources before failing. Operators must check `tier_states` in

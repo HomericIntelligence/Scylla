@@ -2,7 +2,7 @@
 """Enforce consistency between documentation metric values and authoritative config sources.
 
 Checks:
-1. Coverage threshold in CLAUDE.md matches ``fail_under`` in ``pyproject.toml``.
+1. Coverage threshold in AGENTS.md matches ``fail_under`` in ``pyproject.toml``.
 2. ``--cov=<path>`` in README.md matches ``addopts`` in ``pyproject.toml``.
 3. If ``--cov-fail-under=N`` is present in ``addopts``, it must match ``fail_under``
    in ``[tool.coverage.report]``. Absent is OK — ``[tool.coverage.report].fail_under``
@@ -94,10 +94,10 @@ def extract_cov_path_from_pyproject(repo_root: Path) -> str:
     sys.exit(1)
 
 
-def check_claude_md_threshold(repo_root: Path, expected_threshold: int) -> list[str]:
-    """Check that CLAUDE.md documents the correct coverage threshold.
+def check_agents_md_threshold(repo_root: Path, expected_threshold: int) -> list[str]:
+    """Check that AGENTS.md documents the correct coverage threshold.
 
-    Searches for the pattern ``<N>%+ test coverage`` in CLAUDE.md and verifies
+    Searches for the pattern ``<N>%+ test coverage`` in AGENTS.md and verifies
     the integer ``<N>`` matches *expected_threshold*.
 
     Args:
@@ -108,17 +108,17 @@ def check_claude_md_threshold(repo_root: Path, expected_threshold: int) -> list[
         List of error strings (empty if all checks pass).
 
     """
-    claude_md = repo_root / "CLAUDE.md"
-    if not claude_md.exists():
-        return [f"CLAUDE.md not found at {claude_md}"]
+    agents_md = repo_root / "AGENTS.md"
+    if not agents_md.exists():
+        return [f"AGENTS.md not found at {agents_md}"]
 
-    text = claude_md.read_text(encoding="utf-8")
+    text = agents_md.read_text(encoding="utf-8")
     # Match patterns like "75%+ test coverage" or "75% test coverage"
     matches = re.findall(r"(\d+)%\+?\s+test coverage", text)
 
     if not matches:
         return [
-            "CLAUDE.md: No coverage threshold mention found "
+            "AGENTS.md: No coverage threshold mention found "
             "(expected pattern: '<N>%+ test coverage')"
         ]
 
@@ -127,8 +127,8 @@ def check_claude_md_threshold(repo_root: Path, expected_threshold: int) -> list[
         found = int(raw)
         if found != expected_threshold:
             errors.append(
-                f"CLAUDE.md: Coverage threshold mismatch — "
-                f"CLAUDE.md says {found}%, pyproject.toml says {expected_threshold}%"
+                f"AGENTS.md: Coverage threshold mismatch — "
+                f"AGENTS.md says {found}%, pyproject.toml says {expected_threshold}%"
             )
     return errors
 
@@ -326,11 +326,11 @@ def main() -> int:  # CLI orchestration with many check paths
 
     # --- Check 1: Coverage threshold ---
     expected_threshold = load_pyproject_coverage_threshold(repo_root)
-    threshold_errors = check_claude_md_threshold(repo_root, expected_threshold)
+    threshold_errors = check_agents_md_threshold(repo_root, expected_threshold)
     if threshold_errors:
         all_errors.extend(threshold_errors)
     elif args.verbose:
-        print(f"PASS: CLAUDE.md coverage threshold matches pyproject.toml ({expected_threshold}%)")
+        print(f"PASS: AGENTS.md coverage threshold matches pyproject.toml ({expected_threshold}%)")
 
     # --- Check 2: --cov path ---
     expected_cov_path = extract_cov_path_from_pyproject(repo_root)
