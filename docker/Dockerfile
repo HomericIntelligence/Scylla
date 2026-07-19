@@ -148,6 +148,8 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 #   CVE-2025-64756 (glob command injection)
 #   CVE-2026-26996/27903/27904 (minimatch DoS)
 #   CVE-2026-23745/23950/24842/26960/29786/31802 (tar path traversal/overwrite)
+#   CVE-2026-48815 (sigstore certificate verification bypass — npm bundled copy
+#   only; sigstore is pinned to 4.x because 5.x requires Node >= 22)
 #
 # MAINTENANCE: These npm patch versions are pinned manually because Dependabot
 # does not scan Dockerfile RUN lines. Update cadence and verification steps are
@@ -159,13 +161,16 @@ RUN npm install -g @anthropic-ai/claude-code@2.1.91 \
     && cd /usr/local/lib/node_modules/@anthropic-ai/claude-code \
     && npm install cross-spawn@7.0.6 glob@11.1.0 minimatch@10.2.5 tar@7.5.13 --save \
     # Patch npm's own bundled copies — npm install inside npm's tree is unreliable,
-    # so we install fixed versions globally then copy them over the vulnerable copies
-    && npm install -g tar@7.5.13 cross-spawn@7.0.6 glob@11.1.0 minimatch@10.2.5 \
-    && for pkg in tar cross-spawn glob minimatch; do \
+    # so we install fixed versions globally then copy them over the vulnerable copies.
+    # sigstore is npm-bundled only (not a claude-code dep), hence absent from the
+    # --save line above; the global install nests its own @sigstore/* deps, which
+    # the copy carries along so module resolution stays self-contained.
+    && npm install -g tar@7.5.13 cross-spawn@7.0.6 glob@11.1.0 minimatch@10.2.5 sigstore@4.1.1 \
+    && for pkg in tar cross-spawn glob minimatch sigstore; do \
          rm -rf /usr/local/lib/node_modules/npm/node_modules/$pkg \
          && cp -r /usr/local/lib/node_modules/$pkg /usr/local/lib/node_modules/npm/node_modules/$pkg; \
        done \
-    && npm uninstall -g tar cross-spawn glob minimatch \
+    && npm uninstall -g tar cross-spawn glob minimatch sigstore \
     # Purge npm cache — contains auth tokens from registry handshake
     && npm cache clean --force \
     && rm -rf /root/.npm /home/scylla/.npm /tmp/npm-*
