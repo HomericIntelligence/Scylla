@@ -10,6 +10,7 @@ import yaml
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _WORKFLOWS = _PROJECT_ROOT / ".github" / "workflows"
 _REQUIRED_WORKFLOW = _WORKFLOWS / "_required.yml"
+_SMOKE_WORKFLOW = _WORKFLOWS / "merge-queue-smoke.yml"
 
 _REQUIRED_JOBS = {
     "lint": "lint",
@@ -33,11 +34,19 @@ def _load_workflow(path: Path) -> dict[str, Any]:
     return workflow
 
 
-def test_required_checks_run_for_merge_group_checks_requested() -> None:
-    """Required checks must report for the merge queue's supported event."""
-    workflow = _load_workflow(_REQUIRED_WORKFLOW)
+def test_merge_group_runs_only_the_smoke_workflow() -> None:
+    """The merge queue must run exactly one fast smoke job (one runner slot)."""
+    required = _load_workflow(_REQUIRED_WORKFLOW)
+    assert "merge_group" not in required["on"], (
+        "_required.yml must not run for merge_group — merge-queue-smoke.yml owns that "
+        "event so the queue consumes a single runner slot"
+    )
 
-    assert workflow["on"]["merge_group"] == {"types": ["checks_requested"]}
+    smoke = _load_workflow(_SMOKE_WORKFLOW)
+    assert smoke["on"] == {"merge_group": {"types": ["checks_requested"]}}
+    assert list(smoke["jobs"]) == ["merge-queue-smoke"]
+    assert smoke["jobs"]["merge-queue-smoke"]["name"] == "merge-queue-smoke"
+    assert smoke["jobs"]["merge-queue-smoke"]["timeout-minutes"] == "5"
 
 
 def test_existing_required_check_triggers_and_contexts_are_preserved() -> None:

@@ -28,10 +28,10 @@
 name: Required Checks
 
 on:
-  # Merge queues dispatch this event for the synthetic queue commit. Keep the
-  # activity explicit so future merge_group activity types do not run gates.
-  merge_group:
-    types: [checks_requested]
+  # merge_group is intentionally absent: the merge queue runs the fast
+  # merge-queue-smoke.yml workflow instead (single merge-queue-smoke job,
+  # <5 min). Re-running all 16 jobs here per queue entry starved the runner
+  # pool and pushed queue merges to 70-90 min.
   pull_request:
   push:
     branches: [main]
