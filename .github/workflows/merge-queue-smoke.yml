@@ -1,0 +1,64 @@
+# Fast merge-queue gate.
+#
+# The full Required Checks workflow no longer triggers on merge_group: it
+# re-ran up to 16 jobs per queue entry, and with each job waiting 8-16+ min
+# for a runner slot the queue took 70-90 min to merge a PR that was already
+# fully green on the PR itself. This workflow is the ONLY merge_group
+# workflow in the repo: one job, one runner slot, real validation, finishing
+# in well under 5 minutes.
+#
+# PR-side CI is completely untouched; the queue is gated solely on the
+# `merge-queue-smoke` context emitted here. Because no other workflow listens
+# to merge_group and this workflow listens ONLY to merge_group, exactly one
+# `merge-queue-smoke` check run exists per event.
+name: Merge Queue Smoke
+
+on:
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mq-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  merge-queue-smoke:
+    name: merge-queue-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7
+        with:
+          enable-cache: true
+
+      # Borrowed from uv-lock-check / deps/version-sync: proves the committed
+      # lock file still resolves against pyproject.toml.
+      - name: Check uv.lock is in sync with pyproject.toml
+        run: uv lock --check
+
+      # Borrowed from schema-validation: every schema shipped in schemas/
+      # must be valid JSON.
+      - name: Validate JSON schemas in schemas/
+        run: |
+          set -euo pipefail
+          find schemas/ -name "*.json" | sort | while read -r f; do
+            echo "Checking $f ..."
+            python3 -c "import json, sys; json.load(open(sys.argv[1]))" "$f"
+          done
+
+      # Borrowed from symlink-check.
+      - name: Run symlink check
+        run: bash scripts/check-symlinks.sh
+
+      # Borrowed from markdownlint: globs and rule config come from
+      # .markdownlint-cli2.yaml at the repo root.
+      - name: Run markdownlint-cli2
+        uses: DavidAnson/markdownlint-cli2-action@8de2aa07cae85fd17c0b35642db70cf5495f1d25  # v20.0.0
+        with:
+          globs: "**/*.md"
