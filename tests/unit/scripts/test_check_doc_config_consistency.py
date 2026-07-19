@@ -8,7 +8,7 @@ import pytest
 
 from scripts.check_doc_config_consistency import (
     check_addopts_cov_fail_under,
-    check_claude_md_threshold,
+    check_agents_md_threshold,
     check_readme_cov_path,
     check_readme_test_count,
     collect_actual_test_count,
@@ -29,9 +29,9 @@ def write_pyproject(tmp_path: Path, content: str) -> Path:
     return path
 
 
-def write_claude_md(tmp_path: Path, content: str) -> Path:
-    """Write a CLAUDE.md to *tmp_path* and return its path."""
-    path = tmp_path / "CLAUDE.md"
+def write_agents_md(tmp_path: Path, content: str) -> Path:
+    """Write a AGENTS.md to *tmp_path* and return its path."""
+    path = tmp_path / "AGENTS.md"
     path.write_text(textwrap.dedent(content), encoding="utf-8")
     return path
 
@@ -154,68 +154,68 @@ class TestExtractCovPathFromPyproject:
 
 
 # ---------------------------------------------------------------------------
-# check_claude_md_threshold
+# check_agents_md_threshold
 # ---------------------------------------------------------------------------
 
 
-class TestCheckClaudeMdThreshold:
-    """Tests for check_claude_md_threshold()."""
+class TestCheckAgentsMdThreshold:
+    """Tests for check_agents_md_threshold()."""
 
     def test_matching_threshold_returns_no_errors(self, tmp_path: Path) -> None:
-        """Should return empty list when CLAUDE.md matches expected threshold."""
-        write_claude_md(
+        """Should return empty list when AGENTS.md matches expected threshold."""
+        write_agents_md(
             tmp_path,
             "studies with 75%+ test coverage enforced in CI.\n",
         )
-        assert check_claude_md_threshold(tmp_path, 75) == []
+        assert check_agents_md_threshold(tmp_path, 75) == []
 
     def test_matching_threshold_without_plus_returns_no_errors(self, tmp_path: Path) -> None:
         """Should also match '75% test coverage' (without '+')."""
-        write_claude_md(
+        write_agents_md(
             tmp_path,
             "requires 75% test coverage in this project.\n",
         )
-        assert check_claude_md_threshold(tmp_path, 75) == []
+        assert check_agents_md_threshold(tmp_path, 75) == []
 
     def test_mismatched_threshold_returns_error(self, tmp_path: Path) -> None:
-        """Should return an error when CLAUDE.md has a different threshold."""
-        write_claude_md(
+        """Should return an error when AGENTS.md has a different threshold."""
+        write_agents_md(
             tmp_path,
             "studies with 80%+ test coverage enforced in CI.\n",
         )
-        errors = check_claude_md_threshold(tmp_path, 75)
+        errors = check_agents_md_threshold(tmp_path, 75)
         assert len(errors) == 1
         assert "80%" in errors[0]
         assert "75%" in errors[0]
 
-    def test_missing_claude_md_returns_error(self, tmp_path: Path) -> None:
-        """Should return an error when CLAUDE.md does not exist."""
-        errors = check_claude_md_threshold(tmp_path, 75)
+    def test_missing_agents_md_returns_error(self, tmp_path: Path) -> None:
+        """Should return an error when AGENTS.md does not exist."""
+        errors = check_agents_md_threshold(tmp_path, 75)
         assert len(errors) == 1
         assert "not found" in errors[0]
 
     def test_no_coverage_mention_returns_error(self, tmp_path: Path) -> None:
-        """Should return an error when CLAUDE.md has no coverage threshold mention."""
-        write_claude_md(tmp_path, "No mention of coverage here.\n")
-        errors = check_claude_md_threshold(tmp_path, 75)
+        """Should return an error when AGENTS.md has no coverage threshold mention."""
+        write_agents_md(tmp_path, "No mention of coverage here.\n")
+        errors = check_agents_md_threshold(tmp_path, 75)
         assert len(errors) == 1
         assert "No coverage threshold mention" in errors[0]
 
     def test_multiple_matching_occurrences_no_errors(self, tmp_path: Path) -> None:
         """Multiple matching occurrences should all pass."""
-        write_claude_md(
+        write_agents_md(
             tmp_path,
             "75%+ test coverage enforced. Also: 75%+ test coverage required.\n",
         )
-        assert check_claude_md_threshold(tmp_path, 75) == []
+        assert check_agents_md_threshold(tmp_path, 75) == []
 
     def test_multiple_occurrences_one_mismatch_returns_error(self, tmp_path: Path) -> None:
         """If any occurrence mismatches, an error should be returned."""
-        write_claude_md(
+        write_agents_md(
             tmp_path,
             "75%+ test coverage enforced. Also: 80%+ test coverage elsewhere.\n",
         )
-        errors = check_claude_md_threshold(tmp_path, 75)
+        errors = check_agents_md_threshold(tmp_path, 75)
         assert len(errors) == 1
         assert "80%" in errors[0]
 
@@ -536,7 +536,7 @@ class TestMainIntegration:
         tmp_path: Path,
         threshold: int = 75,
         cov_path: str = "scylla",
-        claude_threshold: int = 75,
+        agents_threshold: int = 75,
         readme_cov: str = "scylla",
         addopts_fail_under: int | None = 75,
         readme_test_count: int | None = 3500,
@@ -551,9 +551,9 @@ class TestMainIntegration:
             f"[tool.coverage.report]\nfail_under = {threshold}\n\n"
             f"[tool.pytest.ini_options]\naddopts = [{addopts_str}]\n",
         )
-        write_claude_md(
+        write_agents_md(
             tmp_path,
-            f"This project requires {claude_threshold}%+ test coverage enforced in CI.\n",
+            f"This project requires {agents_threshold}%+ test coverage enforced in CI.\n",
         )
         test_count_line = (
             f"Test suite: **{readme_test_count}+ tests** passing.\n"
@@ -592,7 +592,7 @@ class TestMainIntegration:
 
         from scripts.check_doc_config_consistency import main
 
-        repo = self._make_repo(tmp_path, threshold=75, claude_threshold=80)
+        repo = self._make_repo(tmp_path, threshold=75, agents_threshold=80)
         original_argv = sys.argv
         sys.argv = ["check_doc_config_consistency.py", "--repo-root", str(repo)]
         with patch(

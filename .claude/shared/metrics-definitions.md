@@ -4,7 +4,7 @@ Complete definitions of all metrics used in Scylla evaluations.
 
 **See also:**
 
-- [CLAUDE.md](/CLAUDE.md#core-metrics) - Quick reference summary
+- [AGENTS.md](/AGENTS.md#core-metrics) - Quick reference summary
 - [Research Methodology](/docs/research.md) - Application and context
 
 ## Quality Metrics

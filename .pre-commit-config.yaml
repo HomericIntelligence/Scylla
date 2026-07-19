@@ -163,7 +163,7 @@ repos:
         pass_filenames: false
       - id: audit-doc-policy
         name: Audit Doc Policy Violations
-        description: Fails if any markdown file contains command examples that violate CLAUDE.md policies
+        description: Fails if any markdown file contains command examples that violate AGENTS.md policies
         entry: uv run python scripts/audit_doc_examples.py
         language: system
         files: \.md$
@@ -179,10 +179,10 @@ repos:
         pass_filenames: false
       - id: check-doc-config-consistency
         name: Check Doc/Config Metric Consistency
-        description: Fails if coverage threshold in CLAUDE.md or README.md --cov path diverges from pyproject.toml
+        description: Fails if coverage threshold in AGENTS.md or README.md --cov path diverges from pyproject.toml
         entry: uv run python scripts/check_doc_config_consistency.py
         language: system
-        files: ^(CLAUDE\.md|README\.md|pyproject\.toml)$
+        files: ^(AGENTS\.md|README\.md|pyproject\.toml)$
         pass_filenames: false
       - id: validate-config-schemas
         name: Validate Config Files Against JSON Schemas
@@ -292,7 +292,7 @@ repos:
         name: Conventional Commit Message
         description: >-
           Validate that commit subjects follow Conventional Commits
-          (feat/fix/docs/...). Documented in CLAUDE.md "Commit Message Format".
+          (feat/fix/docs/...). Documented in AGENTS.md "Commit Message Format".
         entry: python3 scripts/check_conventional_commit.py
         language: system
         stages: [commit-msg]

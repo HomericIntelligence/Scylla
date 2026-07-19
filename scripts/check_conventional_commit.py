@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 # Conventional Commits spec (https://www.conventionalcommits.org/) plus the
-# common extensions documented in CLAUDE.md.
+# common extensions documented in AGENTS.md.
 ALLOWED_TYPES = (
     "feat",
     "fix",
@@ -83,7 +83,7 @@ def main(argv: list[str]) -> int:
         f"  expected: <type>(<scope>)<!>: <subject>\n"
         f"  types:    {', '.join(ALLOWED_TYPES)}\n"
         "  example:  fix(metrics): correct token counting logic\n"
-        "See CLAUDE.md > 'Commit Message Format'.",
+        "See AGENTS.md > 'Commit Message Format'.",
         file=sys.stderr,
     )
     return 1

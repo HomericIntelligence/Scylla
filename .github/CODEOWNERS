@@ -10,6 +10,7 @@
 * @HomericIntelligence/scylla-maintainers
 
 # Core configuration and documentation
+/AGENTS.md @HomericIntelligence/scylla-maintainers
 /CLAUDE.md @HomericIntelligence/scylla-maintainers
 /CONTRIBUTING.md @HomericIntelligence/scylla-maintainers
 /README.md @HomericIntelligence/scylla-maintainers
