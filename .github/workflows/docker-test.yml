@@ -117,15 +117,15 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install hephaestus
-        run: uv pip install --system "homericintelligence-hephaestus>=0.7.0,<1"
+      - name: Install project environment
+        run: uv sync --locked
 
       - name: Report timing results
         env:
           COLD_DURATION: ${{ steps.cold_build.outputs.duration }}
           WARM_DURATION: ${{ steps.warm_build.outputs.duration }}
         run: |
-          python3 - <<'PYEOF'
+          uv run python3 - <<'PYEOF'
           import os
           import sys
 
