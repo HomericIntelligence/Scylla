@@ -3398,7 +3398,7 @@ provides-extras = ["dev", "nats", "analysis"]
 [package.metadata.requires-dev]
 dev = [
     { name = "bandit", extras = ["toml"], specifier = ">=1.7.5,<2" },
-    { name = "build", specifier = ">=1.2,<2" },
+    { name = "build", specifier = ">=1.5.0,<2" },
     { name = "bump2version", specifier = ">=1.0.1,<2" },
     { name = "check-jsonschema", specifier = ">=0.29,<1" },
     { name = "defusedxml", specifier = ">=0.7.1,<1" },
