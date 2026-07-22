@@ -9,7 +9,15 @@
 set -euo pipefail
 
 DOCKERFILE="docker/Dockerfile"
-PACKAGES=(cross-spawn glob minimatch tar)
+PACKAGES=(cross-spawn glob minimatch tar sigstore)
+
+# Per-package semver range caps. Most packages track the registry's latest,
+# but some are capped by the image's runtime (e.g. sigstore 5.x requires
+# Node >= 22 while the image ships node:20). A capped package compares its
+# pin against the newest version matching the range instead of `latest`.
+declare -A RANGE_CAP=(
+    [sigstore]='^4'
+)
 
 if ! command -v npm >/dev/null 2>&1; then
     echo "error: npm not found on PATH" >&2
@@ -34,7 +42,14 @@ for pkg in "${PACKAGES[@]}"; do
         continue
     fi
 
-    latest=$(npm view "$pkg" version 2>/dev/null || true)
+    if [[ -n "${RANGE_CAP[$pkg]:-}" ]]; then
+        # `npm view pkg@range version` prints one line per matching version
+        # ("pkg@x.y.z 'x.y.z'"), or a bare version when only one matches.
+        latest=$(npm view "${pkg}@${RANGE_CAP[$pkg]}" version 2>/dev/null \
+            | tail -1 | awk '{print $NF}' | tr -d "'" || true)
+    else
+        latest=$(npm view "$pkg" version 2>/dev/null || true)
+    fi
     if [[ -z "${latest:-}" ]]; then
         printf "%-13s  %-10s  %-10s  %s\n" "$pkg" "$pinned" "?" "REGISTRY ERROR"
         stale=1
