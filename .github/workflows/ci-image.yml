@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "ci/Containerfile"
+      - "ci/patch_precommit_node_tar.py"
       - "uv.lock"
       - ".pre-commit-config.yaml"
       - "pyproject.toml"
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - "ci/Containerfile"
+      - "ci/patch_precommit_node_tar.py"
       - "uv.lock"
       - ".pre-commit-config.yaml"
       - "pyproject.toml"
