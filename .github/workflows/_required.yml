@@ -28,20 +28,16 @@
 name: Required Checks
 
 on:
-  # merge_group is intentionally absent: the merge queue runs the fast
-  # merge-queue-smoke.yml workflow instead (single merge-queue-smoke job,
-  # <5 min). Re-running all 16 jobs here per queue entry starved the runner
-  # pool and pushed queue merges to 70-90 min.
   pull_request:
   push:
     branches: [main]
+  merge_group:
+    types: [checks_requested]
 
-# One run per branch at a time; cancel any in-progress run when a new commit
-# arrives. The group includes ${{ github.workflow }} so it cannot collide with
-# any other workflow's concurrency group (the bug that cancelled the old
-# workflow_call bridge).
+# Cancel superseded commits for one PR, while keeping pull-request and
+# synthetic merge-group validations in separate event-scoped groups.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 permissions:

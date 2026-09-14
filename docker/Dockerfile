@@ -12,9 +12,9 @@
 # ============================================================================
 # Pinned to SHA256 digest for reproducibility - prevents drift from upstream updates
 # Python 3.13 aligns with pyproject.toml classifiers (3.13); requires-python = ">=3.13,<3.14"
-# NOTE: ci/Containerfile pins a different SHA256 for the same python:3.12-slim tag.
-# Both intentionally kept separate; if you update either digest, update both files together.
-FROM python:3.13-slim@sha256:6771159cd4fa5d9bba1258caf0b82e6b73458c694d178ad97c5e925c2d0e1a91 AS builder
+# NOTE: ci/Containerfile pins the same digest for python:3.13-slim.
+# If you update either digest, update both files together (see .github/workflows/digest-check.yml).
+FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a AS builder
 
 # Set build environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -101,7 +101,7 @@ FROM node:20-slim@sha256:1e85773c98c31d4fe5b545e4cb17379e617b348832fb3738b22a08f
 # ============================================================================
 # Pinned to SHA256 digest for reproducibility - prevents drift from upstream updates
 # Python 3.13 aligns with pyproject.toml classifiers (3.13); requires-python = ">=3.13,<3.14"
-FROM python:3.13-slim@sha256:6771159cd4fa5d9bba1258caf0b82e6b73458c694d178ad97c5e925c2d0e1a91
+FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a
 
 # Set labels for image metadata
 LABEL org.opencontainers.image.title="scylla-runner"
@@ -150,6 +150,9 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 #   CVE-2026-23745/23950/24842/26960/29786/31802 (tar path traversal/overwrite)
 #   CVE-2026-55607 (claude-code git directory confusion; fixed 2.1.163)
 #   CVE-2026-59873/59874 (tar DoS; fixed 7.5.19)
+#   CVE-2026-73566 (tar DoS via crafted long-path archive; fixed 7.5.21 —
+#   this is why the pin moved to 7.5.22, and it also supersedes the
+#   59873/59874 fix above)
 #   CVE-2026-13149 (brace-expansion ReDoS; fixed 2.1.2)
 #   CVE-2026-48815 (sigstore certificate verification bypass — npm bundled copy
 #   only; sigstore is pinned to 4.x because 5.x requires Node >= 22)
@@ -162,13 +165,13 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 RUN npm install -g @anthropic-ai/claude-code@2.1.163 \
     # Patch claude-code's transitive deps
     && cd /usr/local/lib/node_modules/@anthropic-ai/claude-code \
-    && npm install cross-spawn@7.0.6 glob@11.1.0 minimatch@10.2.5 tar@7.5.19 brace-expansion@2.1.2 --save \
+    && npm install cross-spawn@7.0.6 glob@11.1.0 minimatch@10.2.5 tar@7.5.22 brace-expansion@2.1.2 --save \
     # Patch npm's own bundled copies — npm install inside npm's tree is unreliable,
     # so we install fixed versions globally then copy them over the vulnerable copies.
     # sigstore is npm-bundled only (not a claude-code dep), hence absent from the
     # --save line above; the global install nests its own @sigstore/* deps, which
     # the copy carries along so module resolution stays self-contained.
-    && npm install -g tar@7.5.19 cross-spawn@7.0.6 glob@11.1.0 minimatch@10.2.5 brace-expansion@2.1.2 sigstore@4.1.1 \
+    && npm install -g tar@7.5.22 cross-spawn@7.0.6 glob@11.1.0 minimatch@10.2.5 brace-expansion@2.1.2 sigstore@4.1.1 \
     && for pkg in tar cross-spawn glob minimatch brace-expansion sigstore; do \
          rm -rf /usr/local/lib/node_modules/npm/node_modules/$pkg \
          && cp -r /usr/local/lib/node_modules/$pkg /usr/local/lib/node_modules/npm/node_modules/$pkg; \
