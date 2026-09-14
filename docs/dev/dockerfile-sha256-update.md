@@ -7,14 +7,14 @@
 
 ## Why SHA256 Digest Pinning Is Used
 
-`docker/Dockerfile` pins the `python:3.12-slim` base image to a specific SHA256 digest on both
+`docker/Dockerfile` pins the `python:3.13-slim` base image to a specific SHA256 digest on both
 the builder stage and the runtime stage:
 
 ```dockerfile
-FROM python:3.12-slim@sha256:f3fa41d74a768c2fce8016b98c191ae8c1bacd8f1152870a3f9f87d350920b7c AS builder
+FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a AS builder
 ```
 
-Tag-only references (e.g., `FROM python:3.12-slim`) are mutable. The Docker registry can replace
+Tag-only references (e.g., `FROM python:3.13-slim`) are mutable. The Docker registry can replace
 the bytes behind a tag at any time — even a minor-version tag like `python:3.12.9-slim` can be
 republished with security patches during a multi-day benchmark run. Because Scylla uses
 `ANTHROPIC_API_KEY` and accumulates results over runs that may span days, bit-for-bit

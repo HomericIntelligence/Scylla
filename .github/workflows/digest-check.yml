@@ -1,4 +1,4 @@
-name: Check Node Digest Pins
+name: Check Python Digest Pins
 
 on:
   schedule:
@@ -10,9 +10,13 @@ permissions:
   issues: write
   contents: read
 
+env:
+  IMAGE_REPOSITORY: library/python
+  IMAGE_TAG: 3.13-slim
+
 jobs:
-  check-node-digest:
-    name: Check for stale node digest pins
+  check-python-digest:
+    name: Check for stale python digest pins
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -23,21 +27,32 @@ jobs:
       - name: Get current pinned digest from Containerfile
         id: pinned
         run: |
-          PINNED_DIGEST=$(grep -oP 'FROM python:3.13-slim@sha256:\K[a-f0-9]{64}' ci/Containerfile | head -1)
+          PINNED_DIGEST=$(grep -oP "FROM python:${{ env.IMAGE_TAG }}@sha256:\K[a-f0-9]{64}" ci/Containerfile | head -1)
           echo "digest=${PINNED_DIGEST}" >> "$GITHUB_OUTPUT"
           echo "Pinned digest: ${PINNED_DIGEST}"
 
       - name: Get latest digest from Docker Hub
         id: latest
         run: |
-          LATEST_DIGEST=$(curl -s -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
-            https://registry-1.docker.io/v2/library/python/manifests/3.12-slim \
-            | jq -r '.config.digest' 2>/dev/null || echo "")
+          # Anonymous registry GETs return a 401 JSON error body even for public
+          # images, so fetch an anonymous bearer token first.
+          TOKEN=$(curl -fsSL "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${{ env.IMAGE_REPOSITORY }}:pull" \
+            | jq -r '.token')
 
-          if [ -z "$LATEST_DIGEST" ]; then
-            LATEST_DIGEST=$(curl -s -I -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
-              https://registry-1.docker.io/v2/library/python/manifests/3.12-slim \
-              | grep -i "docker-content-digest" | awk '{print $2}' | tr -d '[:space:]' | sed 's/sha256://')
+          # The digest comparable to a FROM image@sha256 pin is the manifest-list /
+          # OCI-index digest in the docker-content-digest RESPONSE header — never
+          # .config.digest from the manifest body.
+          LATEST_DIGEST=$(curl -fsSL -o /dev/null -w '%header{docker-content-digest}' \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json" \
+            "https://registry-1.docker.io/v2/${{ env.IMAGE_REPOSITORY }}/manifests/${{ env.IMAGE_TAG }}" \
+            | sed 's/^sha256://')
+
+          # jq prints the literal STRING "null" on error JSON, which is non-empty
+          # and would pass an emptiness-only check, so guard for it explicitly.
+          if [ -z "$LATEST_DIGEST" ] || [ "$LATEST_DIGEST" = "null" ]; then
+            echo "ERROR: Could not fetch latest digest from Docker Hub"
+            exit 1
           fi
 
           echo "digest=${LATEST_DIGEST}" >> "$GITHUB_OUTPUT"
@@ -49,12 +64,12 @@ jobs:
           PINNED="${{ steps.pinned.outputs.digest }}"
           LATEST="${{ steps.latest.outputs.digest }}"
 
-          if [ -z "$PINNED" ]; then
+          if [ -z "$PINNED" ] || [ "$PINNED" = "null" ]; then
             echo "ERROR: Could not extract pinned digest from Containerfile"
             exit 1
           fi
 
-          if [ -z "$LATEST" ]; then
+          if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
             echo "ERROR: Could not fetch latest digest from Docker Hub"
             exit 1
           fi
@@ -71,14 +86,15 @@ jobs:
         if: steps.compare.outputs.status == 'stale'
         run: |
           LATEST_DIGEST="${{ steps.latest.outputs.digest }}"
-          EXISTING_ISSUE=$(gh issue list --search "update python:3.12-slim digest in:title" --json number -q '.[0].number' 2>/dev/null || echo "")
+          TAG="${{ env.IMAGE_TAG }}"
+          EXISTING_ISSUE=$(gh issue list --search "update python:${TAG} digest in:title" --json number -q '.[0].number' 2>/dev/null || echo "")
 
           if [ -n "$EXISTING_ISSUE" ]; then
             echo "Updating existing issue #${EXISTING_ISSUE}"
             gh issue comment "${EXISTING_ISSUE}" --body "Digest check: Latest digest is ${LATEST_DIGEST}"
           else
             echo "Creating new issue for digest update"
-            gh issue create --title "chore: update python:3.12-slim digest pins" --body "The python:3.12-slim digest pins need to be updated. Latest: ${LATEST_DIGEST}. Check ci/Containerfile and docker/Dockerfile."
+            gh issue create --title "chore: update python:${TAG} digest pins" --body "The python:${TAG} digest pins need to be updated. Latest: ${LATEST_DIGEST}. Check ci/Containerfile and docker/Dockerfile."
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -12,9 +12,9 @@
 # ============================================================================
 # Pinned to SHA256 digest for reproducibility - prevents drift from upstream updates
 # Python 3.13 aligns with pyproject.toml classifiers (3.13); requires-python = ">=3.13,<3.14"
-# NOTE: ci/Containerfile pins a different SHA256 for the same python:3.12-slim tag.
-# Both intentionally kept separate; if you update either digest, update both files together.
-FROM python:3.13-slim@sha256:6771159cd4fa5d9bba1258caf0b82e6b73458c694d178ad97c5e925c2d0e1a91 AS builder
+# NOTE: ci/Containerfile pins the same digest for python:3.13-slim.
+# If you update either digest, update both files together (see .github/workflows/digest-check.yml).
+FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a AS builder
 
 # Set build environment variables
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -101,7 +101,7 @@ FROM node:20-slim@sha256:1e85773c98c31d4fe5b545e4cb17379e617b348832fb3738b22a08f
 # ============================================================================
 # Pinned to SHA256 digest for reproducibility - prevents drift from upstream updates
 # Python 3.13 aligns with pyproject.toml classifiers (3.13); requires-python = ">=3.13,<3.14"
-FROM python:3.13-slim@sha256:6771159cd4fa5d9bba1258caf0b82e6b73458c694d178ad97c5e925c2d0e1a91
+FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a
 
 # Set labels for image metadata
 LABEL org.opencontainers.image.title="scylla-runner"
