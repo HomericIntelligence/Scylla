@@ -1,0 +1,58 @@
+# CodeQL advanced setup (migrated from GitHub default setup — issue #2028).
+#
+# Default setup emitted non-configurable check names (`Analyze (python)` /
+# `Analyze (actions)`); this committed workflow emits the canonical
+# security/* contexts required by the ecosystem CI board:
+#   - security/codeql-python
+#   - security/codeql-actions
+# Do not rename these checks (see .github/workflows/_required.yml header).
+name: CodeQL
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 8 * * 1" # weekly, matching the retired default-setup schedule
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: security/codeql-${{ matrix.language }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: python
+            build-mode: none
+          - language: actions
+            build-mode: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # Parity with the retired default setup (threat_model: remote).
+          config: |
+            threat-models: remote
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a  # v4.36.3
+        with:
+          category: "/language:${{ matrix.language }}"
