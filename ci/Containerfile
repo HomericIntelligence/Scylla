@@ -44,6 +44,9 @@ FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    # Keep the pre-commit cache at one absolute path in every stage. Its
+    # database and Node shims contain absolute paths and are not relocatable.
+    PRE_COMMIT_HOME=/opt/pre-commit-cache \
     # Build the project virtualenv in a fixed, copyable location.
     UV_PROJECT_ENVIRONMENT=/opt/scylla-venv \
     # Bytecode-compile on install for faster cold starts.
@@ -91,9 +94,27 @@ RUN uv sync --all-groups --all-extras --locked --no-install-project
 # without downloading hook repos or creating virtualenvs at CI time.
 # Hooks that use 'language: system' (uv run ...) just need uv + the venv available.
 # pre-commit install-hooks requires a git repo, so we init a temporary one.
+# markdownlint's nodeenv bundles npm, whose own tar dependency is not controlled
+# by uv.lock or .pre-commit-config.yaml. Patch that bundled copy to the first
+# version beyond the CVE-2026-73566 fix floor, using the npm registry tarball's
+# published integrity digest. Keep this in the hook-install RUN so no image
+# layer retains the vulnerable tar@7.5.19 tree.
+COPY ci/patch_precommit_node_tar.py /tmp/patch_precommit_node_tar.py
 RUN git init . && \
     uv run pre-commit install-hooks && \
-    rm -rf .git
+    curl -fsSL --retry 5 --retry-all-errors \
+        https://registry.npmjs.org/tar/-/tar-7.5.22.tgz \
+        -o /tmp/tar-7.5.22.tgz && \
+    echo "3053bf433bed00e9896e484e6824ef6c670537d2fd6fe26e9c8b03c1a2a58d239d70b31e6b7349d64f54b33feb8dd7d25d3ab875fcdf792ed6e29e1838000778  /tmp/tar-7.5.22.tgz" \
+        | sha512sum --check && \
+    mkdir /tmp/node-tar-package && \
+    tar xzf /tmp/tar-7.5.22.tgz -C /tmp/node-tar-package --strip-components=1 && \
+    python3 /tmp/patch_precommit_node_tar.py patch \
+        --cache-root "$PRE_COMMIT_HOME" \
+        --source /tmp/node-tar-package \
+        --expected-version 7.5.22 && \
+    rm -rf .git /tmp/node-tar-package /tmp/patch_precommit_node_tar.py \
+        /tmp/tar-7.5.22.tgz
 
 # ============================================================================
 # Stage 2: Runtime — minimal image without build tools
@@ -108,6 +129,7 @@ LABEL org.opencontainers.image.source="https://github.com/HomericIntelligence/Sc
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    PRE_COMMIT_HOME=/opt/pre-commit-cache \
     UV_PROJECT_ENVIRONMENT=/opt/scylla-venv \
     UV_LINK_MODE=copy \
     UV_TOOL_DIR=/opt/uv-tools \
@@ -148,17 +170,14 @@ RUN curl -fsSL --retry 5 --retry-all-errors https://github.com/gitleaks/gitleaks
     && uv tool install check-jsonschema \
     && chmod -R a+rX /opt/uv-tools
 
-# Copy pre-commit hook cache from builder (baked-in hook envs)
-COPY --from=builder /root/.cache/pre-commit /root/.cache/pre-commit
-
 # Create non-root user for rootless Podman compatibility
 # UID 1000 is the default first user on most Linux systems, matching typical
 # developer UIDs for smooth volume mount permissions without --userns=keep-id
 RUN groupadd -r ci && useradd -r -g ci -u 1000 -m -s /bin/bash ci
 
-# Copy pre-commit cache to ci user's home (pre-commit uses $HOME/.cache)
-RUN cp -r /root/.cache/pre-commit /home/ci/.cache/ 2>/dev/null || true && \
-    chown -R ci:ci /home/ci/.cache
+# Preserve the cache's absolute path and give the final runtime user ownership.
+COPY --from=builder --chown=ci:ci /opt/pre-commit-cache /opt/pre-commit-cache
+COPY --chown=ci:ci ci/patch_precommit_node_tar.py /tmp/patch_precommit_node_tar.py
 
 # The baked venv was built with --no-install-project; at runtime `uv run`
 # installs the project (editable) into it, so the ci user must own it.
@@ -167,7 +186,14 @@ RUN chown -R ci:ci /opt/scylla-venv /opt/uv-tools
 # Working directory is the mounted repo root at runtime
 WORKDIR /workspace
 
+USER ci
+
+# Validate the active store as the final runtime user. This checks every npm
+# tar copy and executes markdownlint-cli2 from the same pre-commit cache.
+RUN python3 /tmp/patch_precommit_node_tar.py verify \
+        --cache-root "$PRE_COMMIT_HOME" \
+        --minimum-version 7.5.21 && \
+    rm /tmp/patch_precommit_node_tar.py
+
 # No ENTRYPOINT — commands are provided externally by CI or run_ci_local.sh
 # Example: podman run --rm -v .:/workspace:Z scylla-ci:local uv run pytest
-
-USER ci
