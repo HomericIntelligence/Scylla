@@ -12,6 +12,7 @@ The `release.yml` workflow handles the full release pipeline:
 | `workflow_dispatch` (part=patch/minor/major) | `bump-version` — bumps `pyproject.toml`, commits, tags, opens PR |
 | `push` tag `v*` | `release` (GitHub Release) → `build` (sdist + wheel) → `publish-pypi` (PyPI OIDC) |
 | `workflow_dispatch` (testpypi=true) | `publish-testpypi` — publishes to TestPyPI for smoke-testing |
+| `pull_request` / `push` to `main` | `release` check in `_required.yml` — dry-run validation of this pipeline (tag gating, OIDC permissions, action pin, dist↔version match) via `scripts/check_release_pipeline.py`. Never publishes. |
 
 ## Normal release procedure
 
