@@ -1,0 +1,12 @@
+# CodeQL configuration for Scylla.
+# Scope analysis to first-party source; build artifacts, vendored deps, and
+# generated trees are third-party code we do not maintain (#2028, #455 rollout).
+name: "Scylla CodeQL config"
+
+paths-ignore:
+  - build/**
+  - "**/_deps/**"
+  - "**/node_modules/**"
+  - "**/.venv/**"
+  - dist/**
+  - vendor/**

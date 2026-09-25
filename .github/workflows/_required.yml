@@ -521,3 +521,32 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Run symlink check
         run: bash scripts/check-symlinks.sh
+
+  # ── 13. release (canonical dry-run) ─────────────────────────────────────
+  # Canonical `release` context per the 8-category naming scheme (#2027).
+  # Validates release-pipeline well-formedness on every PR/push WITHOUT
+  # publishing — real publishing stays tag-only in release.yml.
+  release:
+    name: release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Validate release workflow schema
+        run: |
+          pip install check-jsonschema
+          check-jsonschema \
+            --schemafile https://json.schemastore.org/github-workflow \
+            .github/workflows/release.yml
+      - name: Validate package version consistency
+        run: |
+          python3 - <<'PYEOF'
+          import tomllib
+          from pathlib import Path
+          py = tomllib.loads(Path("pyproject.toml").read_text())
+          version = py["project"]["version"]
+          assert version.count(".") >= 2, f"malformed version: {version}"
+          print(f"OK: pyproject version {version}")
+          PYEOF
