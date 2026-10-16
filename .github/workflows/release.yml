@@ -169,6 +169,9 @@ jobs:
   # Publish to PyPI via Trusted Publishing (OIDC — no API token required).
   # Triggered only on tag push (v*).  A maintainer must configure the PyPI
   # Trusted Publisher once; see docs/dev/release.md for setup instructions.
+  # The tag-only gating, id-token permission, and SHA pin of the publish action
+  # are enforced on every PR by scripts/check_release_pipeline.py (the canonical
+  # `release` check in _required.yml) — keep them in sync.
   # ---------------------------------------------------------------------------
   publish-pypi:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')

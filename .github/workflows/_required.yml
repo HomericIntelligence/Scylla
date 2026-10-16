@@ -399,6 +399,40 @@ jobs:
           /tmp/scylla-install-venv/bin/scylla --help
           /tmp/scylla-install-venv/bin/python -c "import scylla; print('scylla', getattr(scylla, '__version__', 'imported'))"
 
+  # ── 6d. release ────────────────────────────────────────────────────────────
+  # Canonical 8-category `release` context. Dry-run validation of the release
+  # pipeline: asserts release.yml keeps publishing tag-gated with OIDC Trusted
+  # Publishing and a SHA-pinned publish action, and that the built sdist+wheel
+  # carry exactly the pyproject.toml version. NEVER publishes — real
+  # publishing stays tag-only in release.yml.
+  release:
+    name: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v6
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install locked project environment
+        run: uv sync --all-groups --all-extras --locked
+
+      - name: Download built distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: python-package
+          path: dist/
+
+      - name: Validate release pipeline (dry-run, no publish)
+        run: uv run python scripts/check_release_pipeline.py --dist-dir dist/ --verbose
+
+      - name: Dry-run version bump script (workflow_dispatch path)
+        run: uv run python scripts/bump_version.py patch --dry-run
+
   # ── 7. schema-validation ───────────────────────────────────────────────────
   schema-validation:
     name: schema-validation
