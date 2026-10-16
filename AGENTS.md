@@ -621,3 +621,21 @@ gh auth refresh -h github.com
 - `docs/research.md` - Research methodology and evaluation framework
 - `README.md` - Main project documentation
 - `.claude/shared/github-issue-workflow.md` - GitHub issue read/write patterns
+
+## Design Philosophy
+
+The shared CI/CD contract in this repository follows principles inherited from
+**ProjectOdyssey**:
+
+- **Canonical single source of truth (DRY).** `_required.yml` is *the* place
+  every required status-check context is produced; check names match the
+  `homeric-main-baseline` ruleset exactly, and nothing is named differently in
+  a secondary workflow.
+- **Fail loudly (no silent drift).** Dependency versions, digest pins, and
+  schema expectations are enforced by dedicated checks (`deps/version-sync`,
+  `digest-check`); a mismatch fails the gate rather than slipping through.
+- **Pin everything (reproducibility).** Base images, toolchains, and transitive
+  deps are pinned to exact versions/digests so a green run is reproducible.
+- **Preserve the queue (KISS).** The merge queue runs only the fast
+  `merge-queue-smoke` job; heavy matrices stay on `pull_request`/push so queued
+  merges do not starve the runner pool.
