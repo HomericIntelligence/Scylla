@@ -97,7 +97,7 @@ dev = [
     "build>=1.5.0,<2",
     "twine>=7.0.0,<8",
     "bump2version>=1.0.1,<2",
-    "types-pyyaml>=6.0.12.20260724,<7",
+    "types-pyyaml>=6.0.12.20260815,<7",
     "types-jsonschema>=4.26.0.20260202,<5",
     # Build backend importable in-env so tests/unit/config/test_wheel_contents.py
     # (empty-wheel regression guard) can build real artifacts under `uv run`.
